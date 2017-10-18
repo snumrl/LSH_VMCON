@@ -30,12 +30,8 @@ EvalGradient(const VectorX& x)
 {
 	ComputeF(x);
 
-	auto p0 = x.block(mi0);
-	auto p1 = x.block(mi1);
-	auto p2 = x.block(mi2);
-	auto p3 = x.block(mi2);
-
-	Matrix3 P = mMu*(mF - mR) + mLambda*((mR.transpose()*mF-Matrix3::Identity()).trace())*mR;
+	Matrix3 P;
+	ComputeP(P);
 
 	P = mVolume*P*(mInvDm.transpose());
 	mg.block(0) = -(P.block<3,1>(0,0) + P.block<3,1>(0,1) + P.block<3,1>(0,2));
@@ -48,6 +44,34 @@ CorotateFEMCst::
 EvalHessian(const VectorX& x)
 {
 	ComputeF(x);
+
+	Tensor3333 dPdF;
+
+	ComputedPdF(dPdF);
+
+	dPdF = mVolume*dPdF*mInvDm.transpose();
+
+	for(int i=0;i<3;i++)
+	{
+		for(int j=0;j<3;j++)
+		{
+			//H_ij
+			Vector3 df0,df1,df2;
+			df0 = dPdF(0,j)*mInvDm.transpose().block<3,1>(0,i);
+			df1 = dPdF(1,j)*mInvDm.transpose().block<3,1>(0,i);
+			df2 = dPdF(2,j)*mInvDm.transpose().block<3,1>(0,i);
+
+			mH.block<3,1>(i*3,j*3+0) = df0;
+			mH.block<3,1>(i*3,j*3+1) = df1;
+			mH.block<3,1>(i*3,j*3+2) = df2;
+		}
+
+		mH.block<3,3>(i*3,9) = -mH.block<3,3>(i*3,0)-mH.block<3,3>(i*3,3)-mH.block<3,3>(i*3,6);
+	}
+	for(int i=0;i<4;i++)
+	{
+		mH.block<3,3>(9,i*3) = -mH.block<3,3>(0,i*3)-mH.block<3,3>(3,i*3)-mH.block<3,3>(6,i*3);
+	}
 }
 void
 CorotateFEMCst::
