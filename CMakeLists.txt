@@ -7,10 +7,10 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
 	"Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
 #	FORCE
 	)
-SET( ENABLE_VMCON3D ON CACHE BOOL "Enable vmcon3d" )
+SET( ENABLE_VMCON ON CACHE BOOL "Enable vmcon3d" )
 
-add_subdirectory( fem3d )
-add_subdirectory( gui3d )
+#add_subdirectory( fem )
+add_subdirectory( gui )
 
 include(FindOpenMP)
 if(OPENMP_FOUND)
@@ -27,17 +27,18 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
 
-link_directories(./fem3d/)
-link_directories(./gui3d/)
+include_directories(${CMAKE_SOURCE_DIR})
+#link_directories(./fem/)
+link_directories(./gui/)
 
-file(GLOB vmcon3d_srcs "vmcon3d/*.h" "vmcon3d/*.cpp")
+file(GLOB vmcon_srcs "vmcon/*.h" "vmcon/*.cpp")
 
-if (ENABLE_VMCON3D)
-	project(vmcon3d)
+if (ENABLE_VMCON)
+	project(vmcon)
 	find_package(DART REQUIRED COMPONENTS utils-urdf gui optimizer-ipopt CONFIG)
 	add_compile_options(-DHAVE_CSTDDEF)
 	include_directories(${DART_INCLUDE_DIRS})
 
-	add_executable(vmcon3d ${vmcon3d_srcs})
-	target_link_libraries(vmcon3d ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} fem3d gui3d)
+	add_executable(vmcon ${vmcon_srcs})
+	target_link_libraries(vmcon ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} gui) #fem gui)
 endif()
