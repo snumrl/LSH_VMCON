@@ -13,19 +13,19 @@ AttachmentCst(T k,int i0,const Vector3& p)
 }
 void
 AttachmentCst::
-EvalPotentialEnergy(const VectorX& x)
+EvaluatePotentialEnergy(const VectorX& x)
 {
 	mE = 0.5 * mStiffness * ((x.block(mi0) - mp).squaredNorm());
 }
 void
 AttachmentCst::
-EvalGradient(const VectorX& x)
+EvaluateGradient(const VectorX& x)
 {
 	mg = mStiffness*(x.block(mi0) - mp);
 }
 void
 AttachmentCst::
-EvalHessian(const VectorX& x)
+EvaluateHessian(const VectorX& x)
 {
 	Vector3 kv;
 

@@ -9,9 +9,9 @@ class AttachmentCst : public Cst
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	AttachmentCst(T k,int i0,const Vector3& p);
-	void EvalPotentialEnergy(const VectorX& x) override;
-	void EvalGradient(const VectorX& x) override;
-	void EvalHessian(const VectorX& x) override;
+	void EvaluatePotentialEnergy(const VectorX& x) override;
+	void EvaluateGradient(const VectorX& x) override;
+	void EvaluateHessian(const VectorX& x) override;
 	void GetPotentialEnergy(T& e) override;
 	void GetGradient(VectorX& g) override;
 	void GetHessian(std::vector<SMatrixTriplet>& h_triplets) override;

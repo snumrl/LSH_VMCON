@@ -17,7 +17,7 @@ CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,T volume,const Matrix3& 
 }
 void
 CorotateFEMCst::
-EvalPotentialEnergy(const VectorX& x)
+EvaluatePotentialEnergy(const VectorX& x)
 {
 	ComputeF(x);
 
@@ -26,7 +26,7 @@ EvalPotentialEnergy(const VectorX& x)
 }
 void
 CorotateFEMCst::
-EvalGradient(const VectorX& x)
+EvaluateGradient(const VectorX& x)
 {
 	ComputeF(x);
 
@@ -41,7 +41,7 @@ EvalGradient(const VectorX& x)
 }
 void
 CorotateFEMCst::
-EvalHessian(const VectorX& x)
+EvaluateHessian(const VectorX& x)
 {
 	ComputeF(x);
 

@@ -15,9 +15,9 @@ class Cst
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	Cst(T k):mStiffness(k){};
-	virtual void EvalPotentialEnergy(const VectorX& x) = 0;
-	virtual void EvalGradient(const VectorX& x) = 0;
-	virtual void EvalHessian(const VectorX& x) = 0;
+	virtual void EvaluatePotentialEnergy(const VectorX& x) = 0;
+	virtual void EvaluateGradient(const VectorX& x) = 0;
+	virtual void EvaluateHessian(const VectorX& x) = 0;
 
 	virtual void GetPotentialEnergy(T& e) = 0;
 	virtual void GetGradient(VectorX& g) = 0;

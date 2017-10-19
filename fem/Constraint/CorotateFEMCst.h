@@ -10,9 +10,9 @@ class CorotateFEMCst : public Cst
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,int i3,T volume,const Matrix3& invDms);
-	void EvalPotentialEnergy(const VectorX& x) override;
-	void EvalGradient(const VectorX& x) override;
-	void EvalHessian(const VectorX& x) override;
+	void EvaluatePotentialEnergy(const VectorX& x) override;
+	void EvaluateGradient(const VectorX& x) override;
+	void EvaluateHessian(const VectorX& x) override;
 	void GetPotentialEnergy(T& e) override;
 	void GetGradient(VectorX& g) override;
 	void GetHessian(std::vector<SMatrixTriplet>& h_triplets) override;
