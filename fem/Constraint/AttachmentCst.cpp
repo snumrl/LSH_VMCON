@@ -1,4 +1,4 @@
-#include "AttachmetnCst.h"
+#include "AttachmentCst.h"
 
 using namespace FEM;
 
@@ -15,13 +15,13 @@ void
 AttachmentCst::
 EvaluatePotentialEnergy(const VectorX& x)
 {
-	mE = 0.5 * mStiffness * ((x.block(mi0) - mp).squaredNorm());
+	mE = 0.5 * mStiffness * ((x.block3(mi0) - mp).squaredNorm());
 }
 void
 AttachmentCst::
 EvaluateGradient(const VectorX& x)
 {
-	mg = mStiffness*(x.block(mi0) - mp);
+	mg = mStiffness*(x.block3(mi0) - mp);
 }
 void
 AttachmentCst::
@@ -44,7 +44,7 @@ void
 AttachmentCst::
 GetGradient(VectorX& g)
 {
-	g.block(mi0) += mg;
+	g.block3(mi0) += mg;
 }
 void
 AttachmentCst::
@@ -64,7 +64,7 @@ void
 AttachmentCst::
 GetDVector(int& index,VectorX& d)
 {
-	d.block(index) = md;
+	d.block3(index) = md;
 	index++;
 }
 void

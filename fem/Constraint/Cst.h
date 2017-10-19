@@ -1,7 +1,6 @@
 #ifndef __FEM_CST_H__
 #define __FEM_CST_H__
 #include "../global_headers.h"
-#include "Cst_Data.h"
 namespace FEM
 {
 enum CstType

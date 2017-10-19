@@ -1,8 +1,11 @@
 #include "CorotateFEMCst.h"
 #include <Eigen/SVD>
 #include <Eigen/LU>
+using namespace FEM;
 CorotateFEMCst::
-CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,T volume,const Matrix3& invDms)
+CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,int i3,T volume,const Matrix3& invDm)
+	:Cst(k),mi0(i0),mi1(i1),mi2(i2),mi3(i3),mVolume(volume),mInvDm(invDm),
+	mMu(k/((1.0+poisson_ratio))),mLambda(k*poisson_ratio/((1.0+poisson_ratio)*(1-2.0*poisson_ratio)))
 {
 	mE = 0.0;
 	mg.setZero();
@@ -21,8 +24,8 @@ EvaluatePotentialEnergy(const VectorX& x)
 {
 	ComputeF(x);
 
-	double vol_preserve = (mCacheD-Matrix3::Identity()).trace();
-	mE = mVolume*(0.5*mMu*((mCacheF - mCacheR).norm())+0.5*mLambda*vol_preserve*vol_preserve);
+	T vol_preserve = (mD-Matrix3::Identity()).trace();
+	mE = mVolume*(0.5*mMu*((mF - mR).norm())+0.5*mLambda*vol_preserve*vol_preserve);
 }
 void
 CorotateFEMCst::
@@ -34,10 +37,10 @@ EvaluateGradient(const VectorX& x)
 	ComputeP(P);
 
 	P = mVolume*P*(mInvDm.transpose());
-	mg.block(0) = -(P.block<3,1>(0,0) + P.block<3,1>(0,1) + P.block<3,1>(0,2));
-	mg.block(1) = P.block<3,1>(0,0);
-	mg.block(2) = P.block<3,1>(0,1);
-	mg.block(3) = P.block<3,1>(0,2);
+	mg.block3(0) = -(P.block<3,1>(0,0) + P.block<3,1>(0,1) + P.block<3,1>(0,2));
+	mg.block3(1) = P.block<3,1>(0,0);
+	mg.block3(2) = P.block<3,1>(0,1);
+	mg.block3(3) = P.block<3,1>(0,2);
 }
 void
 CorotateFEMCst::
@@ -83,10 +86,10 @@ void
 CorotateFEMCst::
 GetGradient(VectorX& g)
 {
-	g.block(mi0) += mg.block(0);
-	g.block(mi1) += mg.block(1);
-	g.block(mi2) += mg.block(2);
-	g.block(mi3) += mg.block(3);
+	g.block3(mi0) += mg.block3(0);
+	g.block3(mi1) += mg.block3(1);
+	g.block3(mi2) += mg.block3(2);
+	g.block3(mi3) += mg.block3(3);
 }
 void
 CorotateFEMCst::
@@ -116,15 +119,15 @@ CorotateFEMCst::
 EvaluateDVector(const VectorX& x)
 {
 	ComputeF(x);
-
+	md = mR;
 }
 void
 CorotateFEMCst::
 GetDVector(int& index,VectorX& d)
 {
-	d.block(index) = md.block(0);
-	d.block(index+1) = md.block(1);
-	d.block(index+2) = md.block(2);
+	d.block3(index) = md.block<3,1>(0,0);
+	d.block3(index+1) = md.block<3,1>(0,1);
+	d.block3(index+2) = md.block<3,1>(0,2);
 	index+=3;
 }
 void
@@ -208,15 +211,15 @@ EvaluateLMatrix(std::vector<SMatrixTriplet>& L_triplets)
 		for(int j=0;j<4;j++)
 		{
 			//MuAiTAi.block [i,j] -- 3x3 matrix
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+0, MuAiT(3*i+0, 3*j+0)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+1, MuAiT(3*i+0, 3*j+1)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+2, MuAiT(3*i+0, 3*j+2)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+0, MuAiT(3*i+1, 3*j+0)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+1, MuAiT(3*i+1, 3*j+1)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+2, MuAiT(3*i+1, 3*j+2)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+0, MuAiT(3*i+2, 3*j+0)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+1, MuAiT(3*i+2, 3*j+1)));
-			J_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+2, MuAiT(3*i+2, 3*j+2)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+0, MuAiTAi(3*i+0, 3*j+0)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+1, MuAiTAi(3*i+0, 3*j+1)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+0, 3*idx[j]+2, MuAiTAi(3*i+0, 3*j+2)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+0, MuAiTAi(3*i+1, 3*j+0)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+1, MuAiTAi(3*i+1, 3*j+1)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+1, 3*idx[j]+2, MuAiTAi(3*i+1, 3*j+2)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+0, MuAiTAi(3*i+2, 3*j+0)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+1, MuAiTAi(3*i+2, 3*j+1)));
+			L_triplets.push_back(SMatrixTriplet(3*idx[i]+2, 3*idx[j]+2, MuAiTAi(3*i+2, 3*j+2)));
 		}
 	}
 
@@ -247,15 +250,15 @@ void
 CorotateFEMCst::
 ComputeF(const VectorX& x)
 {
-	mX.block(0) = x.block(mi0);
-	mX.block(1) = x.block(mi1);
-	mX.block(2) = x.block(mi2);
-	mX.block(3) = x.block(mi3);
+	mX.block3(0) = x.block3(mi0);
+	mX.block3(1) = x.block3(mi1);
+	mX.block3(2) = x.block3(mi2);
+	mX.block3(3) = x.block3(mi3);
 
 	Matrix3 Ds;
-	Ds.block<3,1>(0,0) = mX.block(1) - mX.block(0);
-	Ds.block<3,1>(0,1) = mX.block(2) - mX.block(0);
-	Ds.block<3,1>(0,2) = mX.block(3) - mX.block(0);
+	Ds.block<3,1>(0,0) = mX.block3(1) - mX.block3(0);
+	Ds.block<3,1>(0,1) = mX.block3(2) - mX.block3(0);
+	Ds.block<3,1>(0,2) = mX.block3(3) - mX.block3(0);
 
 	mF = Ds*mInvDm;
 
@@ -291,7 +294,7 @@ ComputedPdF(Tensor3333& dPdF)
 			Matrix3 M = mU.transpose()*dFdF(i,j)*mV;
 			if(fabs(mD(0,0)-mD(1,1))<BIG_EPSILON && fabs(mD(0,0)-mD(2,2))<BIG_EPSILON)
 			{
-				matrix3 off_diag_M;
+				Matrix3 off_diag_M;
 				off_diag_M.setZero();
 				for(int a=0;a<3;a++)
 					for(int b=0;b<3;b++)		
@@ -302,7 +305,7 @@ ComputedPdF(Tensor3333& dPdF)
 							off_diag_M(a,b) = M(a,b) / mD(0,0);
 					}
 
-				dRdF(i,j) = U*off_diag_M*V.transpose();
+				dRdF(i,j) = mU*off_diag_M*mV.transpose();
 			}
 			else
 			{
@@ -333,10 +336,10 @@ ComputedPdF(Tensor3333& dPdF)
 						V_tilde(col, row) = -V_tilde(row, col);
 					}
 				}
-				EigenMatrix3 deltaU = U*U_tilde;
-				EigenMatrix3 deltaV = V_tilde*V.transpose();
+				Matrix3 deltaU = mU*U_tilde;
+				Matrix3 deltaV = V_tilde*mV.transpose();
 
-				dRdF(i, j) = deltaU*V.transpose() + U*deltaV;
+				dRdF(i, j) = deltaU*mV.transpose() + mU*deltaV;
 			}
 		}
 	
@@ -346,7 +349,7 @@ ComputedPdF(Tensor3333& dPdF)
 		{
 			lambda_term(i,j) =
 				(dRdF(i,j).transpose()*mF+mR.transpose()*dFdF(i,j)).trace()*mR +
-				(mR.transpose()*mF-Matrix3::Identity()).trace()*dRdF(i,j));
+				(mR.transpose()*mF-Matrix3::Identity()).trace()*dRdF(i,j);
 		}
 
 	dPdF = mMu*(dFdF - dRdF) + mLambda*lambda_term;

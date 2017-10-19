@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.6)
-project(gui3d)
+project(fem)
 add_compile_options(-std=gnu++11)
 add_compile_options(-Wdeprecated-declarations)
 SET(CMAKE_BUILD_TYPE Release CACHE STRING
@@ -16,6 +16,8 @@ include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
 
 file(GLOB srcs "*.h" "*.cpp")
+file(GLOB cst_srcs "Constraint/*.h" "Constraint/*.cpp")
+file(GLOB mesh_srcs "Mesh/*.h" "Mesh/*.cpp")
 
-add_library(gui3d ${srcs})
-target_link_libraries(gui3d ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})
+add_library(fem ${srcs} ${cst_srcs} ${mesh_srcs})
+target_link_libraries(fem ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES})

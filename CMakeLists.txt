@@ -9,7 +9,7 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
 	)
 SET( ENABLE_VMCON ON CACHE BOOL "Enable vmcon3d" )
 
-#add_subdirectory( fem )
+add_subdirectory( fem )
 add_subdirectory( gui )
 
 include(FindOpenMP)
@@ -28,7 +28,7 @@ include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(${GLUT_INCLUDE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR})
-#link_directories(./fem/)
+link_directories(./fem/)
 link_directories(./gui/)
 
 file(GLOB vmcon_srcs "vmcon/*.h" "vmcon/*.cpp")

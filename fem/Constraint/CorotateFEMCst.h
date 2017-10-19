@@ -1,6 +1,7 @@
 #ifndef __FEM_COROTATE_FEM_CST_H__
 #define __FEM_COROTATE_FEM_CST_H__
 #include "../Tensor3333.h"
+#include "Cst.h"
 namespace FEM
 {
 
@@ -9,7 +10,7 @@ class CorotateFEMCst : public Cst
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,int i3,T volume,const Matrix3& invDms);
+	CorotateFEMCst(T k,T poisson_ratio,int i0,int i1,int i2,int i3,T volume,const Matrix3& invDm);
 	void EvaluatePotentialEnergy(const VectorX& x) override;
 	void EvaluateGradient(const VectorX& x) override;
 	void EvaluateHessian(const VectorX& x) override;
@@ -33,7 +34,7 @@ protected:
 	T 		mE;
 	Vector12 mg;
 	Matrix12 mH;
-	Vector9 md;
+	Matrix3 md;
 
 	//For Cache
 	Vector12 mX;

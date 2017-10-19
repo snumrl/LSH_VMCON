@@ -24,7 +24,7 @@ public:
 	void Initialize();
 	void TimeStepping();
 
-	void AddBody(const VectorX& x0, const,const std::vector<std::shared_ptr<Cst>>& constraints, T m = 1.0);
+	void AddBody(const VectorX& x0, const std::vector<std::shared_ptr<Cst>>& constraints, T m = 1.0);
 	void AddConstraint(std::shared_ptr<Cst> c);
 	void RemoveConstraint(std::shared_ptr<Cst> c);
 
@@ -46,7 +46,7 @@ private:
 	void EvaluateConstraintsGradient(const VectorX& x,VectorX& g);
 	void EvaluateConstraintsHessian(const VectorX& x,SMatrix& H);
 	
-	void ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d);
+	T ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d);
 	//For Projective Dynamics, Projective Quasi-static
 	void EvaluateDVector(const VectorX& x,VectorX& d);
 	void EvaluateJMatrix(SMatrix& J);
@@ -59,7 +59,7 @@ private:
 	void IntegratePositionsAndVelocities(const VectorX& x_next);
 
 private:
-	bool isInitialized;
+	bool mIsInitialized;
 	int mNumVertices;
 	int mConstraintDofs;
 	int mMaxIteration;

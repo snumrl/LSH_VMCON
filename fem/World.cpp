@@ -10,7 +10,7 @@ World(	IntegrationMethod im,
 	:mIntegrationMethod(im),
 	mTimeStep(time_step),
 	mMaxIteration(max_iteration),
-	mGravity(gravity)
+	mGravity(gravity),
 	mDampingCoefficient(damping_coeff),
 	mNumVertices(0),
 	mConstraintDofs(0),
@@ -37,7 +37,7 @@ TimeStepping()
 	VectorX x_next(mNumVertices*3);
 	mExternalForces.setZero();
 	for(int i=0;i<mNumVertices;i++)
-		mExternalForces.block(i) = mGravity;
+		mExternalForces.block3(i) = mGravity;
 
 	mq = mPositions + mTimeStep*mVelocities + (mTimeStep*mTimeStep)*(mInvMassMatrix*mExternalForces);
 
@@ -64,7 +64,7 @@ TimeStepping()
 }
 void
 World::
-AddBody(const VectorX& x0, const,const std::vector<std::shared_ptr<Cst>>& constraints,T m)
+AddBody(const VectorX& x0, const std::vector<std::shared_ptr<Cst>>& constraints,T m)
 {
 	if(mIsInitialized)
 	{
@@ -88,7 +88,7 @@ void
 World::
 AddConstraint(std::shared_ptr<Cst> c)
 {
-	mConstraints.push_back(c):
+	mConstraints.push_back(c);
 	if((mIntegrationMethod == IntegrationMethod::PROJECTIVE_DYNAMICS||
 		mIntegrationMethod == IntegrationMethod::PROJECTIVE_QUASI_STATIC)&&
 		mIsInitialized)
@@ -214,7 +214,7 @@ IntegrateProjectiveQuasiStatic()
 }
 void
 World::
-FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& llt_solver)
+FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& lltSolver)
 {
 	Eigen::SparseMatrix<double> A_prime = A;
 	lltSolver.analyzePattern(A_prime);
@@ -233,7 +233,7 @@ FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& llt_solver)
 }
 void
 World::
-FactorizeLDLT(const SMatrix& A, Eigen::SimplicialLDLT<SMatrix>& ldlt_solver)
+FactorizeLDLT(const SMatrix& A, Eigen::SimplicialLDLT<SMatrix>& ldltSolver)
 {
 	Eigen::SparseMatrix<double> A_prime = A;
 	ldltSolver.analyzePattern(A_prime);
@@ -341,7 +341,7 @@ EvaluateConstraintsHessian(const VectorX& x,SMatrix& H)
 
 	H.setFromTriplets(h_triplets.cbegin(),h_triplets.cend());
 }
-void
+T
 World::
 ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d)
 {
@@ -355,7 +355,7 @@ ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d)
 
 	T g_dot_d = g.dot(d);
 
-	for(i=0;i<16;i++)
+	for(int i=0;i<16;i++)
 	{
 		x_next = x + alpha*d;
 
@@ -423,7 +423,7 @@ Precompute()
 	mConstraintDofs = 0;
 
 	//For computing constraint's dofs
-	Eigen::VectorX d_temp(3*mConstraints.size()*3);
+	VectorX d_temp(3*mConstraints.size()*3);
 	int index = 0;
 	for(auto& c : mConstraints)
 	{
