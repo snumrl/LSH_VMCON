@@ -131,7 +131,7 @@ Transpose()
 	return ret;
 }
 Tensor3333
-operator*(T a,const Tensor3333& B)
+FEM::operator*(T a,const Tensor3333& B)
 {
 	Tensor3333 ret;
 
@@ -142,7 +142,7 @@ operator*(T a,const Tensor3333& B)
 	return ret;
 }
 Tensor3333
-operator*(const Matrix3& m,const Tensor3333& B)
+FEM::operator*(const Matrix3& m,const Tensor3333& B)
 {
 	Tensor3333 ret;
 
@@ -161,7 +161,7 @@ operator*(const Matrix3& m,const Tensor3333& B)
 }
 
 std::ostream&
-operator<<(std::ostream& os,const Tensor3333& B)
+FEM::operator<<(std::ostream& os,const Tensor3333& B)
 {
 	std::cout<<"(0,0)\n"<<B.A[0][0]<<std::endl<<std::endl;
 	std::cout<<"(0,1)\n"<<B.A[0][1]<<std::endl<<std::endl;
@@ -176,4 +176,4 @@ operator<<(std::ostream& os,const Tensor3333& B)
 	std::cout<<"(2,2)\n"<<B.A[2][2]<<std::endl<<std::endl;
 	
 	return os;
-}
+} 

@@ -23,7 +23,52 @@ void
 World::
 Initialize()
 {
+	mTime = 0.0;
+	
+	mVelocities.resize(mNumVertices*3);	
+	mVelocities.setZero();
 
+	mExternalForces.resize(mNumVertices*3);
+	mExternalForces.setZero();
+
+	mMassMatrix.resize(mNumVertices*3,mNumVertices*3);
+	mInvMassMatrix.resize(mNumVertices*3,mNumVertices*3);
+	mIdentityMatrix.resize(mNumVertices*3,mNumVertices*3);
+
+	std::vector<SMatrixTriplet> i_triplets;
+	std::vector<SMatrixTriplet> m_triplets;
+	std::vector<SMatrixTriplet> inv_m_triplets;
+
+	for(int i =0;i<mNumVertices;i++)
+	{
+		m_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,mUnitMass[i]));
+		m_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,mUnitMass[i]));
+		m_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,mUnitMass[i]));
+
+		inv_m_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,1.0/mUnitMass[i]));
+		inv_m_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,1.0/mUnitMass[i]));
+		inv_m_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,1.0/mUnitMass[i]));
+
+		i_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,1.0));
+		i_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,1.0));
+		i_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,1.0));
+	}
+
+	mMassMatrix.setFromTriplets(m_triplets.cbegin(), m_triplets.cend());
+	mInvMassMatrix.setFromTriplets(inv_m_triplets.cbegin(), inv_m_triplets.cend());
+	mIdentityMatrix.setFromTriplets(i_triplets.cbegin(), i_triplets.cend());
+
+	mq.resize(mNumVertices*3);
+	mq.setZero();
+
+	if( mIntegrationMethod == IntegrationMethod::PROJECTIVE_DYNAMICS ||
+		mIntegrationMethod == IntegrationMethod::PROJECTIVE_QUASI_STATIC)
+		Precompute();
+
+	mIsInitialized = true;
+
+	std::cout<<"Total degree of freedom : "<<mPositions.rows()<<std::endl;
+	std::cout<<"Total constraints : "<<mConstraints.size()<<std::endl;
 }
 void
 World::
@@ -40,18 +85,19 @@ TimeStepping()
 		mExternalForces.block3(i) = mGravity;
 
 	mq = mPositions + mTimeStep*mVelocities + (mTimeStep*mTimeStep)*(mInvMassMatrix*mExternalForces);
-
 	switch(mIntegrationMethod)
 	{
 	case NEWTON_METHOD:
-	break;
 		x_next = IntegrateNewtonMethod();
+		break;
 	case QUASI_STATIC:
-	break;
+	
 		x_next = IntegrateQuasiStatic();
+		break;
 	case PROJECTIVE_DYNAMICS:
-	break;
+	
 		x_next = IntegrateProjectiveDynamics();
+		break;
 	case PROJECTIVE_QUASI_STATIC:
 		x_next = IntegrateProjectiveQuasiStatic();
 	break;
@@ -153,8 +199,9 @@ IntegrateQuasiStatic()
 {
 	VectorX x_next(mNumVertices*3);
 
-	x_next = mq;
 
+	x_next = mPositions;
+	std::cout<<x_next.transpose()<<std::endl;
 	VectorX g_k(mNumVertices*3);
 	SMatrix H_k(mNumVertices*3,mNumVertices*3);
 	for(int k=0;k<mMaxIteration;k++)
@@ -172,6 +219,7 @@ IntegrateQuasiStatic()
 
 		x_next += alpha*d;
 	}
+	std::cout<<x_next.transpose()<<std::endl;
 	InversionFree(x_next);
 	return x_next;
 }

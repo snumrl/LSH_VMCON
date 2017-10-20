@@ -40,5 +40,5 @@ if (ENABLE_VMCON)
 	include_directories(${DART_INCLUDE_DIRS})
 
 	add_executable(vmcon ${vmcon_srcs})
-	target_link_libraries(vmcon ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} gui) #fem gui)
+	target_link_libraries(vmcon ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} fem gui)
 endif()

@@ -58,7 +58,7 @@ private:
 
 	void IntegratePositionsAndVelocities(const VectorX& x_next);
 
-private:
+public:
 	bool mIsInitialized;
 	int mNumVertices;
 	int mConstraintDofs;
