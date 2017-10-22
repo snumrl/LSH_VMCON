@@ -27,9 +27,8 @@ typedef Eigen::Matrix<T, Eigen::Dynamic, 1> VectorX;
 typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
 typedef Eigen::SparseMatrix<T> SMatrix;
 typedef Eigen::Triplet<T,int> SMatrixTriplet;
-typedef std::vector<Vector3,Eigen::aligned_allocator<Vector3>> EigenVector3Vector;
 typedef Eigen::Quaternion<T> Quater;
-
+typedef Eigen::Transform<T,3,Eigen::Isometry> Isometry3;
 #define EPSILON 1E-6
 #define BIG_EPSILON 1E-4
 #define block3(a) block<3,1>(3*(a),0)

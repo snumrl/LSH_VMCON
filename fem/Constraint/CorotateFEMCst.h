@@ -24,7 +24,7 @@ public:
 	int GetNumHessianTriplets() override;
 	CstType GetType() override;
 	void AddOffset(int offset) override;
-protected:
+public:
 	int mi0,mi1,mi2,mi3;
 	T mVolume;
 	T mMu,mLambda;

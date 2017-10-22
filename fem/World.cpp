@@ -201,7 +201,6 @@ IntegrateQuasiStatic()
 
 
 	x_next = mPositions;
-	std::cout<<x_next.transpose()<<std::endl;
 	VectorX g_k(mNumVertices*3);
 	SMatrix H_k(mNumVertices*3,mNumVertices*3);
 	for(int k=0;k<mMaxIteration;k++)
@@ -219,7 +218,6 @@ IntegrateQuasiStatic()
 
 		x_next += alpha*d;
 	}
-	std::cout<<x_next.transpose()<<std::endl;
 	InversionFree(x_next);
 	return x_next;
 }
@@ -500,4 +498,5 @@ IntegratePositionsAndVelocities(const VectorX& x_next)
 {
 	mVelocities = (1.0/mTimeStep)*(x_next - mPositions);
 	mPositions = x_next;
+	mVelocities = mDampingCoefficient*mVelocities;
 }

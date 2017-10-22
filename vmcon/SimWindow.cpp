@@ -8,29 +8,52 @@ SimWindow()
 	:GLUTWindow()
 {
 	mSoftWorld = std::make_shared<FEM::World>(
-		IntegrationMethod::NEWTON_METHOD,	//Integration Method
+		IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
 		1.0/120.0,							//Time Step
 		100,								//Max Iteration
 		Vector3(0,-9.81,0),					//Gravity
 		0.999								//Damping
 		);
 
-	VectorX p(12);
+	RectangularMesh rm(0.9,0.9,0.9,3,3,3);
+	const auto& vertices = rm.GetVertices();
+	const auto& tets = rm.GetTetrahedrons();
 
-	p.block3(0) = Vector3(0,0,0);
-	p.block3(1) = Vector3(1,0,0);
-	p.block3(2) = Vector3(1,0.5,0);
-	p.block3(3) = Vector3(0,0,0.5);
-
-	Matrix3 Dm;
-	Dm.block<3,1>(0,0) = p.block3(1)-p.block3(0);	
-	Dm.block<3,1>(0,1) = p.block3(2)-p.block3(0);	
-	Dm.block<3,1>(0,2) = p.block3(3)-p.block3(0);
+	VectorX p(vertices.size()*3);
 	std::vector<std::shared_ptr<Cst>> cst_vec;
-	cst_vec.push_back(std::make_shared<CorotateFEMCst>(
+	
+	for(int i =0;i<vertices.size();i++)
+		p.block3(i) = vertices[i];
+
+	for(const auto& t : tets)
+	{
+		Matrix3 Dm;
+		Dm.block<3,1>(0,0) = p.block3(t[1])-p.block3(t[0]);	
+		Dm.block<3,1>(0,1) = p.block3(t[2])-p.block3(t[0]);	
+		Dm.block<3,1>(0,2) = p.block3(t[3])-p.block3(t[0]);
+
+		cst_vec.push_back(std::make_shared<CorotateFEMCst>(
 		1E4,
 		0.3,
-		0,1,2,3,1.0/6.0*Dm.determinant(),Dm.inverse()));
+		t[0],t[1],t[2],t[3],1.0/6.0*Dm.determinant(),Dm.inverse()));
+	}
+
+	// VectorX p(12);
+
+	// p.block3(0) = Vector3(0,0,0);
+	// p.block3(1) = Vector3(1,0,0);
+	// p.block3(2) = Vector3(1,0.5,0);
+	// p.block3(3) = Vector3(0,0,0.5);
+
+	// Matrix3 Dm;
+	// Dm.block<3,1>(0,0) = p.block3(1)-p.block3(0);	
+	// Dm.block<3,1>(0,1) = p.block3(2)-p.block3(0);	
+	// Dm.block<3,1>(0,2) = p.block3(3)-p.block3(0);
+	// std::vector<std::shared_ptr<Cst>> cst_vec;
+	// cst_vec.push_back(std::make_shared<CorotateFEMCst>(
+	// 	1E4,
+	// 	0.3,
+	// 	0,1,2,3,1.0/6.0*Dm.determinant(),Dm.inverse()));
 	cst_vec.push_back(std::make_shared<AttachmentCst>(1E3,0,Vector3(0,0,0)));
 	mSoftWorld->AddBody(p,cst_vec);
 	mSoftWorld->Initialize();
@@ -73,10 +96,34 @@ Display()
 	glColor3f(0,0,0);
 	glPointSize(5.0);
 
-	glBegin(GL_POINTS);
-	for(int i=0;i<mSoftWorld->mPositions.rows()/3;i++)
+
+	const auto& X = mSoftWorld->mPositions;
+	glBegin(GL_LINES);
+
+	for(auto& c: mSoftWorld->mConstraints)
 	{
-		glVertex3f(mSoftWorld->mPositions[i*3+0],mSoftWorld->mPositions[i*3+1],mSoftWorld->mPositions[i*3+2]);
+		const auto& tc = static_cast<CorotateFEMCst*>(c.get());
+		auto p0 =X.block3(tc->mi0);
+		auto p1 =X.block3(tc->mi1);
+		auto p2 =X.block3(tc->mi2);
+		auto p3 =X.block3(tc->mi3);
+		glVertex3f(p0[0],p0[1],p0[2]);
+		glVertex3f(p1[0],p1[1],p1[2]);
+
+		glVertex3f(p0[0],p0[1],p0[2]);
+		glVertex3f(p2[0],p2[1],p2[2]);
+
+		glVertex3f(p0[0],p0[1],p0[2]);
+		glVertex3f(p3[0],p3[1],p3[2]);
+
+		glVertex3f(p1[0],p1[1],p1[2]);
+		glVertex3f(p2[0],p2[1],p2[2]);
+
+		glVertex3f(p1[0],p1[1],p1[2]);
+		glVertex3f(p3[0],p3[1],p3[2]);
+
+		glVertex3f(p2[0],p2[1],p2[2]);
+		glVertex3f(p3[0],p3[1],p3[2]);
 	}
 	glEnd();
 	glutSwapBuffers();
@@ -87,7 +134,7 @@ Keyboard(unsigned char key,int x,int y)
 {
 	switch(key)
 	{
-		case 's': mSoftWorld->TimeStepping(); break;
+		case 's': mSoftWorld->TimeStepping();break;
 		case 27: exit(0);break;
 		default : break;
 	}
@@ -159,6 +206,7 @@ void
 SimWindow::
 Timer(int value) 
 {	
+	// mSoftWorld->TimeStepping();
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }
