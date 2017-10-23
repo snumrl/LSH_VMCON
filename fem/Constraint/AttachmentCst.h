@@ -1,36 +1,40 @@
 #ifndef __FEM_ATTACHMENT_CST_H__
 #define __FEM_ATTACHMENT_CST_H__
 #include "Cst.h"
-
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <Eigen/Geometry>
 namespace FEM
 {
 class AttachmentCst : public Cst
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	AttachmentCst(T k,int i0,const Vector3& p);
-	void EvaluatePotentialEnergy(const VectorX& x) override;
-	void EvaluateGradient(const VectorX& x) override;
-	void EvaluateHessian(const VectorX& x) override;
-	void GetPotentialEnergy(T& e) override;
-	void GetGradient(VectorX& g) override;
-	void GetHessian(std::vector<SMatrixTriplet>& h_triplets) override;
-	void EvaluateDVector(const VectorX& x) override;
-	void GetDVector(int& index,VectorX& d) override;
-	void EvaluateJMatrix(int& index, std::vector<SMatrixTriplet>& J_triplets) override;
-	void EvaluateLMatrix(std::vector<SMatrixTriplet>& L_triplets) override;
+	AttachmentCst(double k,int i0,const Eigen::Vector3d& p);
+	void EvaluatePotentialEnergy(const Eigen::VectorXd& x) override;
+	void EvaluateGradient(const Eigen::VectorXd& x) override;
+	void EvaluateHessian(const Eigen::VectorXd& x) override;
+	void GetPotentialEnergy(double& e) override;
+	void GetGradient(Eigen::VectorXd& g) override;
+	void GetHessian(std::vector<Eigen::Triplet<double>>& h_triplets) override;
+	void EvaluateDVector(const Eigen::VectorXd& x) override;
+	void GetDVector(int& index,Eigen::VectorXd& d) override;
+	void EvaluateJMatrix(int& index, std::vector<Eigen::Triplet<double>>& J_triplets) override;
+	void EvaluateLMatrix(std::vector<Eigen::Triplet<double>>& L_triplets) override;
 	int GetNumHessianTriplets() override;
-	CstType GetType() override;
 	void AddOffset(int offset) override;
+
+	int GetI0() {return mi0;}
+	const Eigen::Vector3d& GetP() {return mp;}
 protected:
 	int mi0;
-	Vector3 mp;
+	Eigen::Vector3d mp;
 
 	//For parallization
-	T 		mE;
-	Vector3 mg;
-	Matrix3 mH;
-	Vector3 md;
+	double 		mE;
+	Eigen::Vector3d mg;
+	Eigen::Matrix3d mH;
+	Eigen::Vector3d md;
 };
 }
 #endif

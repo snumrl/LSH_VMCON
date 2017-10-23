@@ -3,7 +3,7 @@
 using namespace FEM;
 
 AttachmentCst::
-AttachmentCst(T k,int i0,const Vector3& p)
+AttachmentCst(double k,int i0,const Eigen::Vector3d& p)
 	:Cst(k),mi0(i0),mp(p)
 {
 	mE = 0.0;
@@ -13,21 +13,21 @@ AttachmentCst(T k,int i0,const Vector3& p)
 }
 void
 AttachmentCst::
-EvaluatePotentialEnergy(const VectorX& x)
+EvaluatePotentialEnergy(const Eigen::VectorXd& x)
 {
-	mE = 0.5 * mStiffness * ((x.block3(mi0) - mp).squaredNorm());
+	mE = 0.5 * mStiffness * ((x.block<3,1>(mi0*3,0) - mp).squaredNorm());
 }
 void
 AttachmentCst::
-EvaluateGradient(const VectorX& x)
+EvaluateGradient(const Eigen::VectorXd& x)
 {
-	mg = mStiffness*(x.block3(mi0) - mp);
+	mg = mStiffness*(x.block<3,1>(mi0*3,0) - mp);
 }
 void
 AttachmentCst::
-EvaluateHessian(const VectorX& x)
+EvaluateHessian(const Eigen::VectorXd& x)
 {
-	Vector3 kv;
+	Eigen::Vector3d kv;
 
 	kv[0] = mStiffness;
 	kv[1] = mStiffness;
@@ -36,40 +36,40 @@ EvaluateHessian(const VectorX& x)
 }
 void
 AttachmentCst::
-GetPotentialEnergy(T& e)
+GetPotentialEnergy(double& e)
 {
 	e += mE;
 }
 void
 AttachmentCst::
-GetGradient(VectorX& g)
+GetGradient(Eigen::VectorXd& g)
 {
-	g.block3(mi0) += mg;
+	g.block<3,1>(mi0*3,0) += mg;
 }
 void
 AttachmentCst::
-GetHessian(std::vector<SMatrixTriplet>& h_triplets)
+GetHessian(std::vector<Eigen::Triplet<double>>& h_triplets)
 {
-	h_triplets.push_back(SMatrixTriplet(3*mi0+0, 3*mi0+0, mH(0, 0)));
-	h_triplets.push_back(SMatrixTriplet(3*mi0+1, 3*mi0+1, mH(1, 1)));
-	h_triplets.push_back(SMatrixTriplet(3*mi0+2, 3*mi0+2, mH(2, 2)));
+	h_triplets.push_back(Eigen::Triplet<double>(3*mi0+0, 3*mi0+0, mH(0, 0)));
+	h_triplets.push_back(Eigen::Triplet<double>(3*mi0+1, 3*mi0+1, mH(1, 1)));
+	h_triplets.push_back(Eigen::Triplet<double>(3*mi0+2, 3*mi0+2, mH(2, 2)));
 }
 void
 AttachmentCst::
-EvaluateDVector(const VectorX& x)
+EvaluateDVector(const Eigen::VectorXd& x)
 {
 	md = mp;
 }
 void
 AttachmentCst::
-GetDVector(int& index,VectorX& d)
+GetDVector(int& index,Eigen::VectorXd& d)
 {
-	d.block3(index) = md;
+	d.block<3,1>(index*3,0) = md;
 	index++;
 }
 void
 AttachmentCst::
-EvaluateJMatrix(int& index, std::vector<SMatrixTriplet>& J_triplets)
+EvaluateJMatrix(int& index, std::vector<Eigen::Triplet<double>>& J_triplets)
 {
 	J_triplets.push_back(Eigen::Triplet<double>(3*mi0+0, 3*index+0, mStiffness));
 	J_triplets.push_back(Eigen::Triplet<double>(3*mi0+1, 3*index+1, mStiffness));
@@ -78,7 +78,7 @@ EvaluateJMatrix(int& index, std::vector<SMatrixTriplet>& J_triplets)
 }
 void
 AttachmentCst::
-EvaluateLMatrix(std::vector<SMatrixTriplet>& L_triplets)
+EvaluateLMatrix(std::vector<Eigen::Triplet<double>>& L_triplets)
 {
 	L_triplets.push_back(Eigen::Triplet<double>(3*mi0+0, 3*mi0+0, mStiffness));
 	L_triplets.push_back(Eigen::Triplet<double>(3*mi0+1, 3*mi0+1, mStiffness));
@@ -91,12 +91,6 @@ GetNumHessianTriplets()
 	return 3;
 }
 
-CstType
-AttachmentCst::
-GetType()
-{
-	return CstType::ATTACHMENT;
-}
 void
 AttachmentCst::
 AddOffset(int offset)

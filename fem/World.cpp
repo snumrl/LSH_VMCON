@@ -1,12 +1,13 @@
 #include "World.h"
 using namespace FEM;
-
+#define BIG_EPSILON 1E-4
+#define EPSILON 1E-6
 World::
 World(	IntegrationMethod im,
-		T time_step,
+		double time_step,
 		int max_iteration,
-		Vector3 gravity,
-		T damping_coeff)
+		const Eigen::Vector3d& gravity,
+		double damping_coeff)
 	:mIntegrationMethod(im),
 	mTimeStep(time_step),
 	mMaxIteration(max_iteration),
@@ -35,23 +36,23 @@ Initialize()
 	mInvMassMatrix.resize(mNumVertices*3,mNumVertices*3);
 	mIdentityMatrix.resize(mNumVertices*3,mNumVertices*3);
 
-	std::vector<SMatrixTriplet> i_triplets;
-	std::vector<SMatrixTriplet> m_triplets;
-	std::vector<SMatrixTriplet> inv_m_triplets;
+	std::vector<Eigen::Triplet<double>> i_triplets;
+	std::vector<Eigen::Triplet<double>> m_triplets;
+	std::vector<Eigen::Triplet<double>> inv_m_triplets;
 
 	for(int i =0;i<mNumVertices;i++)
 	{
-		m_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,mUnitMass[i]));
-		m_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,mUnitMass[i]));
-		m_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,mUnitMass[i]));
+		m_triplets.push_back(Eigen::Triplet<double>(i*3+0,i*3+0,mUnitMass[i]));
+		m_triplets.push_back(Eigen::Triplet<double>(i*3+1,i*3+1,mUnitMass[i]));
+		m_triplets.push_back(Eigen::Triplet<double>(i*3+2,i*3+2,mUnitMass[i]));
 
-		inv_m_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,1.0/mUnitMass[i]));
-		inv_m_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,1.0/mUnitMass[i]));
-		inv_m_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,1.0/mUnitMass[i]));
+		inv_m_triplets.push_back(Eigen::Triplet<double>(i*3+0,i*3+0,1.0/mUnitMass[i]));
+		inv_m_triplets.push_back(Eigen::Triplet<double>(i*3+1,i*3+1,1.0/mUnitMass[i]));
+		inv_m_triplets.push_back(Eigen::Triplet<double>(i*3+2,i*3+2,1.0/mUnitMass[i]));
 
-		i_triplets.push_back(SMatrixTriplet(i*3+0,i*3+0,1.0));
-		i_triplets.push_back(SMatrixTriplet(i*3+1,i*3+1,1.0));
-		i_triplets.push_back(SMatrixTriplet(i*3+2,i*3+2,1.0));
+		i_triplets.push_back(Eigen::Triplet<double>(i*3+0,i*3+0,1.0));
+		i_triplets.push_back(Eigen::Triplet<double>(i*3+1,i*3+1,1.0));
+		i_triplets.push_back(Eigen::Triplet<double>(i*3+2,i*3+2,1.0));
 	}
 
 	mMassMatrix.setFromTriplets(m_triplets.cbegin(), m_triplets.cend());
@@ -79,10 +80,10 @@ TimeStepping()
 		std::cout<<"Engine is not initialized."<<std::endl;
 		return;
 	}
-	VectorX x_next(mNumVertices*3);
+	Eigen::VectorXd x_next(mNumVertices*3);
 	mExternalForces.setZero();
 	for(int i=0;i<mNumVertices;i++)
-		mExternalForces.block3(i) = mGravity;
+		mExternalForces.block<3,1>(i*3,0) = mGravity;
 
 	mq = mPositions + mTimeStep*mVelocities + (mTimeStep*mTimeStep)*(mInvMassMatrix*mExternalForces);
 	switch(mIntegrationMethod)
@@ -110,7 +111,7 @@ TimeStepping()
 }
 void
 World::
-AddBody(const VectorX& x0, const std::vector<std::shared_ptr<Cst>>& constraints,T m)
+AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& constraints,double m)
 {
 	if(mIsInitialized)
 	{
@@ -120,13 +121,13 @@ AddBody(const VectorX& x0, const std::vector<std::shared_ptr<Cst>>& constraints,
 	int nv = x0.rows()/3;
 	mNumVertices += nv;
 
-	VectorX prev_x(mPositions);
+	Eigen::VectorXd prev_x(mPositions);
 	mPositions.resize(mNumVertices*3);
 	mPositions.head(prev_x.rows()) = prev_x;
 	mPositions.tail(x0.rows()) = x0;
 
 	mConstraints.insert(mConstraints.end(),constraints.begin(),constraints.end());
-	T unit_mass = m/((T)nv);
+	double unit_mass = m/((double)nv);
 	for(int i=0;i<nv;i++)
 		mUnitMass.push_back(unit_mass);
 }
@@ -165,16 +166,16 @@ RemoveConstraint(std::shared_ptr<Cst> c)
 		Precompute();
 	}
 }
-VectorX
+Eigen::VectorXd
 World::
 IntegrateNewtonMethod()
 {
-	VectorX x_next(mNumVertices*3);
+	Eigen::VectorXd x_next(mNumVertices*3);
 
 	x_next = mq;
 
-	VectorX g_k(mNumVertices*3);
-	SMatrix H_k(mNumVertices*3,mNumVertices*3);
+	Eigen::VectorXd g_k(mNumVertices*3);
+	Eigen::SparseMatrix<double> H_k(mNumVertices*3,mNumVertices*3);
 	for(int k=0;k<mMaxIteration;k++)
 	{
 		EvaluateGradient(x_next,g_k);
@@ -184,25 +185,25 @@ IntegrateNewtonMethod()
 
 		EvaluateHessian(x_next,H_k);
 		FactorizeLDLT(H_k,mSolver);
-		VectorX d = -mSolver.solve(g_k);
+		Eigen::VectorXd d = -mSolver.solve(g_k);
 
-		T alpha = ComputeStepSize(x_next,g_k,d);
+		double alpha = ComputeStepSize(x_next,g_k,d);
 
 		x_next += alpha*d;
 	}
 	InversionFree(x_next);
 	return x_next;
 }
-VectorX
+Eigen::VectorXd
 World::
 IntegrateQuasiStatic()
 {
-	VectorX x_next(mNumVertices*3);
+	Eigen::VectorXd x_next(mNumVertices*3);
 
 
 	x_next = mPositions;
-	VectorX g_k(mNumVertices*3);
-	SMatrix H_k(mNumVertices*3,mNumVertices*3);
+	Eigen::VectorXd g_k(mNumVertices*3);
+	Eigen::SparseMatrix<double> H_k(mNumVertices*3,mNumVertices*3);
 	for(int k=0;k<mMaxIteration;k++)
 	{
 		EvaluateConstraintsGradient(x_next,g_k);
@@ -212,22 +213,22 @@ IntegrateQuasiStatic()
 
 		EvaluateConstraintsHessian(x_next,H_k);
 		FactorizeLDLT(H_k,mSolver);
-		VectorX d = -mSolver.solve(g_k);
+		Eigen::VectorXd d = -mSolver.solve(g_k);
 
-		T alpha = ComputeStepSize(x_next,g_k,d);
+		double alpha = ComputeStepSize(x_next,g_k,d);
 
 		x_next += alpha*d;
 	}
 	InversionFree(x_next);
 	return x_next;
 }
-VectorX
+Eigen::VectorXd
 World::
 IntegrateProjectiveDynamics()
 {
-	VectorX x_next(mNumVertices*3);
-	VectorX b(mNumVertices*3);
-	VectorX d(mConstraintDofs*3);
+	Eigen::VectorXd x_next(mNumVertices*3);
+	Eigen::VectorXd b(mNumVertices*3);
+	Eigen::VectorXd d(mConstraintDofs*3);
 
 	b = (1.0/(mTimeStep*mTimeStep))*mMassMatrix*mq;
 
@@ -241,12 +242,12 @@ IntegrateProjectiveDynamics()
 	InversionFree(x_next);
 	return x_next;
 }
-VectorX
+Eigen::VectorXd
 World::
 IntegrateProjectiveQuasiStatic()
 {
-	VectorX x_next(mNumVertices*3);
-	VectorX d(mConstraintDofs*3);
+	Eigen::VectorXd x_next(mNumVertices*3);
+	Eigen::VectorXd d(mConstraintDofs*3);
 
 	x_next = mPositions;
 
@@ -260,7 +261,7 @@ IntegrateProjectiveQuasiStatic()
 }
 void
 World::
-FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& lltSolver)
+FactorizeLLT(const Eigen::SparseMatrix<double>& A, Eigen::SimplicialLLT<Eigen::SparseMatrix<double>>& lltSolver)
 {
 	Eigen::SparseMatrix<double> A_prime = A;
 	lltSolver.analyzePattern(A_prime);
@@ -279,7 +280,7 @@ FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& lltSolver)
 }
 void
 World::
-FactorizeLDLT(const SMatrix& A, Eigen::SimplicialLDLT<SMatrix>& ldltSolver)
+FactorizeLDLT(const Eigen::SparseMatrix<double>& A, Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>& ldltSolver)
 {
 	Eigen::SparseMatrix<double> A_prime = A;
 	ldltSolver.analyzePattern(A_prime);
@@ -296,13 +297,13 @@ FactorizeLDLT(const SMatrix& A, Eigen::SimplicialLDLT<SMatrix>& ldltSolver)
 	if (!success)
 		std::cout << "factorize failure (damping : " << damping<<" )"<<std::endl;
 }
-T
+double
 World::
-EvaluateEnergy(const VectorX& x)
+EvaluateEnergy(const Eigen::VectorXd& x)
 {
-	VectorX x_q = x - mq;
+	Eigen::VectorXd x_q = x - mq;
 
-	T val = EvaluateConstraintsEnergy(x);
+	double val = EvaluateConstraintsEnergy(x);
 
 	if(mIntegrationMethod == NEWTON_METHOD)
 		val += 0.5*(1.0/(mTimeStep*mTimeStep))*(x_q.dot(mMassMatrix*x_q));
@@ -311,7 +312,7 @@ EvaluateEnergy(const VectorX& x)
 }
 void
 World::
-EvaluateGradient(const VectorX& x,VectorX& g)
+EvaluateGradient(const Eigen::VectorXd& x,Eigen::VectorXd& g)
 {
 	EvaluateConstraintsGradient(x,g);
 	
@@ -320,7 +321,7 @@ EvaluateGradient(const VectorX& x,VectorX& g)
 }
 void
 World::
-EvaluateHessian(const VectorX& x,SMatrix& H)
+EvaluateHessian(const Eigen::VectorXd& x,Eigen::SparseMatrix<double>& H)
 {
 	EvaluateConstraintsHessian(x,H);
 
@@ -328,11 +329,11 @@ EvaluateHessian(const VectorX& x,SMatrix& H)
 		H = H + (1.0/(mTimeStep*mTimeStep))*mMassMatrix;
 }
 
-T
+double
 World::
-EvaluateConstraintsEnergy(const VectorX& x)
+EvaluateConstraintsEnergy(const Eigen::VectorXd& x)
 {
-	T energy=0;
+	double energy=0;
 	
 #pragma omp for
 	for(int i=0;i<mConstraints.size();i++)
@@ -350,7 +351,7 @@ EvaluateConstraintsEnergy(const VectorX& x)
 }
 void
 World::
-EvaluateConstraintsGradient(const VectorX& x,VectorX& g)
+EvaluateConstraintsGradient(const Eigen::VectorXd& x,Eigen::VectorXd& g)
 {
 	g.resize(mNumVertices*3);
 	g.setZero();
@@ -369,10 +370,10 @@ EvaluateConstraintsGradient(const VectorX& x,VectorX& g)
 }
 void
 World::
-EvaluateConstraintsHessian(const VectorX& x,SMatrix& H)
+EvaluateConstraintsHessian(const Eigen::VectorXd& x,Eigen::SparseMatrix<double>& H)
 {
 	H.resize(mNumVertices*3,mNumVertices*3);
-	std::vector<SMatrixTriplet> h_triplets;
+	std::vector<Eigen::Triplet<double>> h_triplets;
 
 #pragma omp for
 	for(int i=0;i<mConstraints.size();i++)
@@ -387,19 +388,19 @@ EvaluateConstraintsHessian(const VectorX& x,SMatrix& H)
 
 	H.setFromTriplets(h_triplets.cbegin(),h_triplets.cend());
 }
-T
+double
 World::
-ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d)
+ComputeStepSize(const Eigen::VectorXd& x, const Eigen::VectorXd& g,const Eigen::VectorXd& d)
 {
-	T alpha = 1.0;
-	T c1 = 0.03;
-	T c2 = 0.5;
-	T f_x,f_x_next;
-	VectorX x_next;
+	double alpha = 1.0;
+	double c1 = 0.03;
+	double c2 = 0.5;
+	double f_x,f_x_next;
+	Eigen::VectorXd x_next;
 
 	f_x = EvaluateEnergy(x);
 
-	T g_dot_d = g.dot(d);
+	double g_dot_d = g.dot(d);
 
 	for(int i=0;i<16;i++)
 	{
@@ -417,7 +418,7 @@ ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d)
 }
 void
 World::
-EvaluateDVector(const VectorX& x,VectorX& d)
+EvaluateDVector(const Eigen::VectorXd& x,Eigen::VectorXd& d)
 {
 	d.resize(mConstraintDofs*3);
 
@@ -435,10 +436,10 @@ EvaluateDVector(const VectorX& x,VectorX& d)
 }
 void
 World::
-EvaluateJMatrix(SMatrix& J)
+EvaluateJMatrix(Eigen::SparseMatrix<double>& J)
 {
 	J.resize(mNumVertices*3,mConstraintDofs*3);
-	std::vector<SMatrixTriplet> J_triplets;
+	std::vector<Eigen::Triplet<double>> J_triplets;
 
 	int index = 0;
 	for(auto& c : mConstraints)
@@ -450,10 +451,10 @@ EvaluateJMatrix(SMatrix& J)
 }
 void
 World::
-EvaluateLMatrix(SMatrix& L)
+EvaluateLMatrix(Eigen::SparseMatrix<double>& L)
 {
 	L.resize(mNumVertices*3,mNumVertices*3);
-	std::vector<SMatrixTriplet> L_triplets;
+	std::vector<Eigen::Triplet<double>> L_triplets;
 
 	for(auto& c: mConstraints)
 	{
@@ -469,7 +470,7 @@ Precompute()
 	mConstraintDofs = 0;
 
 	//For computing constraint's dofs
-	VectorX d_temp(3*mConstraints.size()*3);
+	Eigen::VectorXd d_temp(3*mConstraints.size()*3);
 	int index = 0;
 	for(auto& c : mConstraints)
 	{
@@ -480,7 +481,7 @@ Precompute()
 	EvaluateLMatrix(mL);
 	EvaluateJMatrix(mJ);
 
-	SMatrix H2ML = (1.0/(mTimeStep*mTimeStep))*mMassMatrix+mL;
+	Eigen::SparseMatrix<double> H2ML = (1.0/(mTimeStep*mTimeStep))*mMassMatrix+mL;
 	if(mIntegrationMethod == PROJECTIVE_DYNAMICS)
 		FactorizeLDLT(H2ML,mSolver);
 	else if(mIntegrationMethod == PROJECTIVE_QUASI_STATIC)
@@ -488,13 +489,13 @@ Precompute()
 }
 void
 World::
-InversionFree(VectorX& x)
+InversionFree(Eigen::VectorXd& x)
 {
 	//TODO
 }
 void
 World::
-IntegratePositionsAndVelocities(const VectorX& x_next)
+IntegratePositionsAndVelocities(const Eigen::VectorXd& x_next)
 {
 	mVelocities = (1.0/mTimeStep)*(x_next - mPositions);
 	mPositions = x_next;

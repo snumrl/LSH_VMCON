@@ -2,16 +2,16 @@
 
 using namespace FEM;
 RectangularMesh::
-RectangularMesh(T _x,T _y, T _z, int _nx,int _ny, int _nz,const Isometry3& M)
+RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Isometry3d& M)
 	:mNx(_nx),mNy(_ny),mNz(_nz),mX(_x),mY(_y),mZ(_z)
 {
 
 
-	T dx = mX /(T)mNx;
-	T dy = mY /(T)mNy;
-	T dz = mZ /(T)mNz;
+	double dx = mX /(double)mNx;
+	double dy = mY /(double)mNy;
+	double dz = mZ /(double)mNz;
 
-	T x,y,z;
+	double x,y,z;
 	for(int i=0; i<mNx+1;i++)
 	{	
 		x = -0.5*mNx + i*dx;
@@ -21,7 +21,7 @@ RectangularMesh(T _x,T _y, T _z, int _nx,int _ny, int _nz,const Isometry3& M)
 			for(int k=0; k<mNz+1;k++)
 			{
 				z = -0.5*mNz + k*dz;
-				mVertices.push_back(Vector3(x,y,z));
+				mVertices.push_back(Eigen::Vector3d(x,y,z));
 			}
 		}
 	}
@@ -60,11 +60,11 @@ RectangularMesh(T _x,T _y, T _z, int _nx,int _ny, int _nz,const Isometry3& M)
 
 
 
-	// T dx = mX /(T)mNx;
-	// T dy = mY /(T)mNy;
-	// T dz = mZ /(T)mNz;
+	// double dx = mX /(double)mNx;
+	// double dy = mY /(double)mNy;
+	// double dz = mZ /(double)mNz;
 
-	// T x,y,z;
+	// double x,y,z;
 	// for(int i=0; i<mNx+1;i++)
 	// {	
 	// 	x = -0.5*mNx + i*dx;
@@ -74,10 +74,10 @@ RectangularMesh(T _x,T _y, T _z, int _nx,int _ny, int _nz,const Isometry3& M)
 	// 		for(int k=0; k<mNz+1;k++)
 	// 		{
 	// 			z = -0.5*mNz + k*dz;
-	// 			mVertices.push_back(Vector3(x,y,z));
+	// 			mVertices.push_back(Eigen::Vector3d(x,y,z));
 	// 			if( i!=mNx && j!=mNy && k!=mNz)
 	// 			{
-	// 				mVertices.push_back(Vector3(x + 0.5*dx,y + 0.5*dy,z + 0.5*dz));
+	// 				mVertices.push_back(Eigen::Vector3d(x + 0.5*dx,y + 0.5*dy,z + 0.5*dz));
 	// 			}
 	// 		}
 	// 	}

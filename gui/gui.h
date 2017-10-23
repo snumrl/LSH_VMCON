@@ -2,4 +2,5 @@
 #include "Camera.h"
 #include "GLUTWindow.h"
 #include "GLfunctions.h"
+#include "Ray.h"
 #endif

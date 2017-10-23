@@ -1,5 +1,6 @@
 #include "GLUTWindow.h"
 #include "Camera.h"
+#include <iostream>
 #include <GL/glut.h>
 using namespace GUI;
 std::vector<GLUTWindow*> GLUTWindow::mWindows;

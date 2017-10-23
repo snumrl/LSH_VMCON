@@ -1,7 +1,8 @@
 #ifndef __MESH_H__
 #define __MESH_H__
-#include "../global_headers.h"
-
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <Eigen/Geometry>
 namespace FEM
 {
 class Mesh
@@ -9,11 +10,11 @@ class Mesh
 public:
 	Mesh(){};
 	~Mesh(){mVertices.clear();mTetrahedrons.clear();};
-	virtual const std::vector<Vector3>& GetVertices(){return mVertices;};
+	virtual const std::vector<Eigen::Vector3d>& GetVertices(){return mVertices;};
 	virtual const std::vector<Eigen::Vector4i>& GetTetrahedrons(){return mTetrahedrons;};
 
 protected:
-	std::vector<Vector3> mVertices;
+	std::vector<Eigen::Vector3d> mVertices;
 	std::vector<Eigen::Vector4i> mTetrahedrons;
 };
 };

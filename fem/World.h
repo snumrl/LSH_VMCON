@@ -1,7 +1,9 @@
 #ifndef __FEM_WORLD_H__
 #define __FEM_WORLD_H__
 #include "Constraint/Constraint.h"
-#include "global_headers.h"
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <Eigen/Geometry>
 namespace FEM
 {
 enum IntegrationMethod
@@ -16,73 +18,78 @@ class World
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	World(	IntegrationMethod im = NEWTON_METHOD,
-			T time_step = 1.0/120.0,
+			double time_step = 1.0/120.0,
 			int max_iteration = 100,
-			Vector3 gravity = Vector3(0,-9.81,0),
-			T damping_coeff = 0.999);
+			const Eigen::Vector3d& gravity = Eigen::Vector3d(0,-9.81,0),
+			double damping_coeff = 0.999);
 
 	void Initialize();
 	void TimeStepping();
 
-	void AddBody(const VectorX& x0, const std::vector<std::shared_ptr<Cst>>& constraints, T m = 1.0);
+	void AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& constraints, double m = 1.0);
 	void AddConstraint(std::shared_ptr<Cst> c);
 	void RemoveConstraint(std::shared_ptr<Cst> c);
 
 private:
-	VectorX IntegrateNewtonMethod();
-	VectorX IntegrateQuasiStatic();
-	VectorX IntegrateProjectiveDynamics();
-	VectorX IntegrateProjectiveQuasiStatic();
+	Eigen::VectorXd IntegrateNewtonMethod();
+	Eigen::VectorXd IntegrateQuasiStatic();
+	Eigen::VectorXd IntegrateProjectiveDynamics();
+	Eigen::VectorXd IntegrateProjectiveQuasiStatic();
 
-	void FactorizeLLT(const SMatrix& A, Eigen::SimplicialLLT<SMatrix>& llt_solver);
-	void FactorizeLDLT(const SMatrix& A, Eigen::SimplicialLDLT<SMatrix>& ldlt_solver);
+	void FactorizeLLT(const Eigen::SparseMatrix<double>& A, Eigen::SimplicialLLT<Eigen::SparseMatrix<double>>& llt_solver);
+	void FactorizeLDLT(const Eigen::SparseMatrix<double>& A, Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>& ldlt_solver);
 
 	//For Newton method, Quasi-static
-	T EvaluateEnergy(const VectorX& x);
-	void EvaluateGradient(const VectorX& x,VectorX& g);
-	void EvaluateHessian(const VectorX& x,SMatrix& H);
+	double EvaluateEnergy(const Eigen::VectorXd& x);
+	void EvaluateGradient(const Eigen::VectorXd& x,Eigen::VectorXd& g);
+	void EvaluateHessian(const Eigen::VectorXd& x,Eigen::SparseMatrix<double>& H);
 	
-	T EvaluateConstraintsEnergy(const VectorX& x);
-	void EvaluateConstraintsGradient(const VectorX& x,VectorX& g);
-	void EvaluateConstraintsHessian(const VectorX& x,SMatrix& H);
+	double EvaluateConstraintsEnergy(const Eigen::VectorXd& x);
+	void EvaluateConstraintsGradient(const Eigen::VectorXd& x,Eigen::VectorXd& g);
+	void EvaluateConstraintsHessian(const Eigen::VectorXd& x,Eigen::SparseMatrix<double>& H);
 	
-	T ComputeStepSize(const VectorX& x, const VectorX& g,const VectorX& d);
+	double ComputeStepSize(const Eigen::VectorXd& x, const Eigen::VectorXd& g,const Eigen::VectorXd& d);
 	//For Projective Dynamics, Projective Quasi-static
-	void EvaluateDVector(const VectorX& x,VectorX& d);
-	void EvaluateJMatrix(SMatrix& J);
-	void EvaluateLMatrix(SMatrix& L);
+	void EvaluateDVector(const Eigen::VectorXd& x,Eigen::VectorXd& d);
+	void EvaluateJMatrix(Eigen::SparseMatrix<double>& J);
+	void EvaluateLMatrix(Eigen::SparseMatrix<double>& L);
 
 	void Precompute();
 	//For detailing
-	void InversionFree(VectorX& x);
+	void InversionFree(Eigen::VectorXd& x);
 
-	void IntegratePositionsAndVelocities(const VectorX& x_next);
+	void IntegratePositionsAndVelocities(const Eigen::VectorXd& x_next);
 
+public:
+	double GetTime() {return mTime;}
+	double GetTimeStep() {return mTimeStep;}
+	const Eigen::VectorXd& GetPositions() {return mPositions;}
+	const std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
 public:
 	bool mIsInitialized;
 	int mNumVertices;
 	int mConstraintDofs;
 	int mMaxIteration;
 
-	T mTimeStep,mTime;
-	T mDampingCoefficient;
-	Vector3 mGravity;
+	double mTimeStep,mTime;
+	double mDampingCoefficient;
+	Eigen::Vector3d mGravity;
 
 	IntegrationMethod mIntegrationMethod;
 
-	std::vector<T> mUnitMass;
+	std::vector<double> mUnitMass;
 	std::vector<std::shared_ptr<Cst>> mConstraints;
 
-	VectorX mPositions,mVelocities;
-	VectorX mExternalForces;
+	Eigen::VectorXd mPositions,mVelocities;
+	Eigen::VectorXd mExternalForces;
 
-	SMatrix mMassMatrix,mInvMassMatrix,mIdentityMatrix;
+	Eigen::SparseMatrix<double> mMassMatrix,mInvMassMatrix,mIdentityMatrix;
 	
 	//For Projective Dynamics, Projective Quasi-static
-	VectorX mq;
-	SMatrix mJ,mL;
+	Eigen::VectorXd mq;
+	Eigen::SparseMatrix<double> mJ,mL;
 
-	Eigen::SimplicialLDLT<SMatrix> mSolver;
+	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> mSolver;
 };
 };
 

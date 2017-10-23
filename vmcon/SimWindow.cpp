@@ -1,4 +1,5 @@
 #include "SimWindow.h"
+#include "FEM_interface.h"
 #include <GL/glut.h>
 using namespace VMCON;
 using namespace GUI;
@@ -7,11 +8,12 @@ SimWindow::
 SimWindow()
 	:GLUTWindow()
 {
+
 	mSoftWorld = std::make_shared<FEM::World>(
 		IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
 		1.0/120.0,							//Time Step
 		100,								//Max Iteration
-		Vector3(0,-9.81,0),					//Gravity
+		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
 		);
 
@@ -19,18 +21,18 @@ SimWindow()
 	const auto& vertices = rm.GetVertices();
 	const auto& tets = rm.GetTetrahedrons();
 
-	VectorX p(vertices.size()*3);
+	Eigen::VectorXd p(vertices.size()*3);
 	std::vector<std::shared_ptr<Cst>> cst_vec;
 	
 	for(int i =0;i<vertices.size();i++)
-		p.block3(i) = vertices[i];
+		p.block<3,1>(i*3,0) = vertices[i];
 
 	for(const auto& t : tets)
 	{
-		Matrix3 Dm;
-		Dm.block<3,1>(0,0) = p.block3(t[1])-p.block3(t[0]);	
-		Dm.block<3,1>(0,1) = p.block3(t[2])-p.block3(t[0]);	
-		Dm.block<3,1>(0,2) = p.block3(t[3])-p.block3(t[0]);
+		Eigen::Matrix3d Dm;
+		Dm.block<3,1>(0,0) = p.block<3,1>(t[1]*3,0)-p.block<3,1>(t[0]*3,0);	
+		Dm.block<3,1>(0,1) = p.block<3,1>(t[2]*3,0)-p.block<3,1>(t[0]*3,0);	
+		Dm.block<3,1>(0,2) = p.block<3,1>(t[3]*3,0)-p.block<3,1>(t[0]*3,0);
 
 		cst_vec.push_back(std::make_shared<CorotateFEMCst>(
 		1E4,
@@ -38,14 +40,14 @@ SimWindow()
 		t[0],t[1],t[2],t[3],1.0/6.0*Dm.determinant(),Dm.inverse()));
 	}
 
-	// VectorX p(12);
+	// Eigen::VectorXd p(12);
 
-	// p.block3(0) = Vector3(0,0,0);
-	// p.block3(1) = Vector3(1,0,0);
-	// p.block3(2) = Vector3(1,0.5,0);
-	// p.block3(3) = Vector3(0,0,0.5);
+	// p.block3(0) = Eigen::Vector3d(0,0,0);
+	// p.block3(1) = Eigen::Vector3d(1,0,0);
+	// p.block3(2) = Eigen::Vector3d(1,0.5,0);
+	// p.block3(3) = Eigen::Vector3d(0,0,0.5);
 
-	// Matrix3 Dm;
+	// Eigen::Matrix3d Dm;
 	// Dm.block<3,1>(0,0) = p.block3(1)-p.block3(0);	
 	// Dm.block<3,1>(0,1) = p.block3(2)-p.block3(0);	
 	// Dm.block<3,1>(0,2) = p.block3(3)-p.block3(0);
@@ -54,9 +56,10 @@ SimWindow()
 	// 	1E4,
 	// 	0.3,
 	// 	0,1,2,3,1.0/6.0*Dm.determinant(),Dm.inverse()));
-	cst_vec.push_back(std::make_shared<AttachmentCst>(1E3,0,Vector3(0,0,0)));
+	cst_vec.push_back(std::make_shared<AttachmentCst>(1E3,0,Eigen::Vector3d(0,0,0)));
 	mSoftWorld->AddBody(p,cst_vec);
 	mSoftWorld->Initialize();
+	mDisplayTimeout = 33;
 }
 void
 SimWindow::
@@ -65,8 +68,13 @@ Display()
 	glClearColor(0.95, 0.95, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_DEPTH_TEST);
+	
 	mCamera->Apply();
+	glLineWidth(2.0);
+	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(100,0,0),Eigen::Vector3d(1,0,0));
+	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,100,0),Eigen::Vector3d(0,1,0));
+	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
+	glLineWidth(1.0);
 	// glColor3f(0,0,0);
 	// glLineWidth(1.0);
 	// glBegin(GL_LINES);
@@ -91,41 +99,13 @@ Display()
 	// glEnd();
 
 	// glColor3f(0,0,0);
- //    // DrawStringOnScreen(0.8,0.2,std::to_string(0.0),true);
+
+
+    GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mSoftWorld->GetTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
-	glColor3f(0,0,0);
-	glPointSize(5.0);
 
+	DrawWorld(mSoftWorld);
 
-	const auto& X = mSoftWorld->mPositions;
-	glBegin(GL_LINES);
-
-	for(auto& c: mSoftWorld->mConstraints)
-	{
-		const auto& tc = static_cast<CorotateFEMCst*>(c.get());
-		auto p0 =X.block3(tc->mi0);
-		auto p1 =X.block3(tc->mi1);
-		auto p2 =X.block3(tc->mi2);
-		auto p3 =X.block3(tc->mi3);
-		glVertex3f(p0[0],p0[1],p0[2]);
-		glVertex3f(p1[0],p1[1],p1[2]);
-
-		glVertex3f(p0[0],p0[1],p0[2]);
-		glVertex3f(p2[0],p2[1],p2[2]);
-
-		glVertex3f(p0[0],p0[1],p0[2]);
-		glVertex3f(p3[0],p3[1],p3[2]);
-
-		glVertex3f(p1[0],p1[1],p1[2]);
-		glVertex3f(p2[0],p2[1],p2[2]);
-
-		glVertex3f(p1[0],p1[1],p1[2]);
-		glVertex3f(p3[0],p3[1],p3[2]);
-
-		glVertex3f(p2[0],p2[1],p2[2]);
-		glVertex3f(p3[0],p3[1],p3[2]);
-	}
-	glEnd();
 	glutSwapBuffers();
 }
 void
@@ -206,7 +186,8 @@ void
 SimWindow::
 Timer(int value) 
 {	
-	// mSoftWorld->TimeStepping();
+	for(int i =0;i<(int)((double)mDisplayTimeout/(double)1000/mSoftWorld->GetTimeStep());i++)
+		mSoftWorld->TimeStepping();
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }

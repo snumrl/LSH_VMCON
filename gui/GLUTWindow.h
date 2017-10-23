@@ -1,6 +1,10 @@
 #ifndef __GUI_GLUT_WINDOW_H__
 #define __GUI_GLUT_WINDOW_H__
-#include "global_headers.h"
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <Eigen/Geometry>
+#include <memory>
+
 namespace GUI
 {
 class Camera;

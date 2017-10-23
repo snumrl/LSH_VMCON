@@ -4,14 +4,14 @@ using namespace GUI;
 
 Camera::
 Camera()
-	:fovy(60.0),lookAt(Vector3(0,0,0)),eye(Vector3(0,0,10)),up(Vector3(0,1,0))
+	:fovy(60.0),lookAt(Eigen::Vector3d(0,0,0)),eye(Eigen::Vector3d(0,0,10)),up(Eigen::Vector3d(0,1,0))
 {
 
 }
 	
 void
 Camera::
-SetCamera(const Vector3& lookAt,const Vector3& eye,const Vector3& up)
+SetCamera(const Eigen::Vector3d& lookAt,const Eigen::Vector3d& eye,const Eigen::Vector3d& up)
 {
 	this->lookAt = lookAt, this->eye = eye, this->up = up;
 }
@@ -35,7 +35,7 @@ void
 Camera::
 Pan(int x,int y,int prev_x,int prev_y)
 {
-	T delta = (T)prev_y - (T)y;
+	double delta = (double)prev_y - (double)y;
 	delta = 1 - delta / 200.0;
 	eye = lookAt - (lookAt - eye)*delta;
 }
@@ -43,7 +43,7 @@ void
 Camera::
 Zoom(int x,int y,int prev_x,int prev_y)
 {
-	T delta = (T)prev_y - (T)y;
+	double delta = (double)prev_y - (double)y;
 	fovy += delta/20.0;
 }
 void
@@ -53,17 +53,17 @@ Rotate(int x,int y,int prev_x,int prev_y)
 	GLint w = glutGet(GLUT_WINDOW_WIDTH);
 	GLint h = glutGet(GLUT_WINDOW_HEIGHT);
 
-	Vector3 prevPoint = GetTrackballPoint(prev_x,prev_y,w,h);
-	Vector3 curPoint = GetTrackballPoint(x,y,w,h);
-	Vector3 rotVec = curPoint.cross(prevPoint);
+	Eigen::Vector3d prevPoint = GetTrackballPoint(prev_x,prev_y,w,h);
+	Eigen::Vector3d curPoint = GetTrackballPoint(x,y,w,h);
+	Eigen::Vector3d rotVec = curPoint.cross(prevPoint);
 
 	rotVec = UnProject(rotVec);
-	T cosT = curPoint.dot(prevPoint) / (curPoint.norm()*prevPoint.norm());
-	T sinT = (curPoint.cross(prevPoint)).norm() / (curPoint.norm()*prevPoint.norm());
+	double cosT = curPoint.dot(prevPoint) / (curPoint.norm()*prevPoint.norm());
+	double sinT = (curPoint.cross(prevPoint)).norm() / (curPoint.norm()*prevPoint.norm());
 
-	T angle = -atan2(sinT, cosT);
+	double angle = -atan2(sinT, cosT);
 
-	Vector3 n = this->lookAt - this->eye;
+	Eigen::Vector3d n = this->lookAt - this->eye;
 	n = Rotateq(n, rotVec, angle);
 	this->up = Rotateq(this->up, rotVec, angle);
 	this->eye = this->lookAt - n;
@@ -72,50 +72,61 @@ void
 Camera::
 Translate(int x,int y,int prev_x,int prev_y)
 {
-	Vector3 delta((T)x - (T)prev_x, (T)y - (T)prev_y, 0);
+	Eigen::Vector3d delta((double)x - (double)prev_x, (double)y - (double)prev_y, 0);
 	delta = UnProject(delta) / 50.0;
 	lookAt += delta; eye += delta;
 }
-Vector3
+Ray
 Camera::
-Rotateq(const Vector3& target, const Vector3& rotateVector,T angle)
+GetRay(int x,int y)
 {
-	Vector3 rv = rotateVector.normalized();
+	GLint w = glutGet(GLUT_WINDOW_WIDTH);
+	GLint h = glutGet(GLUT_WINDOW_HEIGHT);
 
-	Quater rot(cos(angle / 2.0), sin(angle / 2.0)*rv.x(), sin(angle / 2.0)*rv.y(), sin(angle / 2.0)*rv.z());
+	double dx = (double)(x)-(double)w / 2.0;
+	double dy = -(double)(y)-(double)h / 2.0;
+	return Ray(eye,lookAt-eye);
+}
+Eigen::Vector3d
+Camera::
+Rotateq(const Eigen::Vector3d& target, const Eigen::Vector3d& rotateVector,double angle)
+{
+	Eigen::Vector3d rv = rotateVector.normalized();
+
+	Eigen::Quaternion<double> rot(cos(angle / 2.0), sin(angle / 2.0)*rv.x(), sin(angle / 2.0)*rv.y(), sin(angle / 2.0)*rv.z());
 	rot.normalize();
-	Quater tar(0, target.x(), target.y(), target.z());
+	Eigen::Quaternion<double> tar(0, target.x(), target.y(), target.z());
 
 
 	tar = rot.inverse()*tar*rot;
 
-	return Vector3(tar.x(), tar.y(), tar.z());
+	return Eigen::Vector3d(tar.x(), tar.y(), tar.z());
 }
-Vector3
+Eigen::Vector3d
 Camera::
 GetTrackballPoint(int mouseX, int mouseY,int w,int h)
 {
-	T rad = sqrt((T)(w*w+h*h)) / 2.0;
-	T dx = (T)(mouseX)-(T)w / 2.0;
-	T dy = (T)(mouseY)-(T)h / 2.0;
-	T dx2pdy2 = dx*dx + dy*dy;
+	double rad = sqrt((double)(w*w+h*h)) / 2.0;
+	double dx = (double)(mouseX)-(double)w / 2.0;
+	double dy = (double)(mouseY)-(double)h / 2.0;
+	double dx2pdy2 = dx*dx + dy*dy;
 
 	if (rad*rad - dx2pdy2 <= 0)
-		return Vector3(dx, dy, 0);
+		return Eigen::Vector3d(dx, dy, 0);
 	else
-		return Vector3(dx, dy, sqrt(rad*rad - dx*dx - dy*dy));
+		return Eigen::Vector3d(dx, dy, sqrt(rad*rad - dx*dx - dy*dy));
 }
-Vector3
+Eigen::Vector3d
 Camera::
-UnProject(const Vector3& vec)
+UnProject(const Eigen::Vector3d& vec)
 {
-	Vector3 n = lookAt - eye;
+	Eigen::Vector3d n = lookAt - eye;
 	n.normalize();
 	
-	Vector3 v = up.cross(n);
+	Eigen::Vector3d v = up.cross(n);
 	v.normalize();
 
-	Vector3 u = n.cross(v);
+	Eigen::Vector3d u = n.cross(v);
 	u.normalize();
 
 	return vec.z()*n + vec.x()*v + vec.y()*u;
