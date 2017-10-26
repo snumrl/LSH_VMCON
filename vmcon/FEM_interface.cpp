@@ -27,7 +27,7 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 	}
 	else if(dynamic_cast<CorotateFEMCst*>(c.get()) != nullptr)
 	{
-		CorotateFEMCst* cc = dynamic_cast<CorotateFEMCst*>(c.get());	
+		CorotateFEMCst* cc = dynamic_cast<CorotateFEMCst*>(c.get());
 		int i0 = cc->GetI0();
 		int i1 = cc->GetI1();
 		int i2 = cc->GetI2();
@@ -38,8 +38,7 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 		const Eigen::Vector3d& p2 = x.block<3,1>(i2*3,0);
 		const Eigen::Vector3d& p3 = x.block<3,1>(i3*3,0);
 
-		
-		GUI::DrawTetrahedron(p0,p1,p2,p3);
+			GUI::DrawTetrahedron(p0,p1,p2,p3);
 		glLineWidth(2.0);
 		GUI::DrawLine(p0,p1,Eigen::Vector3d(0,0,0));
 		GUI::DrawLine(p0,p2,Eigen::Vector3d(0,0,0));

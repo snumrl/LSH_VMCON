@@ -2,3 +2,4 @@
 #include "World.h"
 #include "Constraint/Constraint.h"
 #include "Mesh/RectangularMesh.h"
+#include "Mesh/DiamondMesh.h"

@@ -17,7 +17,7 @@ SimWindow()
 		0.999								//Damping
 		);
 
-	RectangularMesh rm(0.9,0.9,0.9,3,3,3);
+	DiamondMesh rm(2,1,1,3,1,1);
 	const auto& vertices = rm.GetVertices();
 	const auto& tets = rm.GetTetrahedrons();
 
@@ -29,11 +29,12 @@ SimWindow()
 
 	for(const auto& t : tets)
 	{
+
 		Eigen::Matrix3d Dm;
 		Dm.block<3,1>(0,0) = p.block<3,1>(t[1]*3,0)-p.block<3,1>(t[0]*3,0);	
 		Dm.block<3,1>(0,1) = p.block<3,1>(t[2]*3,0)-p.block<3,1>(t[0]*3,0);	
 		Dm.block<3,1>(0,2) = p.block<3,1>(t[3]*3,0)-p.block<3,1>(t[0]*3,0);
-
+		// std::cout<<Dm.determinant()<<std::endl;
 		cst_vec.push_back(std::make_shared<CorotateFEMCst>(
 		1E4,
 		0.3,
@@ -61,6 +62,7 @@ SimWindow()
 	mSoftWorld->Initialize();
 	mDisplayTimeout = 33;
 }
+
 void
 SimWindow::
 Display() 
@@ -105,6 +107,7 @@ Display()
 	// glLineWidth(1.0);
 
 	DrawWorld(mSoftWorld);
+
 
 	glutSwapBuffers();
 }
@@ -186,8 +189,8 @@ void
 SimWindow::
 Timer(int value) 
 {	
-	for(int i =0;i<(int)((double)mDisplayTimeout/(double)1000/mSoftWorld->GetTimeStep());i++)
-		mSoftWorld->TimeStepping();
+	// for(int i =0;i<(int)((double)mDisplayTimeout/(double)1000/mSoftWorld->GetTimeStep());i++)
+		// mSoftWorld->TimeStepping();
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }
