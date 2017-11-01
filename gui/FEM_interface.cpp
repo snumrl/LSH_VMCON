@@ -1,8 +1,8 @@
 #include "FEM_interface.h"
 #include "GL/glut.h"
-
+using namespace FEM;
 void
-FEM::
+GUI::
 DrawWorld(const std::shared_ptr<World>& world)
 {
 	const Eigen::VectorXd& X = world->GetPositions();
@@ -13,7 +13,7 @@ DrawWorld(const std::shared_ptr<World>& world)
 
 }
 void
-FEM::
+GUI::
 DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 {
 	if(dynamic_cast<AttachmentCst*>(c.get()) != nullptr)

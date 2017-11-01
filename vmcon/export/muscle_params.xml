@@ -1,0 +1,13 @@
+<Muscles>
+    <unit>
+		<mesh type="Rectangle" nx="2" ny="1" ratio = "0.3"/>
+		<origin>
+			<anchor body="Torso" x="0.05" y="-0.16" z = "0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="Torso" x="0.05" y="0.1525" z = "0.0"/>
+		</insertion>
+	</unit> 
+
+</Muscles>
+

@@ -26,6 +26,7 @@ public:
 
 	int GetI0() {return mi0;}
 	const Eigen::Vector3d& GetP() {return mp;}
+	void SetP(const Eigen::Vector3d& p) {mp = p;}
 protected:
 	int mi0;
 	Eigen::Vector3d mp;

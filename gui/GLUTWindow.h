@@ -26,8 +26,9 @@ public:
 
 	static std::vector<GLUTWindow*> mWindows;
 	static std::vector<int> mWinIDs;
+	
 protected:
-
+	virtual void initLights();
 	virtual void Display() = 0;
 	virtual void Keyboard(unsigned char key,int x,int y) = 0;
 	virtual void Mouse(int button, int state, int x, int y) = 0;

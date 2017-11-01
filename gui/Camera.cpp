@@ -4,7 +4,7 @@ using namespace GUI;
 
 Camera::
 Camera()
-	:fovy(60.0),lookAt(Eigen::Vector3d(0,0,0)),eye(Eigen::Vector3d(0,0,10)),up(Eigen::Vector3d(0,1,0))
+	:fovy(60.0),lookAt(Eigen::Vector3d(0,0.5,0)),eye(Eigen::Vector3d(0,0.5,2)),up(Eigen::Vector3d(0,1,0))
 {
 
 }

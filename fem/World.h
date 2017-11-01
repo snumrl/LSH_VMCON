@@ -61,6 +61,7 @@ private:
 	void IntegratePositionsAndVelocities(const Eigen::VectorXd& x_next);
 
 public:
+	int GetNumVertices(){return mNumVertices;}
 	double GetTime() {return mTime;}
 	double GetTimeStep() {return mTimeStep;}
 	const Eigen::VectorXd& GetPositions() {return mPositions;}

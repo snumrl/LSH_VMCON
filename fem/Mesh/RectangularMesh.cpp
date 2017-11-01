@@ -2,7 +2,7 @@
 
 using namespace FEM;
 RectangularMesh::
-RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Isometry3d& M)
+RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& M)
 	:mNx(_nx),mNy(_ny),mNz(_nz),mX(_x),mY(_y),mZ(_z)
 {
 
