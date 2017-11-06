@@ -14,35 +14,41 @@ struct Muscle
 {
 	void TransferForce(Eigen::Vector3d& f_origin,Eigen::Vector3d& f_insertion);
 	void SetActivationLevel(double a);
-	std::shared_ptr<FEM::Mesh>				mesh;
+	std::string 							name;
+	FEM::MeshPtr							mesh;
 	std::vector<AnchorPoint>				origin_way_points,insertion_way_points;
 	double				activation_level;
 	Eigen::Vector3d		origin_force,insertion_force;
 	
 
-	std::shared_ptr<FEM::AttachmentCst>					origin,insertion;
-	std::vector<std::shared_ptr<FEM::LinearMuscleCst>>	muscle_csts;
-	std::vector<std::shared_ptr<FEM::Cst>>				csts;
+	FEM::AttachmentCstPtr								origin,insertion;
+	std::vector<FEM::LinearMuscleCstPtr>				muscle_csts;
+	std::vector<FEM::CstPtr>							csts;
 	
-
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	Muscle(const Muscle& other) = delete;
+	Muscle& operator=(const Muscle& other) = delete;
+	std::shared_ptr<Muscle> Clone(const FEM::WorldPtr& soft_world,const dart::dynamics::SkeletonPtr& skeleton);
+	static std::shared_ptr<Muscle> Create();
+private:
+	Muscle();
+
 };
 
 
 class MusculoSkeletalSystem
 {
-
 public:
-	MusculoSkeletalSystem();
-
 	void AddMuscle(
+		const std::string& name,
 		const std::vector<AnchorPoint>& origin,
 		const std::vector<AnchorPoint>& insertion,
 		int origin_index,int insertion_index,
 		const Eigen::Vector3d& fiber_direction,
-		std::shared_ptr<FEM::Mesh> mesh);
+		const FEM::MeshPtr& mesh);
 
-	void Initialize(const std::shared_ptr<FEM::World>& soft_world,const dart::simulation::WorldPtr& rigid_world);
+	void Initialize(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world);
 
 	void SetActivationLevels(const Eigen::VectorXd& a);
 	void TransformAttachmentPoints();
@@ -52,7 +58,13 @@ public:
 	std::vector<std::shared_ptr<Muscle>>&	GetMuscles()			{return mMuscles;}
 	dart::dynamics::SkeletonPtr&			GetSkeleton()			{return mSkeleton;}
 	Eigen::VectorXd 						GetActivationLevels()	{return mActivationLevels;}
+
+	MusculoSkeletalSystem(const MusculoSkeletalSystem& other) = delete;
+	MusculoSkeletalSystem& operator=(const MusculoSkeletalSystem& other) = delete;
+	std::shared_ptr<MusculoSkeletalSystem> Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world);
+	static std::shared_ptr<MusculoSkeletalSystem> Create();
 private:
+	MusculoSkeletalSystem();
 	//Muscles and Skeleton
 	std::vector<std::shared_ptr<Muscle>>	mMuscles;
 	dart::dynamics::SkeletonPtr 			mSkeleton;

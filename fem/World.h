@@ -29,7 +29,7 @@ public:
 	double GetTime() {return mTime;}
 	double GetTimeStep() {return mTimeStep;}
 	const Eigen::VectorXd& GetPositions() {return mPositions;}
-	const std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
+	std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
 
 	World(const World& other) = delete;
 	World& operator=(const World& other) = delete;

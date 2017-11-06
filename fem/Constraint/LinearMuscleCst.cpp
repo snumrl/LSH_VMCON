@@ -2,8 +2,8 @@
 using namespace FEM;
 
 LinearMuscleCst::
-LinearMuscleCst(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction)
-	:Cst(k),mi0(i0),mi1(i1),mi2(i2),mi3(i3),mVolume(volume),mInvDm(invDm),mFiberDirection(fiber_direction),mActivationLevel(0.0)
+LinearMuscleCst(const std::string& name,double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction)
+	:Cst(name,k),mi0(i0),mi1(i1),mi2(i2),mi3(i3),mVolume(volume),mInvDm(invDm),mFiberDirection(fiber_direction),mActivationLevel(0.0)
 {
 
 }
@@ -11,13 +11,13 @@ std::shared_ptr<Cst>
 LinearMuscleCst::
 Clone()
 {
-	return Create(mStiffness,mi0,mi1,mi2,mi3,mVolume,mInvDm,mFiberDirection);
+	return Create(mName,mStiffness,mi0,mi1,mi2,mi3,mVolume,mInvDm,mFiberDirection);
 }
 std::shared_ptr<LinearMuscleCst>
 LinearMuscleCst::
-Create(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction)
+Create(const std::string& name,double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction)
 {
-	auto c = new LinearMuscleCst(k,i0,i1,i2,i3,volume,invDm,fiber_direction);
+	auto c = new LinearMuscleCst(name,k,i0,i1,i2,i3,volume,invDm,fiber_direction);
 	return std::shared_ptr<LinearMuscleCst>(c);
 }
 void

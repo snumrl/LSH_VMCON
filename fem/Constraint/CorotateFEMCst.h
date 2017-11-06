@@ -39,9 +39,9 @@ public:
 	CorotateFEMCst(const CorotateFEMCst& other) = delete;
 	CorotateFEMCst& operator=(const CorotateFEMCst& other) = delete;
 	std::shared_ptr<Cst> Clone() override;
-	static std::shared_ptr<CorotateFEMCst> Create(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
+	static std::shared_ptr<CorotateFEMCst> Create(const std::string& name,double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
 protected:
-	CorotateFEMCst(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
+	CorotateFEMCst(const std::string& name,double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
 
 	int mi0,mi1,mi2,mi3;
 	double mVolume;

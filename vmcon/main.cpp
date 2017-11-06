@@ -3,7 +3,7 @@
 
 int main(int argc,char** argv)
 {
-	VMCON::SimWindow simwindow;
+	SimWindow simwindow;
 	glutInit(&argc, argv);
 	simwindow.InitWindow(800,800,"vmcon");
 	glutMainLoop();

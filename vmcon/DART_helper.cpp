@@ -5,7 +5,6 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 
 void
-VMCON::
 MakeRootBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const std::string& name,
@@ -63,7 +62,6 @@ MakeRootBody(
 }
 
 void
-VMCON::
 MakeBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const dart::dynamics::BodyNodePtr& parent,

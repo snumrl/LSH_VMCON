@@ -1,19 +1,15 @@
 #ifndef __VMCON_SIM_WINDOW_H__
 #define __VMCON_SIM_WINDOW_H__
 #include "gui/gui.h"
-#include "fem/fem.h"
-#include "MusculoSkeletalSystem.h"
-namespace VMCON
-{
+
+#include "IntegratedWorld.h"
+
 class SimWindow : public GUI::GLUTWindow
 {
 public:
 	SimWindow();
 
-	std::shared_ptr<FEM::World> mSoftWorld;
-	dart::simulation::WorldPtr mRigidWorld;
-	std::shared_ptr<MusculoSkeletalSystem> mMusculoSkeletalSystem;
-
+	std::shared_ptr<IntegratedWorld> mWorld;
 	void TimeStepping();
 protected:
 	void Display() override;
@@ -24,5 +20,4 @@ protected:
 	void Timer(int value) override;
 };
 
-};
 #endif

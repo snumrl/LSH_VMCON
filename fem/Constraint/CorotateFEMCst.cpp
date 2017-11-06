@@ -4,8 +4,8 @@
 
 using namespace FEM;
 CorotateFEMCst::
-CorotateFEMCst(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm)
-	:Cst(k),mPoissonRatio(poisson_ratio),mi0(i0),mi1(i1),mi2(i2),mi3(i3),mVolume(volume),mInvDm(invDm),
+CorotateFEMCst(const std::string& name,double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm)
+	:Cst(name,k),mPoissonRatio(poisson_ratio),mi0(i0),mi1(i1),mi2(i2),mi3(i3),mVolume(volume),mInvDm(invDm),
 	mMu(k/((1.0+poisson_ratio))),mLambda(k*poisson_ratio/((1.0+poisson_ratio)*(1-2.0*poisson_ratio)))
 {
 	mE = 0.0;
@@ -23,13 +23,13 @@ std::shared_ptr<Cst>
 CorotateFEMCst::
 Clone()
 {
-	return Create(mStiffness,mPoissonRatio,mi0,mi1,mi2,mi3,mVolume,mInvDm);
+	return Create(mName,mStiffness,mPoissonRatio,mi0,mi1,mi2,mi3,mVolume,mInvDm);
 }
 std::shared_ptr<CorotateFEMCst>
 CorotateFEMCst::
-Create(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm)
+Create(const std::string& name,double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm)
 {
-	auto c = new CorotateFEMCst(k,poisson_ratio,i0,i1,i2,i3,volume,invDm);
+	auto c = new CorotateFEMCst(name,k,poisson_ratio,i0,i1,i2,i3,volume,invDm);
 	return std::shared_ptr<CorotateFEMCst>(c);
 }
 void

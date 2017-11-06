@@ -1,6 +1,5 @@
 #include "SimWindow.h"
 #include <GL/glut.h>
-using namespace VMCON;
 using namespace GUI;
 using namespace FEM;
 
@@ -11,20 +10,10 @@ SimWindow()
 	:GLUTWindow()
 {
 	dart::math::seedRand();
-	mSoftWorld = std::make_shared<FEM::World>(
-		IntegrationMethod::PROJECTIVE_QUASI_STATIC,	//Integration Method
-		1.0/120.0,							//Time Step
-		100,								//Max Iteration
-		Eigen::Vector3d(0,-9.81,0),					//Gravity
-		0.999								//Damping
-		);
-	mRigidWorld = std::make_shared<dart::simulation::World>();
-	mMusculoSkeletalSystem = std::make_shared<MusculoSkeletalSystem>();
-	MakeSkeleton(mMusculoSkeletalSystem);
-	MakeMuscles("../vmcon/export/muscle_params.xml",mMusculoSkeletalSystem);
 
-	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
-	mSoftWorld->Initialize();
+	mWorld = IntegratedWorld::Create();
+	mWorld->Initialize();
+
 	mDisplayTimeout = 33;
 
 		// DiamondMesh rm(2,1,1,3,1,1);
@@ -74,14 +63,7 @@ void
 SimWindow::
 TimeStepping()
 {
-	bool need_fem_update = false;
-	if(mSoftWorld->GetTime()<mRigidWorld->getTime())
-		need_fem_update = true;
-
-	if(need_fem_update)
-		mSoftWorld->TimeStepping();
-
-	mRigidWorld->step();
+	mWorld->TimeStepping();
 }
 void
 SimWindow::
@@ -101,7 +83,6 @@ Display()
 	glColor3f(0,0,0);
 	glLineWidth(1.0);
 	glBegin(GL_LINES);
-	// for(double z= -1.0;z<=0.0;z+=0.5)
 	{
 		double z = 0.0;
 		for(double x=-2.0;x<=2.0;x+=0.1)
@@ -119,11 +100,11 @@ Display()
     glColor3f(0,0,0);
     glEnable(GL_LIGHTING);
 
-    GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mRigidWorld->getTime()),true,Eigen::Vector3d(0,0,0));
+    GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
 
-	DrawWorld(mSoftWorld);
-	DrawSkeleton(mMusculoSkeletalSystem->GetSkeleton());
+	DrawWorld(mWorld->GetSoftWorld());
+	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
 
 
 	glutSwapBuffers();
@@ -132,7 +113,7 @@ void
 SimWindow::
 Keyboard(unsigned char key,int x,int y) 
 {
-	Eigen::VectorXd pos = mMusculoSkeletalSystem->GetSkeleton()->getPositions();
+	Eigen::VectorXd pos = mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getPositions();
 
 	
 	switch(key)
@@ -209,8 +190,6 @@ void
 SimWindow::
 Timer(int value) 
 {	
-	// for(int i =0;i<(int)((double)mDisplayTimeout/(double)1000/mSoftWorld->GetTimeStep());i++)
-		// mSoftWorld->TimeStepping();
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }

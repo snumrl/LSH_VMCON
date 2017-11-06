@@ -3,8 +3,8 @@
 using namespace FEM;
 
 AttachmentCst::
-AttachmentCst(double k,int i0,const Eigen::Vector3d& p)
-	:Cst(k),mi0(i0),mp(p)
+AttachmentCst(const std::string& name,double k,int i0,const Eigen::Vector3d& p)
+	:Cst(name,k),mi0(i0),mp(p)
 {
 	mE = 0.0;
 	mg.setZero();
@@ -15,13 +15,13 @@ std::shared_ptr<Cst>
 AttachmentCst::
 Clone()
 {
-	return Create(mStiffness,mi0,mp);
+	return Create(mName,mStiffness,mi0,mp);
 }
 std::shared_ptr<AttachmentCst>
 AttachmentCst::
-Create(double k,int i0,const Eigen::Vector3d& p)
+Create(const std::string& name,double k,int i0,const Eigen::Vector3d& p)
 {
-	auto c = new AttachmentCst(k,i0,p);
+	auto c = new AttachmentCst(name,k,i0,p);
 	return std::shared_ptr<AttachmentCst>(c);
 }
 void

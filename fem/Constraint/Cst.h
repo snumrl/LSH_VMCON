@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
+#include <string>
 #include <memory>
 namespace FEM
 {
@@ -30,9 +31,13 @@ public:
 	Cst(const Cst& other) = delete;
 	Cst& operator=(const Cst& other) = delete;
 	virtual std::shared_ptr<Cst> Clone() = 0;
+
+	bool Equal(const std::shared_ptr<Cst>& other){return !(other->mName.compare(this->mName));}
+	std::string GetName(){return mName;};
 protected:
-	Cst(double k):mStiffness(k){};
+	Cst(const std::string& name,double k):mName(name),mStiffness(k){};
 	double mStiffness;
+	std::string mName;
 
 };
 

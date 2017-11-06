@@ -31,9 +31,9 @@ public:
 	AttachmentCst(const AttachmentCst& other) = delete;
 	AttachmentCst& operator=(const AttachmentCst& other) = delete;
 	std::shared_ptr<Cst> Clone() override;
-	static std::shared_ptr<AttachmentCst> Create(double k,int i0,const Eigen::Vector3d& p);
+	static std::shared_ptr<AttachmentCst> Create(const std::string& name,double k,int i0,const Eigen::Vector3d& p);
 protected:
-	AttachmentCst(double k,int i0,const Eigen::Vector3d& p);
+	AttachmentCst(const std::string& name,double k,int i0,const Eigen::Vector3d& p);
 	int mi0;
 	Eigen::Vector3d mp;
 

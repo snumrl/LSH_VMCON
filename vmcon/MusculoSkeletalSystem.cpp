@@ -1,10 +1,77 @@
 #include "MusculoSkeletalSystem.h"
 #include "DART_helper.h"
 #include <tinyxml.h>
-using namespace VMCON;
+#include <algorithm>
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+
+Muscle::
+Muscle()
+{
+
+}
+std::shared_ptr<Muscle>
+Muscle::
+Clone(const FEM::WorldPtr& soft_world,const dart::dynamics::SkeletonPtr& skeleton)
+{
+	auto new_muscle = Create();
+
+	new_muscle->name = name;
+	auto& new_constraints = soft_world->GetConstraints();
+
+	new_muscle->mesh = mesh->Clone();
+	for(int i=0;i<origin_way_points.size();i++)
+	{
+		auto& ap = origin_way_points[i];
+		new_muscle->origin_way_points.push_back(std::make_pair(skeleton->getBodyNode(ap.first->getName()),ap.second));
+	}
+
+	for(int i=0;i<insertion_way_points.size();i++)
+	{
+		auto& ap = insertion_way_points[i];
+		new_muscle->insertion_way_points.push_back(std::make_pair(skeleton->getBodyNode(ap.first->getName()),ap.second));
+	}
+
+	new_muscle->activation_level = activation_level;
+	new_muscle->origin_force = origin_force;
+	new_muscle->insertion_force = insertion_force;
+
+	std::cout<<(*new_constraints.begin())->GetName()<<std::endl;
+
+
+	for(int i =0;i<new_constraints.size();i++)
+		if(origin->Equal(new_constraints[i]))
+			new_muscle->origin = std::dynamic_pointer_cast<AttachmentCst>(new_constraints[i]);
+		else if(insertion->Equal(new_constraints[i]))
+			new_muscle->insertion = std::dynamic_pointer_cast<AttachmentCst>(new_constraints[i]);
+
+	new_muscle->muscle_csts.resize(muscle_csts.size());
+	new_muscle->csts.resize(csts.size());
+	for(int i=0;i<muscle_csts.size();i++)
+	{
+		for(int j =0;j<new_constraints.size();j++)
+			if(muscle_csts[i]->Equal(new_constraints[j]))
+				new_muscle->muscle_csts[i] = std::dynamic_pointer_cast<LinearMuscleCst>(new_constraints[j]);		
+	}
+
+	for(int i=0;i<csts.size();i++)
+	{
+		for(int j =0;j<new_constraints.size();j++)
+			if(csts[i]->Equal(new_constraints[j]))
+				new_muscle->csts[i] = new_constraints[j];		
+	}
+
+	return new_muscle;
+}
+std::shared_ptr<Muscle>
+Muscle::
+Create()
+{
+	auto nm = new Muscle();
+
+	return std::shared_ptr<Muscle>(nm);
+}
 Eigen::Vector3d
 GetPoint(const AnchorPoint& ap)
 {
@@ -34,29 +101,59 @@ MusculoSkeletalSystem()
 {
 
 }
+std::shared_ptr<MusculoSkeletalSystem>
+MusculoSkeletalSystem::
+Clone(const std::shared_ptr<FEM::World>& soft_world,const dart::simulation::WorldPtr& rigid_world)
+{
+	auto new_mss = Create();
+	auto new_skeleton = rigid_world->getSkeleton(mSkeleton->getName());
+	for(int i=0;i<mMuscles.size();i++)
+		new_mss->mMuscles.push_back(mMuscles[i]->Clone(soft_world,new_skeleton));
+	new_mss->mSkeleton = new_skeleton;
 
+	new_mss->mTendonStiffness = mTendonStiffness;
+	new_mss->mMuscleStiffness = mMuscleStiffness;
+	new_mss->mYoungsModulus = mYoungsModulus;
+	new_mss->mPoissonRatio = mPoissonRatio;
+	
+	new_mss->mActivationLevels = mActivationLevels;
+
+	return new_mss;
+}
+
+std::shared_ptr<MusculoSkeletalSystem>
+MusculoSkeletalSystem::
+Create()
+{
+	auto mss = new MusculoSkeletalSystem();
+
+	return std::shared_ptr<MusculoSkeletalSystem>(mss);
+}
 void
 MusculoSkeletalSystem::
 AddMuscle(
+	const std::string& name,
 	const std::vector<AnchorPoint>& origin,
 	const std::vector<AnchorPoint>& insertion,
 	int origin_index,int insertion_index,
 	const Eigen::Vector3d& fiber_direction,
-	std::shared_ptr<FEM::Mesh> mesh)
+	const MeshPtr& mesh)
 {
-	mMuscles.push_back(std::make_shared<Muscle>());
+	mMuscles.push_back(Muscle::Create());
 	auto& muscle = mMuscles.back();
 
+	muscle->name = name;
 	muscle->mesh = mesh;
 	muscle->origin_way_points = origin;
 	muscle->insertion_way_points = insertion;
 
-	muscle->origin = std::make_shared<AttachmentCst>(mTendonStiffness,origin_index,GetPoint(origin[0]));
-	muscle->insertion = std::make_shared<AttachmentCst>(mTendonStiffness,insertion_index,GetPoint(insertion[0]));
+	muscle->origin = AttachmentCst::Create(name+"_origin",mTendonStiffness,origin_index,GetPoint(origin[0]));
+	muscle->insertion = AttachmentCst::Create(name+"_insertion",mTendonStiffness,insertion_index,GetPoint(insertion[0]));
 	muscle->activation_level = 0.0;
 
 	const auto& tetrahedrons = muscle->mesh->GetTetrahedrons();
 	const auto& vertices = muscle->mesh->GetVertices();
+	int tet_index = 0;
 	for(const auto& tet: tetrahedrons)
 	{
 		int i0,i1,i2,i3;
@@ -91,14 +188,16 @@ AddMuscle(
 			Dm.block<3,1>(0,2) = p3-p0;
 		}
 
-		muscle->muscle_csts.push_back(std::make_shared<LinearMuscleCst>(
+		muscle->muscle_csts.push_back(LinearMuscleCst::Create(name+"_muscle_"+std::to_string(tet_index),
 			mMuscleStiffness,
 			i0,i1,i2,i3,1.0/6.0*Dm.determinant(),Dm.inverse(),
 			fiber_direction));
-		muscle->csts.push_back(std::make_shared<CorotateFEMCst>(
+		muscle->csts.push_back(CorotateFEMCst::Create(name+"_element_"+std::to_string(tet_index),
 			mYoungsModulus,
 			mPoissonRatio,
 			i0,i1,i2,i3,1.0/6.0*Dm.determinant(),Dm.inverse()));
+
+		tet_index++;
 	}
 	for(auto c: muscle->muscle_csts)
 		muscle->csts.push_back(c);
@@ -208,6 +307,7 @@ void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>&
     for(TiXmlElement* unit = muscles->FirstChildElement("unit");unit!=nullptr;unit = unit->NextSiblingElement("unit"))
     {
         TiXmlElement* ori = unit->FirstChildElement("origin");
+        std::string name = (unit->Attribute("name"));
         std::vector<AnchorPoint> p_ori,p_ins;
        
         for(TiXmlElement* anc = ori->FirstChildElement("anchor");anc!=nullptr;anc = anc->NextSiblingElement("anchor"))   
@@ -250,11 +350,11 @@ void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>&
         int nx = std::stoi(mesh_element->Attribute("nx"));
         int ny = std::stoi(mesh_element->Attribute("ny"));
         double ratio = std::stod(mesh_element->Attribute("ratio"));
-        auto dm = std::make_shared<DiamondMesh>(1.0,(double)ny/(double)nx*ratio,(double)ny/(double)nx*ratio,nx,ny,ny,T);
+        auto dm = DiamondMesh::Create(1.0,(double)ny/(double)nx*ratio,(double)ny/(double)nx*ratio,nx,ny,ny,T);
         int i_ori = dm->GetEndingPointIndex();
         int i_ins = dm->GetStartingPointIndex();
 
-        ms->AddMuscle(p_ori,p_ins,i_ori,i_ins,unit_dir,dm);
+        ms->AddMuscle(name,p_ori,p_ins,i_ori,i_ins,unit_dir,dm);
         
         
     }

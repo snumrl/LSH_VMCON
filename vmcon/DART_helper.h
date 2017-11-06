@@ -5,8 +5,6 @@
 #include "dart/math/math.hpp"
 #include "dart/simulation/simulation.hpp"
 
-namespace VMCON
-{
 enum JOINT_TYPE
 {
 	WELD,
@@ -31,7 +29,6 @@ void MakeBody(
 	const Eigen::Vector3d& c_to_joint,
 	JOINT_TYPE joint_type,
 	double mass);
-};
 
 
 #endif
