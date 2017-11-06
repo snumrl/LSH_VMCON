@@ -18,7 +18,6 @@ class CorotateFEMCst : public Cst
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	CorotateFEMCst(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
 	void EvaluatePotentialEnergy(const Eigen::VectorXd& x) override;
 	void EvaluateGradient(const Eigen::VectorXd& x) override;
 	void EvaluateHessian(const Eigen::VectorXd& x) override;
@@ -36,10 +35,18 @@ public:
 	int GetI1() {return mi1;}
 	int GetI2() {return mi2;}
 	int GetI3() {return mi3;}
+	
+	CorotateFEMCst(const CorotateFEMCst& other) = delete;
+	CorotateFEMCst& operator=(const CorotateFEMCst& other) = delete;
+	std::shared_ptr<Cst> Clone() override;
+	static std::shared_ptr<CorotateFEMCst> Create(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
 protected:
+	CorotateFEMCst(double k,double poisson_ratio,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm);
+
 	int mi0,mi1,mi2,mi3;
 	double mVolume;
 	double mMu,mLambda;
+	double mPoissonRatio;
 	Eigen::Matrix3d mInvDm;
 
 	//For parallization

@@ -11,6 +11,19 @@ AttachmentCst(double k,int i0,const Eigen::Vector3d& p)
 	mH.setZero();
 	md.setZero();
 }
+std::shared_ptr<Cst>
+AttachmentCst::
+Clone()
+{
+	return Create(mStiffness,mi0,mp);
+}
+std::shared_ptr<AttachmentCst>
+AttachmentCst::
+Create(double k,int i0,const Eigen::Vector3d& p)
+{
+	auto c = new AttachmentCst(k,i0,p);
+	return std::shared_ptr<AttachmentCst>(c);
+}
 void
 AttachmentCst::
 EvaluatePotentialEnergy(const Eigen::VectorXd& x)

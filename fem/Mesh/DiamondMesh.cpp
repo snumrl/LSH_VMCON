@@ -2,19 +2,12 @@
 #include <iostream>
 #include <cassert>
 using namespace FEM;
-bool is_big(Eigen::Vector3d& p)
-{
-	if(p.norm()>1E6)
-		return true;
-	else
-		return false;
-}
 
 DiamondMesh::
-DiamondMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& M)
+DiamondMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& _M)
 	:RectangularMesh(_x,_y,_z,_nx,_ny,_nz,Eigen::Affine3d::Identity())
 {
-
+	mT = _M;
 	double dx = 0.5 * mX /(double)mNx;
 
 	mStartPointIndex = mVertices.size();
@@ -89,7 +82,22 @@ DiamondMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen
 	for(auto& v : mVertices)
 		v[0] = (scale)*v[0];
 	for(auto& v : mVertices)
-		v = M*v;
+		v = mT*v;
 
 	
+}
+
+std::shared_ptr<Mesh>
+DiamondMesh::
+Clone()
+{
+	return Create(mX,mY,mZ,mNx,mNy,mNz,mT);
+}
+std::shared_ptr<DiamondMesh>
+DiamondMesh::
+Create(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& _M)
+{
+	auto rm = new DiamondMesh(_x,_y,_z,_nx,_ny,_nz,_M);
+
+	return std::shared_ptr<DiamondMesh>(rm);
 }

@@ -2,8 +2,8 @@
 
 using namespace FEM;
 RectangularMesh::
-RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& M)
-	:mNx(_nx),mNy(_ny),mNz(_nz),mX(_x),mY(_y),mZ(_z)
+RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& _M)
+	:mNx(_nx),mNy(_ny),mNz(_nz),mX(_x),mY(_y),mZ(_z),mT(_M)
 {
 
 
@@ -27,7 +27,7 @@ RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const E
 	}
 
 	for(auto& v : mVertices)
-		v = M*v;
+		v = mT*v;
 
 	for(int i=0; i<mNx;i++)
 	{	
@@ -147,3 +147,17 @@ RectangularMesh(double _x,double _y, double _z, int _nx,int _ny, int _nz,const E
 
 }
 
+std::shared_ptr<Mesh>
+RectangularMesh::
+Clone()
+{
+	return Create(mX,mY,mZ,mNx,mNy,mNz,mT);
+}
+std::shared_ptr<RectangularMesh>
+RectangularMesh::
+Create(double _x,double _y, double _z, int _nx,int _ny, int _nz,const Eigen::Affine3d& _M)
+{
+	auto rm = new RectangularMesh(_x,_y,_z,_nx,_ny,_nz,_M);
+
+	return std::shared_ptr<RectangularMesh>(rm);
+}

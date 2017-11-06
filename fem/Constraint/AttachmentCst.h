@@ -10,7 +10,7 @@ class AttachmentCst : public Cst
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	AttachmentCst(double k,int i0,const Eigen::Vector3d& p);
+	
 	void EvaluatePotentialEnergy(const Eigen::VectorXd& x) override;
 	void EvaluateGradient(const Eigen::VectorXd& x) override;
 	void EvaluateHessian(const Eigen::VectorXd& x) override;
@@ -27,7 +27,13 @@ public:
 	int GetI0() {return mi0;}
 	const Eigen::Vector3d& GetP() {return mp;}
 	void SetP(const Eigen::Vector3d& p) {mp = p;}
+
+	AttachmentCst(const AttachmentCst& other) = delete;
+	AttachmentCst& operator=(const AttachmentCst& other) = delete;
+	std::shared_ptr<Cst> Clone() override;
+	static std::shared_ptr<AttachmentCst> Create(double k,int i0,const Eigen::Vector3d& p);
 protected:
+	AttachmentCst(double k,int i0,const Eigen::Vector3d& p);
 	int mi0;
 	Eigen::Vector3d mp;
 

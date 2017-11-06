@@ -7,6 +7,19 @@ LinearMuscleCst(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::
 {
 
 }
+std::shared_ptr<Cst>
+LinearMuscleCst::
+Clone()
+{
+	return Create(mStiffness,mi0,mi1,mi2,mi3,mVolume,mInvDm,mFiberDirection);
+}
+std::shared_ptr<LinearMuscleCst>
+LinearMuscleCst::
+Create(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction)
+{
+	auto c = new LinearMuscleCst(k,i0,i1,i2,i3,volume,invDm,fiber_direction);
+	return std::shared_ptr<LinearMuscleCst>(c);
+}
 void
 LinearMuscleCst::
 EvaluatePotentialEnergy(const Eigen::VectorXd& x)

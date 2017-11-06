@@ -17,20 +17,36 @@ class World
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	void Initialize();
+	void TimeStepping();
+
+	void AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& constraints, double m = 1.0);
+	void AddConstraint(const std::shared_ptr<Cst>& c);
+	void RemoveConstraint(const std::shared_ptr<Cst>& c);
+
+	int GetNumVertices(){return mNumVertices;}
+	double GetTime() {return mTime;}
+	double GetTimeStep() {return mTimeStep;}
+	const Eigen::VectorXd& GetPositions() {return mPositions;}
+	const std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
+
+	World(const World& other) = delete;
+	World& operator=(const World& other) = delete;
+	std::shared_ptr<World> Clone();
+	static std::shared_ptr<World> Create(
+			IntegrationMethod im = NEWTON_METHOD,
+			double time_step = 1.0/120.0,
+			int max_iteration = 100,
+			const Eigen::Vector3d& gravity = Eigen::Vector3d(0,-9.81,0),
+			double damping_coeff = 0.999);
+private:
 	World(	IntegrationMethod im = NEWTON_METHOD,
 			double time_step = 1.0/120.0,
 			int max_iteration = 100,
 			const Eigen::Vector3d& gravity = Eigen::Vector3d(0,-9.81,0),
 			double damping_coeff = 0.999);
 
-	void Initialize();
-	void TimeStepping();
-
-	void AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& constraints, double m = 1.0);
-	void AddConstraint(std::shared_ptr<Cst> c);
-	void RemoveConstraint(std::shared_ptr<Cst> c);
-
-private:
 	Eigen::VectorXd IntegrateNewtonMethod();
 	Eigen::VectorXd IntegrateQuasiStatic();
 	Eigen::VectorXd IntegrateProjectiveDynamics();
@@ -59,14 +75,7 @@ private:
 	void InversionFree(Eigen::VectorXd& x);
 
 	void IntegratePositionsAndVelocities(const Eigen::VectorXd& x_next);
-
-public:
-	int GetNumVertices(){return mNumVertices;}
-	double GetTime() {return mTime;}
-	double GetTimeStep() {return mTimeStep;}
-	const Eigen::VectorXd& GetPositions() {return mPositions;}
-	const std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
-public:
+private:
 	bool mIsInitialized;
 	int mNumVertices;
 	int mConstraintDofs;

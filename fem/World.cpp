@@ -19,7 +19,63 @@ World(	IntegrationMethod im,
 {
 
 }
+std::shared_ptr<World>
+World::
+Clone()
+{
+	auto new_world = Create();
 
+	new_world->mIsInitialized = mIsInitialized;
+	new_world->mNumVertices = mNumVertices;
+	new_world->mConstraintDofs = mConstraintDofs;
+	new_world->mMaxIteration = mMaxIteration;
+
+	new_world->mTimeStep = mTimeStep;
+	new_world->mTime = mTime;
+	new_world->mDampingCoefficient = mDampingCoefficient;
+	new_world->mGravity = mGravity;
+
+	new_world->mIntegrationMethod = mIntegrationMethod;
+
+	new_world->mUnitMass = mUnitMass;
+	new_world->mConstraints = mConstraints;
+
+	for(int i=0;i<mConstraints.size();i++)
+		new_world->mConstraints[i] = mConstraints[i]->Clone();
+
+	new_world->mPositions = mPositions;
+	new_world->mVelocities = mVelocities;
+	new_world->mExternalForces = mExternalForces;
+
+	new_world->mMassMatrix = mMassMatrix;
+	new_world->mInvMassMatrix = mInvMassMatrix;
+	new_world->mIdentityMatrix = mIdentityMatrix;
+	
+	new_world->mq = mq;
+	new_world->mJ = mJ;
+	new_world->mL = mL;
+
+	if(mIntegrationMethod == PROJECTIVE_DYNAMICS)
+	{
+		Eigen::SparseMatrix<double> H2ML = (1.0/(mTimeStep*mTimeStep))*mMassMatrix+mL;
+		FactorizeLDLT(H2ML,new_world->mSolver);
+	}
+	else if(mIntegrationMethod == PROJECTIVE_QUASI_STATIC)
+		FactorizeLDLT(mL,new_world->mSolver);
+
+	return new_world;
+}
+std::shared_ptr<World>
+World::
+Create(	IntegrationMethod im,
+		double time_step,
+		int max_iteration,
+		const Eigen::Vector3d& gravity,
+		double damping_coeff)
+{
+	auto w = new World(im,time_step,max_iteration,gravity,damping_coeff);
+	return std::shared_ptr<World>(w);
+}
 void
 World::
 Initialize()
@@ -133,7 +189,7 @@ AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& cons
 }
 void
 World::
-AddConstraint(std::shared_ptr<Cst> c)
+AddConstraint(const std::shared_ptr<Cst>& c)
 {
 	mConstraints.push_back(c);
 	if((mIntegrationMethod == IntegrationMethod::PROJECTIVE_DYNAMICS||
@@ -146,7 +202,7 @@ AddConstraint(std::shared_ptr<Cst> c)
 }
 void
 World::
-RemoveConstraint(std::shared_ptr<Cst> c)
+RemoveConstraint(const std::shared_ptr<Cst>& c)
 {
 	bool isRemoved = false;
 	for(int i =0;i<mConstraints.size();i++)

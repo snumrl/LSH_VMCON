@@ -17,7 +17,7 @@ namespace FEM
 class LinearMuscleCst : public Cst
 {
 public:
-	LinearMuscleCst(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction);
+	
 	void EvaluatePotentialEnergy(const Eigen::VectorXd& x) override;
 	void EvaluateGradient(const Eigen::VectorXd& x) override;
 	void EvaluateHessian(const Eigen::VectorXd& x) override;
@@ -38,7 +38,13 @@ public:
 
 	double GetActivationLevel() {return mActivationLevel;}
 	void SetActivationLevel(double a) { mActivationLevel = a;}
+
+	LinearMuscleCst(const LinearMuscleCst& other) = delete;
+	LinearMuscleCst& operator=(const LinearMuscleCst& other) = delete;
+	std::shared_ptr<Cst> Clone() override;
+	static std::shared_ptr<LinearMuscleCst> Create(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction);
 protected:
+	LinearMuscleCst(double k,int i0,int i1,int i2,int i3,double volume,const Eigen::Matrix3d& invDm,const Eigen::Vector3d& fiber_direction);
 	int mi0,mi1,mi2,mi3;
 	double mVolume;
 	Eigen::Matrix3d mInvDm;

@@ -10,7 +10,7 @@ class Cst
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	Cst(double k):mStiffness(k){};
+	
 	virtual void EvaluatePotentialEnergy(const Eigen::VectorXd& x) = 0;
 	virtual void EvaluateGradient(const Eigen::VectorXd& x) = 0;
 	virtual void EvaluateHessian(const Eigen::VectorXd& x) = 0;
@@ -26,7 +26,12 @@ public:
 
 	virtual int GetNumHessianTriplets() = 0;
 	virtual void AddOffset(int offset) = 0;
+
+	Cst(const Cst& other) = delete;
+	Cst& operator=(const Cst& other) = delete;
+	virtual std::shared_ptr<Cst> Clone() = 0;
 protected:
+	Cst(double k):mStiffness(k){};
 	double mStiffness;
 
 };
