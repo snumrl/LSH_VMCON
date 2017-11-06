@@ -53,3 +53,15 @@ DrawShape(const Eigen::Isometry3d& T,
 
 	// glDisable(GL_COLOR_MATERIAL);
 }
+void
+GUI::
+DrawMuscleWayPoints(const std::vector<AnchorPoint>& ap)
+{
+	std::vector<Eigen::Vector3d> point;
+
+	for(int i=0;i<ap.size();i++)
+		point.push_back(ap[i].first->getTransform()*ap[i].second);
+
+	for(int i=0;i<ap.size()-1;i++)
+		GUI::DrawLine(point[i],point[i+1]);
+}

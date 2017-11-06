@@ -10,7 +10,7 @@ public:
 	SimWindow();
 
 	std::shared_ptr<IntegratedWorld> mWorld;
-	void TimeStepping();
+	bool TimeStepping();
 protected:
 	void Display() override;
 	void Keyboard(unsigned char key,int x,int y) override;

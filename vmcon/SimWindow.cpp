@@ -59,11 +59,11 @@ SimWindow()
 	// cst_vec.push_back(std::make_shared<AttachmentCst>(1E3,0,Eigen::Vector3d(0,0,0)));
 	// mSoftWorld->AddBody(p,cst_vec);
 }
-void
+bool
 SimWindow::
 TimeStepping()
 {
-	mWorld->TimeStepping();
+	return mWorld->TimeStepping();
 }
 void
 SimWindow::
@@ -106,6 +106,10 @@ Display()
 	DrawWorld(mWorld->GetSoftWorld());
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
 
+	for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
+		DrawMuscleWayPoints(mus->origin_way_points);
+		DrawMuscleWayPoints(mus->insertion_way_points);
+	}
 
 	glutSwapBuffers();
 }
@@ -114,14 +118,17 @@ SimWindow::
 Keyboard(unsigned char key,int x,int y) 
 {
 	Eigen::VectorXd pos = mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getPositions();
+	Eigen::VectorXd act = mWorld->GetMusculoSkeletalSystem()->GetActivationLevels();
 
-	
+
 	switch(key)
 	{
 		case 's' : TimeStepping();break;
+		case 'a' : act[0] += 0.1;break;
 		case 27: exit(0);break;
 		default : break;
 	}
+	mWorld->GetMusculoSkeletalSystem()->SetActivationLevels(act);
 	glutPostRedisplay();
 }
 void
@@ -190,6 +197,7 @@ void
 SimWindow::
 Timer(int value) 
 {	
+	while(!TimeStepping()){	}
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }

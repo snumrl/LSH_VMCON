@@ -1,13 +1,410 @@
 <Muscles>
-    <unit name="d">
-		<mesh type="Rectangle" nx="2" ny="1" ratio = "0.3"/>
+ 	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
 		<origin>
-			<anchor body="Torso" x="0.05" y="-0.16" z = "0.0"/>
+			<anchor body="Torso" x="-0.05" y="-0.16" z="0.0"/>
+			<anchor body="Torso" x="-0.05115" y="-0.22429" z="0.0"/>
+			<anchor body="Torso" x="-0.03162" y="-0.27544" z="0.0"/>
 		</origin>
 		<insertion>
-			<anchor body="Torso" x="0.05" y="0.1525" z = "0.0"/>
+			<anchor body="Torso" x="-0.05" y="0.1525" z="0.0"/>
+			<anchor body="Torso" x="-0.05115" y="0.19793" z="0.0"/>
+			<anchor body="NeckR" x="0.0994632" y="-0.0366182" z="0.0"/>
 		</insertion>
 	</unit> 
+
+
+ 	<unit name="temp">
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.3" />
+		<origin>
+			<anchor body="Torso" x="-0.06" y="0.088" z="0.0"/>
+			<anchor body="Torso" x="-0.042" y="0.018" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="0.0582733" y="-0.0473942" z="0.0"/>
+		</insertion>
+	</unit>
+  
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.28" />
+		<origin>
+			<anchor body="Torso" x="-0.046" y="0.082" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="-0.0137664" y="-0.0506022" z="0.0"/>
+		</insertion>
+	</unit>
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.25" />
+		<origin>
+			<anchor body="Torso" x="-0.07" y="0.098" z="0.0"/>
+			<anchor body="Torso" x="-0.04" y="0.08" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="-0.104515" y="-0.0476471" z="0.0"/>
+		</insertion>
+	</unit>
+
+	
+	 <unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="Torso" x="-0.038" y="0.346" z="0.0"/>
+			<anchor body="Torso" x="-0.012" y="0.33" z="0.0"/>
+			<anchor body="Torso" x="-0.006" y="0.298" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="-0.106338" y="0.050662" z="0.0"/>
+			<anchor body="NeckR" x="-0.15529" y="0.0377103" z="0.0"/>
+			<anchor body="ShoulderR" x="0.13143" y="0.0331345" z="0.0"/>
+		</insertion>
+	</unit>
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="NeckR" x="0.102612" y="0.071627" z="0.0"/>
+			<anchor body="NeckR" x="0.12789" y="0.0600929" z="0.0"/>
+			<anchor body="Torso" x="-0.002" y="0.296" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="-0.0999823" y="0.0874804" z="0.0"/>
+			<anchor body="NeckR" x="-0.138172" y="0.0273675" z="0.0"/>
+		</insertion>
+	</unit> 
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="NeckR" x="0.0984728" y="-0.0473808" z="0.0"/>
+			<anchor body="Torso" x="-0.034" y="0.228" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckR" x="-0.106505" y="-0.0478468" z="0.0"/>
+			<anchor body="ShoulderR" x="0.104918" y="-0.036415" z="0.0"/>
+		</insertion>
+	</unit>
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderR" x="0.08537" y="-0.0825656" z="0.0"/>
+			<anchor body="NeckR" x="-0.117852" y="-0.0349151" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderR" x="-0.108612" y="-0.085861" z="0.0"/>
+			<anchor body="ElbowR" x="0.112492" y="-0.0326093" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderR" x="0.101784" y="-0.0389014" z="0.0"/>
+			<anchor body="NeckR" x="-0.102132" y="-0.0313277" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderR" x="-0.10749" y="-0.0390129" z="0.0"/>
+		</insertion>
+	</unit>
+
+
+
+
+
+
+
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderR" x="0.128994" y="0.049074" z="0.0"/>
+			<anchor body="NeckR" x="-0.12126" y="0.0391146" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderR" x="-0.129939" y="0.0504077" z="0.0"/>
+			<anchor body="ElbowR" x="0.118088" y="0.0394509" z="0.0"/>
+		</insertion>
+	</unit>
+		
+		
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderR" x="0.117956" y="0.101592" z="0.0"/>
+			<anchor body="NeckR" x="-0.0971803" y="0.0395206" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderR" x="-0.0919151" y="0.108667" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.13658" y="0.0298188" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowR" x="0.0750505" y="-0.049407" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.0687486" y="-0.0363546" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowR" x="-0.0970009" y="-0.0519195" z="0.0"/>
+			<anchor body="ElbowR" x="-0.124602" y="-0.0213551" z="0.0"/>
+		</insertion>
+	</unit>
+
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowR" x="0.10612" y="-0.0388865" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.0362733" y="-0.0386692" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowR" x="-0.0247993" y="-0.0385432" z="0.0"/>
+			<anchor body="ElbowR" x="-0.137298" y="-0.0275852" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowR" x="0.0934375" y="0.0415321" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.149982" y="0.0370557" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.0475331" y="0.0366516" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowR" x="-0.101278" y="0.0531029" z="0.0"/>
+			<anchor body="ElbowR" x="-0.152661" y="0.0326143" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowR" x="0.120863" y="0.0723189" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.175221" y="0.0527728" z="0.0"/>
+			<anchor body="ShoulderR" x="-0.0790886" y="0.0345896" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowR" x="-0.0973513" y="0.0707829" z="0.0"/>
+			<anchor body="ElbowR" x="-0.150075" y="0.0401847" z="0.0"/>
+		</insertion>
+	</unit>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="Torso" x="0.05" y="-0.16" z="0.0"/>
+			<anchor body="Torso" x="0.05115" y="-0.22429" z="0.0"/>
+			<anchor body="Torso" x="0.03162" y="-0.27544" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="Torso" x="0.05" y="0.1525" z="0.0"/>
+			<anchor body="Torso" x="0.05115" y="0.19793" z="0.0"/>
+			<anchor body="NeckL" x="-0.0994632" y="-0.0366182" z="0.0"/>
+		</insertion>
+	</unit> 
+
+
+ 	<unit name="temp">
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.3" />
+		<origin>
+			<anchor body="Torso" x="0.06" y="0.088" z="0.0"/>
+			<anchor body="Torso" x="0.042" y="0.018" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="-0.0582733" y="-0.0473942" z="0.0"/>
+		</insertion>
+	</unit>
+  
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.28" />
+		<origin>
+			<anchor body="Torso" x="0.046" y="0.082" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="0.0137664" y="-0.0506022" z="0.0"/>
+		</insertion>
+	</unit>
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.25" />
+		<origin>
+			<anchor body="Torso" x="0.07" y="0.098" z="0.0"/>
+			<anchor body="Torso" x="0.04" y="0.08" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="0.104515" y="-0.0476471" z="0.0"/>
+		</insertion>
+	</unit>
+
+	
+	 <unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="Torso" x="0.038" y="0.346" z="0.0"/>
+			<anchor body="Torso" x="0.012" y="0.33" z="0.0"/>
+			<anchor body="Torso" x="0.006" y="0.298" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="0.106338" y="0.050662" z="0.0"/>
+			<anchor body="NeckL" x="0.15529" y="0.0377103" z="0.0"/>
+			<anchor body="ShoulderL" x="-0.13143" y="0.0331345" z="0.0"/>
+		</insertion>
+	</unit>
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="NeckL" x="-0.102612" y="0.071627" z="0.0"/>
+			<anchor body="NeckL" x="-0.12789" y="0.0600929" z="0.0"/>
+			<anchor body="Torso" x="0.002" y="0.296" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="0.0999823" y="0.0874804" z="0.0"/>
+			<anchor body="NeckL" x="0.138172" y="0.0273675" z="0.0"/>
+		</insertion>
+	</unit> 
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.24" />
+		<origin>
+			<anchor body="NeckL" x="-0.0984728" y="-0.0473808" z="0.0"/>
+			<anchor body="Torso" x="0.034" y="0.228" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="NeckL" x="0.106505" y="-0.0478468" z="0.0"/>
+			<anchor body="ShoulderL" x="-0.104918" y="-0.036415" z="0.0"/>
+		</insertion>
+	</unit>
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderL" x="-0.08537" y="-0.0825656" z="0.0"/>
+			<anchor body="NeckL" x="0.117852" y="-0.0349151" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderL" x="0.108612" y="-0.085861" z="0.0"/>
+			<anchor body="ElbowL" x="-0.112492" y="-0.0326093" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderL" x="-0.101784" y="-0.0389014" z="0.0"/>
+			<anchor body="NeckL" x="0.102132" y="-0.0313277" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderL" x="0.10749" y="-0.0390129" z="0.0"/>
+		</insertion>
+	</unit>
+
+
+
+
+
+
+
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderL" x="-0.128994" y="0.049074" z="0.0"/>
+			<anchor body="NeckL" x="0.12126" y="0.0391146" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderL" x="0.129939" y="0.0504077" z="0.0"/>
+			<anchor body="ElbowL" x="-0.118088" y="0.0394509" z="0.0"/>
+		</insertion>
+	</unit>
+		
+		
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ShoulderL" x="-0.117956" y="0.101592" z="0.0"/>
+			<anchor body="NeckL" x="0.0971803" y="0.0395206" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ShoulderL" x="0.0919151" y="0.108667" z="0.0"/>
+			<anchor body="ShoulderL" x="0.13658" y="0.0298188" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowL" x="-0.0750505" y="-0.049407" z="0.0"/>
+			<anchor body="ShoulderL" x="0.0687486" y="-0.0363546" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowL" x="0.0970009" y="-0.0519195" z="0.0"/>
+			<anchor body="ElbowL" x="0.124602" y="-0.0213551" z="0.0"/>
+		</insertion>
+	</unit>
+
+	
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowL" x="-0.10612" y="-0.0388865" z="0.0"/>
+			<anchor body="ShoulderL" x="0.0362733" y="-0.0386692" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowL" x="0.0247993" y="-0.0385432" z="0.0"/>
+			<anchor body="ElbowL" x="0.137298" y="-0.0275852" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowL" x="-0.0934375" y="0.0415321" z="0.0"/>
+			<anchor body="ShoulderL" x="0.149982" y="0.0370557" z="0.0"/>
+			<anchor body="ShoulderL" x="0.0475331" y="0.0366516" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowL" x="0.101278" y="0.0531029" z="0.0"/>
+			<anchor body="ElbowL" x="0.152661" y="0.0326143" z="0.0"/>
+		</insertion>
+	</unit>
+
+	<unit name="temp" >
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<origin>
+			<anchor body="ElbowL" x="-0.120863" y="0.0723189" z="0.0"/>
+			<anchor body="ShoulderL" x="0.175221" y="0.0527728" z="0.0"/>
+			<anchor body="ShoulderL" x="0.0790886" y="0.0345896" z="0.0"/>
+		</origin>
+		<insertion>
+			<anchor body="ElbowL" x="0.0973513" y="0.0707829" z="0.0"/>
+			<anchor body="ElbowL" x="0.150075" y="0.0401847" z="0.0"/>
+		</insertion>
+	</unit>
+
+
 
 </Muscles>
 

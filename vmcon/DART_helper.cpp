@@ -38,6 +38,17 @@ MakeRootBody(
 		bn = skel->createJointAndBodyNodePair<RevoluteJoint>(
 			nullptr,prop,BodyNode::AspectProperties(name)).second;	
 	}
+	else if(joint_type == JOINT_TYPE::UNIVERSAL)
+	{
+		UniversalJoint::Properties prop;
+		prop.mName = name + "_joint";
+		prop.mAxis[0] = Eigen::Vector3d::UnitY();
+		prop.mAxis[1] = Eigen::Vector3d::UnitZ();
+		prop.mT_ChildBodyToJoint.translation() = c_to_joint;
+
+		bn = skel->createJointAndBodyNodePair<UniversalJoint>(
+			nullptr,prop,BodyNode::AspectProperties(name)).second;	
+	}
 	else if(joint_type == JOINT_TYPE::EULER)
 	{
 		EulerJoint::Properties prop;
@@ -97,6 +108,18 @@ MakeBody(
 		prop.mT_ChildBodyToJoint.translation() = c_to_joint;
 
 		bn = skel->createJointAndBodyNodePair<RevoluteJoint>(
+			parent,prop,BodyNode::AspectProperties(name)).second;	
+	}
+	else if(joint_type == JOINT_TYPE::UNIVERSAL)
+	{
+		UniversalJoint::Properties prop;
+		prop.mName = name + "_joint";
+		prop.mAxis[0] = Eigen::Vector3d::UnitY();
+		prop.mAxis[1] = Eigen::Vector3d::UnitZ();
+    	prop.mT_ParentBodyToJoint.translation() = p_to_joint;
+		prop.mT_ChildBodyToJoint.translation() = c_to_joint;
+
+		bn = skel->createJointAndBodyNodePair<UniversalJoint>(
 			parent,prop,BodyNode::AspectProperties(name)).second;	
 	}
 	else if(joint_type == JOINT_TYPE::EULER)
