@@ -121,10 +121,21 @@ Keyboard(unsigned char key,int x,int y)
 	Eigen::VectorXd act = mWorld->GetMusculoSkeletalSystem()->GetActivationLevels();
 
 
+
 	switch(key)
 	{
 		case 's' : TimeStepping();break;
-		case 'a' : act[0] += 0.1;break;
+		case '1' : act[1] += 0.1;break;
+		case '2' : act[2] += 0.1;break;
+		case '3' : act[3] += 0.1;break;
+		case '4' : act[4] += 0.1;break;
+		case '5' : act[5] += 0.1;break;
+		case '6' : act[6] += 0.1;break;
+		case '7' : act[7] += 0.1;break;
+		case '8' : act[8] += 0.1;break;
+		case '9' : act[9] += 0.1;break;
+		case '0' : act[0] += 0.1;break;
+		case 'r' : act.setZero();break;
 		case 27: exit(0);break;
 		default : break;
 	}

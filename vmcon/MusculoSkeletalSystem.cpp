@@ -454,12 +454,11 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 		3);
 	Eigen::VectorXd pos = skel->getPositions();
 
-
 	//Universal Joints
 	pos[3*1+0] = -0.1;
-	pos[3*1+2] = 0.1;
-
 	pos[3*1+1] = 0.1;
+
+	pos[3*1+2] = 0.1;
 	pos[3*1+3] = -0.1;
 
 	//Euler Joints
@@ -476,9 +475,31 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	pos[3*5-2] = -0.5;
 	pos[3*5+1-2] = 0.5;
 
+	//Root joint
+	skel->getDof(3*0+0)->setPositionLimits(-0.2,0.2);
+	skel->getDof(3*0+1)->setPositionLimits(-0.2,0.2);
+	skel->getDof(3*0+2)->setPositionLimits(-0.2,0.2);
+
+	//Universal Joint
+	skel->getDof(3*1+0)->setPositionLimits(-0.2,0.0);
+	skel->getDof(3*1+1)->setPositionLimits(0.0,0.2);
+
+	skel->getDof(3*1+2)->setPositionLimits(0.0,0.2);
+	skel->getDof(3*1+3)->setPositionLimits(-0.2,0.0);
+
+	//Shoulder JOint : Euler
+	skel->getDof(3*3+0-2)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(3*3+1-2)->setPositionLimits(-2.0,0.2); //Y
+	skel->getDof(3*3+2-2)->setPositionLimits(-1.8,0.75); //Z
+
+	skel->getDof(3*4+0-2)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(3*4+1-2)->setPositionLimits(-0.2,2.0); //Y
+	skel->getDof(3*4+2-2)->setPositionLimits(-0.75,1.8); //Z
+
+	skel->getDof(3*5+0-2)->setPositionLimits(-2.2,0.1); 
+	skel->getDof(3*5+1-2)->setPositionLimits(0.1,2.2); 
 
 	for(int i =0;i<skel->getNumDofs();i++){
-		skel->getDof(i)->setPositionLimits(-1.0,1.0);
 		skel->getDof(i)->getJoint()->setPositionLimitEnforced(true);
 	}
 	for(int i=0;i<skel->getNumBodyNodes();i++)
