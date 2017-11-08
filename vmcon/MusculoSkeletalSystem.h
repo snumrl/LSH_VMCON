@@ -4,7 +4,6 @@
 #include "dart/gui/gui.hpp"
 #include "dart/math/math.hpp"
 #include "dart/simulation/simulation.hpp"
-
 #include "fem/fem.h"
 
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;

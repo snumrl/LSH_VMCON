@@ -1,4 +1,6 @@
 #include "SimWindow.h"
+#include "MusculoSkeletalSystem.h"
+#include "Controller.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -105,7 +107,14 @@ Display()
 
 	DrawWorld(mWorld->GetSoftWorld());
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
-
+	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
+	auto save_pos = skel->getPositions();
+	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
+	skel->setPositions(mWorld->GetController()->mTargetPositions);
+	skel->computeForwardKinematics(true,false,false);
+	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2));
+	skel->setPositions(save_pos);
+	skel->computeForwardKinematics(true,false,false);
 	for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
 		DrawMuscleWayPoints(mus->origin_way_points);
 		DrawMuscleWayPoints(mus->insertion_way_points);
@@ -119,8 +128,12 @@ Keyboard(unsigned char key,int x,int y)
 {
 	Eigen::VectorXd pos = mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getPositions();
 	Eigen::VectorXd act = mWorld->GetMusculoSkeletalSystem()->GetActivationLevels();
-
-
+	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
+	Eigen::VectorXd random_pose_in_limits = pos;
+	for(int i =0;i<skel->getNumDofs();i++)
+		random_pose_in_limits[i] = dart::math::random(
+										skel->getDof(i)->getPositionLowerLimit(),
+										skel->getDof(i)->getPositionUpperLimit());
 
 	switch(key)
 	{
@@ -136,9 +149,21 @@ Keyboard(unsigned char key,int x,int y)
 		case '9' : act[9] += 0.1;break;
 		case '0' : act[0] += 0.1;break;
 		case 'r' : act.setZero();break;
+		case 'b' : mWorld->GetController()->mTargetPositions = random_pose_in_limits;break;
+		case '+' : 
+			mWorld->GetController()->mKp = mWorld->GetController()->mKp*2;
+			mWorld->GetController()->mKv = mWorld->GetController()->mKv*1.414;
+			break;
+		case '-' : 
+			mWorld->GetController()->mKp = mWorld->GetController()->mKp*0.5;
+			mWorld->GetController()->mKv = mWorld->GetController()->mKv*0.707;
+			break;
 		case 27: exit(0);break;
 		default : break;
 	}
+	for(int i=0;i<act.rows();i++)
+		act[i] = dart::math::clip<double>(act[i],0.0,1.0);
+
 	mWorld->GetMusculoSkeletalSystem()->SetActivationLevels(act);
 	glutPostRedisplay();
 }

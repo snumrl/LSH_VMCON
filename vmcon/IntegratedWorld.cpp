@@ -1,4 +1,6 @@
 #include "IntegratedWorld.h"
+#include "MusculoSkeletalSystem.h"
+#include "Controller.h"
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -7,21 +9,28 @@ IntegratedWorld()
 {
 
 }
+static int bbasdf=0;
 bool
 IntegratedWorld::
 TimeStepping()
 {
 	bool need_fem_update = false;
-	if(mSoftWorld->GetTime()<mRigidWorld->getTime())
-		need_fem_update = true;
+	if(bbasdf++%33==0)
+		need_fem_update=true;
 
-	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	// if(mSoftWorld->GetTime()<mRigidWorld->getTime())
+		// need_fem_update = true;
 
-	if(need_fem_update)
-	{
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping();
-	}
+	// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	mMusculoSkeletalSystem->GetSkeleton()->setForces(
+		mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->ComputePDForces() +
+		mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces()
+		);
+	// if(need_fem_update)
+	// {
+	// 	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	// 	mSoftWorld->TimeStepping();
+	// }
 
 	mRigidWorld->step();
 
@@ -67,5 +76,6 @@ Initialize()
 
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
-	
+
+	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
 }

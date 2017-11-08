@@ -386,27 +386,27 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	MakeRootBody(skel,"Torso",
 		Eigen::Vector3d(0.03,0.6,0.03),
 		Eigen::Vector3d(0,-0.3,0),
-		JOINT_TYPE::EULER,10);
+		JOINT_TYPE::BALL_AND_SOCKET,10);
 	
 	MakeBody(skel,skel->getBodyNode("Torso"),"NeckL",
 		Eigen::Vector3d(0.3,0.03,0.03),
 		Eigen::Vector3d(0.0,0.3,0),
-		Eigen::Vector3d(-0.15,0.0,0),JOINT_TYPE::UNIVERSAL,5);
+		Eigen::Vector3d(-0.15,0.0,0),JOINT_TYPE::REVOLUTE,5);
 
 	MakeBody(skel,skel->getBodyNode("Torso"),"NeckR",
 		Eigen::Vector3d(0.3,0.03,0.03),
 		Eigen::Vector3d(0.0,0.3,0),
-		Eigen::Vector3d(0.15,0.0,0),JOINT_TYPE::UNIVERSAL,5);
+		Eigen::Vector3d(0.15,0.0,0),JOINT_TYPE::REVOLUTE,5);
 
 	MakeBody(skel,skel->getBodyNode("NeckL"),"ShoulderL",
 		Eigen::Vector3d(0.3,0.03,0.03),
 		Eigen::Vector3d(0.15,0.0,0),
-		Eigen::Vector3d(-0.15,0.0,0),JOINT_TYPE::EULER,5);
+		Eigen::Vector3d(-0.15,0.0,0),JOINT_TYPE::BALL_AND_SOCKET,5);
 
 	MakeBody(skel,skel->getBodyNode("NeckR"),"ShoulderR",
 		Eigen::Vector3d(0.3,0.03,0.03),
 		Eigen::Vector3d(-0.15,0.0,0),
-		Eigen::Vector3d(0.15,0.0,0),JOINT_TYPE::EULER,5);
+		Eigen::Vector3d(0.15,0.0,0),JOINT_TYPE::BALL_AND_SOCKET,5);
 
 	MakeBody(skel,skel->getBodyNode("ShoulderL"),"ElbowL",
 		Eigen::Vector3d(0.3,0.03,0.03),
@@ -454,53 +454,54 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 		3);
 	Eigen::VectorXd pos = skel->getPositions();
 
-	//Universal Joints
+	//Revolute Joints
 	pos[3*1+0] = -0.1;
 	pos[3*1+1] = 0.1;
 
-	pos[3*1+2] = 0.1;
-	pos[3*1+3] = -0.1;
+	//Ball Joints
 
-	//Euler Joints
-	pos[3*3+0-2] = 0.3;
-	pos[3*4+0-2] = 0.3;
+	pos[3*3+0-4] = 0.3;
+	pos[3*4+0-4] = 0.3;
 
-	pos[3*3+1-2] = -0.7;
-	pos[3*4+1-2] = 0.7;
+	pos[3*3+1-4] = -0.7;
+	pos[3*4+1-4] = 0.7;
 
-	pos[3*3+2-2] = -1.0;
-	pos[3*4+2-2] = 1.0;
+	pos[3*3+2-4] = -1.0;
+	pos[3*4+2-4] = 1.0;
 
 	// //Revolute Joint
-	pos[3*5-2] = -0.5;
-	pos[3*5+1-2] = 0.5;
+
+	pos[3*5-4] = -0.5;
+	pos[3*5+1-4] = 0.5;
 
 	//Root joint
+
 	skel->getDof(3*0+0)->setPositionLimits(-0.2,0.2);
 	skel->getDof(3*0+1)->setPositionLimits(-0.2,0.2);
 	skel->getDof(3*0+2)->setPositionLimits(-0.2,0.2);
 
-	//Universal Joint
+	//Revolute Joint
 	skel->getDof(3*1+0)->setPositionLimits(-0.2,0.0);
 	skel->getDof(3*1+1)->setPositionLimits(0.0,0.2);
 
-	skel->getDof(3*1+2)->setPositionLimits(0.0,0.2);
-	skel->getDof(3*1+3)->setPositionLimits(-0.2,0.0);
+	skel->getDof(3*1+0)->setPositionLimits(0.0,0.0);
+	skel->getDof(3*1+1)->setPositionLimits(0.0,0.0);
 
 	//Shoulder JOint : Euler
-	skel->getDof(3*3+0-2)->setPositionLimits(0.0,1.57); //X
-	skel->getDof(3*3+1-2)->setPositionLimits(-2.0,0.2); //Y
-	skel->getDof(3*3+2-2)->setPositionLimits(-1.8,0.75); //Z
+	skel->getDof(3*3+0-4)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(3*3+1-4)->setPositionLimits(-2.0,0.2); //Y
+	skel->getDof(3*3+2-4)->setPositionLimits(-1.8,0.75); //Z
 
-	skel->getDof(3*4+0-2)->setPositionLimits(0.0,1.57); //X
-	skel->getDof(3*4+1-2)->setPositionLimits(-0.2,2.0); //Y
-	skel->getDof(3*4+2-2)->setPositionLimits(-0.75,1.8); //Z
+	skel->getDof(3*4+0-4)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(3*4+1-4)->setPositionLimits(-0.2,2.0); //Y
+	skel->getDof(3*4+2-4)->setPositionLimits(-0.75,1.8); //Z
 
-	skel->getDof(3*5+0-2)->setPositionLimits(-2.2,0.1); 
-	skel->getDof(3*5+1-2)->setPositionLimits(0.1,2.2); 
+	skel->getDof(3*5+0-4)->setPositionLimits(-2.2,0.1); 
+	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2); 
 
 	for(int i =0;i<skel->getNumDofs();i++){
-		skel->getDof(i)->getJoint()->setPositionLimitEnforced(true);
+		skel->getDof(i)->getJoint()->setPositionLimitEnforced(false);
+		// skel->getDof(i)->setForceLimits(-50,50);
 	}
 	for(int i=0;i<skel->getNumBodyNodes();i++)
 		skel->getBodyNode(i)->setCollidable(false);
