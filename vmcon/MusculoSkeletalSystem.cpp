@@ -500,6 +500,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2); 
 
 	for(int i =0;i<skel->getNumDofs();i++){
+		skel->getDof(i)->setPositionLimits(-100,100);
 		skel->getDof(i)->getJoint()->setPositionLimitEnforced(false);
 		// skel->getDof(i)->setForceLimits(-50,50);
 	}

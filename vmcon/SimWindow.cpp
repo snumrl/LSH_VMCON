@@ -1,6 +1,7 @@
 #include "SimWindow.h"
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
+#include "IKOptimization.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -67,6 +68,7 @@ TimeStepping()
 {
 	return mWorld->TimeStepping();
 }
+static Eigen::Vector3d random_target;
 void
 SimWindow::
 Display() 
@@ -82,6 +84,8 @@ Display()
 	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,100,0),Eigen::Vector3d(0,1,0));
 	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
 	glLineWidth(1.0);
+	glPointSize(5.0);
+	DrawPoint(random_target);
 	glColor3f(0,0,0);
 	glLineWidth(1.0);
 	glBegin(GL_LINES);
@@ -135,6 +139,11 @@ Keyboard(unsigned char key,int x,int y)
 										skel->getDof(i)->getPositionLowerLimit(),
 										skel->getDof(i)->getPositionUpperLimit());
 
+	
+
+	random_target[0] = dart::math::random(-0.5,0.0);
+	random_target[1] = dart::math::random(0.0,0.5);
+	random_target[2] = dart::math::random(0.0,0.4);
 	switch(key)
 	{
 		case 's' : TimeStepping();break;
@@ -150,14 +159,10 @@ Keyboard(unsigned char key,int x,int y)
 		case '0' : act[0] += 0.1;break;
 		case 'r' : act.setZero();break;
 		case 'b' : mWorld->GetController()->mTargetPositions = random_pose_in_limits;break;
-		case '+' : 
-			mWorld->GetController()->mKp = mWorld->GetController()->mKp*2;
-			mWorld->GetController()->mKv = mWorld->GetController()->mKv*1.414;
-			break;
-		case '-' : 
-			mWorld->GetController()->mKp = mWorld->GetController()->mKp*0.5;
-			mWorld->GetController()->mKv = mWorld->GetController()->mKv*0.707;
-			break;
+		case 'c' : 
+		mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
+		mWorld->GetController()->SolveIK();
+		break;
 		case 27: exit(0);break;
 		default : break;
 	}

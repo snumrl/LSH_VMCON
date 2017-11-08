@@ -1,9 +1,11 @@
 #include "Controller.h"
 #include "MusculoSkeletalSystem.h"
+#include "IKOptimization.h"
+
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-
+using namespace Ipopt;
 
 Controller::
 Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
@@ -17,6 +19,19 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 
 	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
+
+	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
+
+	mIKSolver = new IpoptApplication();
+	mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
+	mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
+	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	mIKSolver->Options()->SetIntegerValue("print_level", 2);
+	mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
+	mIKSolver->Options()->SetNumericValue("tol", 1e-3);
+
+	mIKSolver->Initialize();
 }
 std::shared_ptr<Controller>
 Controller::
@@ -59,29 +74,28 @@ ComputePDForces()
 	Eigen::VectorXd pos_diff(pos.rows());
 
 	pos_diff = skel->getPositionDifferences(pos_m,pos);
-	// std::cout<<"ComputePDForces()"<<std::endl;
 
-	std::cout<<pos.transpose()<<std::endl;
-	std::cout<<pos_m.transpose()<<std::endl;
-	std::cout<<pos_diff.transpose()<<std::endl;
-	// for(int i =0;i<skel->getNumDofs();i++)
-	// {
-	// 	if(!skel->getDof(i)->getJoint()->getType().compare("RevoluteJoint"))
-	// 	{
-	// 		double angle = pos_m[i] - skel->getDof(i)->getPosition();
-	// 		double two_phi_angle = 2*3.141592 -angle;
-	// 		// std::cout<<angle<<std::endl;
-	// 		// std::cout<<two_phi_angle<<std::endl;
-	// 	}
-	// }
-	// for(int i = 0;i<pos_diff.rows();i++)
-		// pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 
 	Eigen::VectorXd qdd_desired = 
 				pos_diff.cwiseProduct(mKp)+
 				(vel_m - vel).cwiseProduct(mKv);
-	std::cout<<qdd_desired.transpose()<<std::endl;
-	if(dart::math::isNan(pos))
-		exit(0);
 	return qdd_desired;
+}
+
+void
+Controller::
+AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
+{
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+	ik->AddTargetPositions(ap,target);	
+}
+void
+Controller::
+SolveIK()
+{
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+
+	mIKSolver->OptimizeTNLP(mIKOptimization);
+
+	mTargetPositions = ik->GetSolution();
 }
