@@ -53,6 +53,9 @@ public:
 	void TransformAttachmentPoints();
 	void ApplyForcesToSkeletons(const std::shared_ptr<FEM::World>& soft_world);
 
+	Eigen::MatrixXd ComputeForceDerivative(const FEM::WorldPtr& world);
+	Eigen::VectorXd ComputeForce(const FEM::WorldPtr& world);
+	
 	int 									GetNumMuscles() 		{return mMuscles.size();}
 	std::vector<std::shared_ptr<Muscle>>&	GetMuscles()			{return mMuscles;}
 	dart::dynamics::SkeletonPtr&			GetSkeleton()			{return mSkeleton;}

@@ -1,6 +1,7 @@
 #include "Controller.h"
 #include "MusculoSkeletalSystem.h"
 #include "IKOptimization.h"
+#include "MuscleOptimization.h"
 
 using namespace FEM;
 using namespace dart::dynamics;
@@ -32,6 +33,19 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mIKSolver->Options()->SetNumericValue("tol", 1e-3);
 
 	mIKSolver->Initialize();
+
+	mMuscleOptimization = new MuscleOptimization(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
+	mMuscleOptimizationSolver = new IpoptApplication();
+	
+	mMuscleOptimizationSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	mMuscleOptimizationSolver->Options()->SetStringValue("jac_c_constant", "no");
+	mMuscleOptimizationSolver->Options()->SetStringValue("hessian_constant", "yes");
+	mMuscleOptimizationSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	mMuscleOptimizationSolver->Options()->SetIntegerValue("print_level", 2);
+	mMuscleOptimizationSolver->Options()->SetIntegerValue("max_iter", 100);
+	mMuscleOptimizationSolver->Options()->SetNumericValue("tol", 1e-4);
+
+	
 }
 std::shared_ptr<Controller>
 Controller::
@@ -54,7 +68,32 @@ Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_w
 
 	return std::shared_ptr<Controller>(con);
 }
+Eigen::VectorXd
+Controller::
+ComputeActivationLevels()
+{
+	auto& skel =mMusculoSkeletalSystem->GetSkeleton();
+	Eigen::VectorXd qdd_desired = ComputePDForces();
 
+	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+
+	if(mSoftWorld->GetTime()==0.0)
+	{
+		mMuscleOptimizationSolver->Initialize();
+		mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
+	}
+	else
+		mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);	
+
+	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	Eigen::VectorXd qdd = solution.head(skel->getNumDofs());
+	Eigen::VectorXd activation = solution.tail(mMusculoSkeletalSystem->GetNumMuscles());
+
+	std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
+	std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl;
+	std::cout<<"activation  :"<<activation.transpose()<<std::endl;
+	return activation;
+}
 
 Eigen::VectorXd
 Controller::

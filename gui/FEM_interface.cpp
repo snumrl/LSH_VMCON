@@ -49,4 +49,28 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 
 		glLineWidth(1.0);
 	}
+	else if(dynamic_cast<LinearMuscleCst*>(c.get()) != nullptr)
+	{
+		LinearMuscleCst* cc = dynamic_cast<LinearMuscleCst*>(c.get());
+		int i0 = cc->GetI0();
+		int i1 = cc->GetI1();
+		int i2 = cc->GetI2();
+		int i3 = cc->GetI3();
+		double a = cc->GetActivationLevel();
+		const Eigen::Vector3d& p0 = x.block<3,1>(i0*3,0);
+		const Eigen::Vector3d& p1 = x.block<3,1>(i1*3,0);
+		const Eigen::Vector3d& p2 = x.block<3,1>(i2*3,0);
+		const Eigen::Vector3d& p3 = x.block<3,1>(i3*3,0);
+
+		GUI::DrawTetrahedron(p0,p1,p2,p3,Eigen::Vector3d(0.8,0.8-0.3*a,0.8-0.3*a));
+		glLineWidth(2.0);
+		GUI::DrawLine(p0,p1,Eigen::Vector3d(0,0,0));
+		GUI::DrawLine(p0,p2,Eigen::Vector3d(0,0,0));
+		GUI::DrawLine(p0,p3,Eigen::Vector3d(0,0,0));
+		GUI::DrawLine(p1,p2,Eigen::Vector3d(0,0,0));
+		GUI::DrawLine(p1,p3,Eigen::Vector3d(0,0,0));
+		GUI::DrawLine(p2,p3,Eigen::Vector3d(0,0,0));
+
+		glLineWidth(1.0);
+	}
 }

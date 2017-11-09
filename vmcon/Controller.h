@@ -12,6 +12,7 @@
 
 struct Muscle;
 class MusculoSkeletalSystem;
+class MuscleOptimization;
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;
 
 class Controller
@@ -23,6 +24,7 @@ public:
 	static std::shared_ptr<Controller> Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
 
 	Eigen::VectorXd ComputePDForces();
+	Eigen::VectorXd ComputeActivationLevels();
 
 	void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
 	void SolveIK();
@@ -39,6 +41,9 @@ public:
 
 	Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
+
+	Ipopt::SmartPtr<Ipopt::TNLP> 			 			mMuscleOptimization;
+	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mMuscleOptimizationSolver;
 };
 
 

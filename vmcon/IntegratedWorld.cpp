@@ -1,6 +1,7 @@
 #include "IntegratedWorld.h"
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
+#include "Record.h"
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -9,30 +10,32 @@ IntegratedWorld()
 {
 
 }
-static int bbasdf=0;
 bool
 IntegratedWorld::
 TimeStepping()
 {
 	bool need_fem_update = false;
-	if(bbasdf++%33==0)
-		need_fem_update=true;
 
-	// if(mSoftWorld->GetTime()<mRigidWorld->getTime())
-		// need_fem_update = true;
+	if(mSoftWorld->GetTime()<=mRigidWorld->getTime())
+	{
+		need_fem_update = true;
+		mMusculoSkeletalSystem->SetActivationLevels(mController->ComputeActivationLevels());	
+	}
 
-	// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
-	mMusculoSkeletalSystem->GetSkeleton()->setForces(
-		mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->ComputePDForces() +
-		mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces()
-		);
-	// if(need_fem_update)
-	// {
-	// 	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	// 	mSoftWorld->TimeStepping();
-	// }
+
+	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	if(need_fem_update)
+	{
+		mMusculoSkeletalSystem->TransformAttachmentPoints();
+		mSoftWorld->TimeStepping();
+	}
 
 	mRigidWorld->step();
+
+	mRecords.push_back(Record::Create());
+	auto rec = mRecords.back();
+
+	rec->Set(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mController);
 
 	return need_fem_update;
 }
@@ -78,4 +81,16 @@ Initialize()
 	mSoftWorld->Initialize();
 
 	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
+}
+
+void
+IntegratedWorld::
+SetRecord(int& frame)
+{
+	if(frame < 0)
+		frame = 0;
+	if(frame>=mRecords.size())
+		frame=0;
+	mRecords[frame]->Get(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mController);
+
 }

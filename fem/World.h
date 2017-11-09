@@ -19,7 +19,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	void Initialize();
-	void TimeStepping();
+	void TimeStepping(bool integrate = true);
 
 	void AddBody(const Eigen::VectorXd& x0, const std::vector<std::shared_ptr<Cst>>& constraints, double m = 1.0);
 	void AddConstraint(const std::shared_ptr<Cst>& c);
@@ -31,6 +31,8 @@ public:
 	const Eigen::VectorXd& GetPositions() {return mPositions;}
 	std::vector<std::shared_ptr<Cst>>& GetConstraints() {return mConstraints;}
 
+	void SetTime(double t) {mTime = t;};
+	void SetPositions(const Eigen::VectorXd& X) {mPositions = X;};
 	World(const World& other) = delete;
 	World& operator=(const World& other) = delete;
 	std::shared_ptr<World> Clone();

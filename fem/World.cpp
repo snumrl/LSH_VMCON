@@ -129,7 +129,7 @@ Initialize()
 }
 void
 World::
-TimeStepping()
+TimeStepping(bool integrate)
 {
 	if(!mIsInitialized)
 	{
@@ -161,9 +161,14 @@ TimeStepping()
 	default:
 	return;
 	};
-	IntegratePositionsAndVelocities(x_next);
-
-	mTime += mTimeStep;
+	
+	if(integrate)
+	{
+		IntegratePositionsAndVelocities(x_next);
+		mTime += mTimeStep;
+	}
+	else
+		mPositions = x_next;
 }
 void
 World::

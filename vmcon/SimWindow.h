@@ -10,6 +10,14 @@ public:
 	SimWindow();
 
 	std::shared_ptr<IntegratedWorld> mWorld;
+
+	bool 						mIsPlay;
+	bool 						mIsReplay;
+	bool 						mIsPaused;
+	
+	int 						mRecordFrame;
+	double						mSimTime;
+
 	bool TimeStepping();
 protected:
 	void Display() override;

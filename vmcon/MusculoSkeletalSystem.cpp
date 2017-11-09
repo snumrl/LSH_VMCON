@@ -310,7 +310,80 @@ ApplyForcesToSkeletons(const std::shared_ptr<FEM::World>& soft_world)
 	}
 
 }
+Eigen::MatrixXd
+MusculoSkeletalSystem::
+ComputeForceDerivative(const FEM::WorldPtr& world)
+{
+	auto save_X = world->GetPositions();
+	
+	Eigen::VectorXd a_plus_d,a_minus_d,a;
+	Eigen::VectorXd d = Eigen::VectorXd::Constant(mActivationLevels.rows(),0.01);
 
+	a = mActivationLevels;
+	a_plus_d = mActivationLevels + d;
+	a_minus_d = mActivationLevels - d;
+
+	for(int i =0;i<d.rows();i++)
+	{
+		a_plus_d[i] = dart::math::clip<double>(a_plus_d[i],0.0,1.0);
+		a_minus_d[i] = dart::math::clip<double>(a_minus_d[i],0.0,1.0);
+	}
+
+	SetActivationLevels(a_plus_d);
+	world->TimeStepping(false);
+	auto f_a_plus_d = ComputeForce(world);
+
+	SetActivationLevels(a_minus_d);
+	world->TimeStepping(false);
+	auto f_a_minus_d = ComputeForce(world);
+
+	SetActivationLevels(a);
+	world->SetPositions(save_X);
+
+	Eigen::MatrixXd J(mMuscles.size()*6,mMuscles.size());
+
+	Eigen::VectorXd df = f_a_plus_d - f_a_minus_d;
+
+	J.setZero();
+	for(int i =0;i<mMuscles.size();i++){
+		J.block<6,1>(i*6,i) = (1.0/(a_plus_d[i]-a_minus_d[i]))*df.block<6,1>(i*6,0);
+	}
+
+	return J;
+}
+Eigen::VectorXd
+MusculoSkeletalSystem::
+ComputeForce(const FEM::WorldPtr& world)
+{
+	Eigen::VectorXd X = world->GetPositions();
+	Eigen::VectorXd force_origin(X.rows()),force_insertion(X.rows());
+	Eigen::VectorXd b(mMuscles.size()*6);
+
+	Eigen::Vector3d fo,fi;
+	for(int i=0;i<mMuscles.size();i++)
+	{
+		auto& muscle = mMuscles[i];
+		
+		force_origin.setZero();
+		force_insertion.setZero();
+
+		muscle->origin->EvaluateGradient(X);
+		muscle->insertion->EvaluateGradient(X);
+
+		muscle->origin->GetGradient(force_origin);
+		muscle->insertion->GetGradient(force_insertion);
+
+		fo = force_origin.block<3,1>(muscle->origin->GetI0()*3,0);
+		fi = force_insertion.block<3,1>(muscle->insertion->GetI0()*3,0);
+
+		muscle->TransferForce(fo,fi);
+
+		b.block<3,1>(6*i+0,0) = fo;
+		b.block<3,1>(6*i+3,0) = fi;
+	}
+
+	return b;
+}
 void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>& ms)
 {
 	auto& skel = ms->GetSkeleton();
