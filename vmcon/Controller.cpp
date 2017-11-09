@@ -12,7 +12,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 500;
+	double k = 300;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
@@ -68,9 +68,9 @@ ComputePDForces()
 	Eigen::VectorXd pos = skel->getPositions();
 	Eigen::VectorXd vel = skel->getVelocities();
 
-	for(int i = 0;i<pos.rows();i++)
-		pos[i] = dart::math::wrapToPi(pos[i]);
-	skel->setPositions(pos);
+	// for(int i = 0;i<pos.rows();i++)
+	// 	pos[i] = dart::math::wrapToPi(pos[i]);
+	// skel->setPositions(pos);
 	Eigen::VectorXd pos_diff(pos.rows());
 
 	pos_diff = skel->getPositionDifferences(pos_m,pos);

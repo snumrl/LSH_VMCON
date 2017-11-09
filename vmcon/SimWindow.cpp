@@ -85,7 +85,7 @@ Display()
 	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
 	glLineWidth(1.0);
 	glPointSize(5.0);
-	DrawPoint(random_target);
+	DrawPoint(random_target,Eigen::Vector3d(0,0,0));
 	glColor3f(0,0,0);
 	glLineWidth(1.0);
 	glBegin(GL_LINES);

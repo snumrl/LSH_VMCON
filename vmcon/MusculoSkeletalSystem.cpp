@@ -480,14 +480,14 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	skel->getDof(3*0+1)->setPositionLimits(-0.2,0.2);
 	skel->getDof(3*0+2)->setPositionLimits(-0.2,0.2);
 
-	//Revolute Joint
+	// //Revolute Joint
 	skel->getDof(3*1+0)->setPositionLimits(-0.2,0.0);
 	skel->getDof(3*1+1)->setPositionLimits(0.0,0.2);
 
 	skel->getDof(3*1+0)->setPositionLimits(0.0,0.0);
 	skel->getDof(3*1+1)->setPositionLimits(0.0,0.0);
 
-	//Shoulder JOint : Euler
+	// //Shoulder JOint : Euler
 	skel->getDof(3*3+0-4)->setPositionLimits(0.0,1.57); //X
 	skel->getDof(3*3+1-4)->setPositionLimits(-2.0,0.2); //Y
 	skel->getDof(3*3+2-4)->setPositionLimits(-1.8,0.75); //Z
@@ -500,9 +500,8 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2); 
 
 	for(int i =0;i<skel->getNumDofs();i++){
-		skel->getDof(i)->setPositionLimits(-100,100);
-		skel->getDof(i)->getJoint()->setPositionLimitEnforced(false);
-		// skel->getDof(i)->setForceLimits(-50,50);
+	// 	skel->getDof(i)->setPositionLimits(-100,100);
+		skel->getDof(i)->getJoint()->setPositionLimitEnforced(true);
 	}
 	for(int i=0;i<skel->getNumBodyNodes();i++)
 		skel->getBodyNode(i)->setCollidable(false);
