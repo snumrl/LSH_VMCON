@@ -1,8 +1,10 @@
 #include "GLfunctions.h"
+#include <assimp/cimport.h>
 #include <iostream>
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "GL/glut.h"
+
 static GLUquadricObj *quadObj;
 static void initQuadObj(void)
 {
@@ -107,6 +109,119 @@ DrawPoint(const Eigen::Vector3d& p0,const Eigen::Vector3d& color)
 	glVertex3f(p0[0],p0[1],p0[2]);
 	glEnd();
 }
+void
+GUI::
+DrawArrow3D(const Eigen::Vector3d& _pt, const Eigen::Vector3d& _dir,
+            const double _length, const double _thickness,const Eigen::Vector3d& color,
+            const double _arrowThickness)
+{
+    glColor3f(color[0],color[1],color[2]);
+    Eigen::Vector3d normDir = _dir;
+  normDir.normalize();
+
+  double arrowLength;
+  if (_arrowThickness == -1)
+    arrowLength = 4*_thickness;
+  else
+    arrowLength = 2*_arrowThickness;
+
+  // draw the arrow body as a cylinder
+  GLUquadricObj *c;
+  c = gluNewQuadric();
+  gluQuadricDrawStyle(c, GLU_FILL);
+  gluQuadricNormals(c, GLU_SMOOTH);
+
+  glPushMatrix();
+  glTranslatef(_pt[0], _pt[1], _pt[2]);
+  glRotated(acos(normDir[2])*180/M_PI, -normDir[1], normDir[0], 0);
+  gluCylinder(c, _thickness, _thickness, _length-arrowLength, 16, 16);
+
+  // draw the arrowhed as a cone
+  glPushMatrix();
+  glTranslatef(0, 0, _length-arrowLength);
+  gluCylinder(c, arrowLength*0.5, 0.0, arrowLength, 10, 10);
+  glPopMatrix();
+
+  glPopMatrix();
+
+  gluDeleteQuadric(c);
+}
+
+void recursiveRender(const struct aiScene *sc, const struct aiNode* nd) {
+    unsigned int i;
+    unsigned int n = 0, t;
+    aiMatrix4x4 m = nd->mTransformation;
+
+    // update transform
+    aiTransposeMatrix4(&m);
+    glPushMatrix();
+    glMultMatrixf((float*)&m);
+
+    // draw all meshes assigned to this node
+    for (; n < nd->mNumMeshes; ++n) {
+        const struct aiMesh* mesh = sc->mMeshes[nd->mMeshes[n]];
+
+        glPushAttrib(GL_POLYGON_BIT | GL_LIGHTING_BIT);  // for applyMaterial()
+
+        if(mesh->mNormals == nullptr) { glDisable(GL_LIGHTING);
+        } else {
+            glEnable(GL_LIGHTING);
+        }
+
+        for (t = 0; t < mesh->mNumFaces; ++t) {
+            const struct aiFace* face = &mesh->mFaces[t];
+            GLenum face_mode;
+
+            switch(face->mNumIndices) {
+                case 1: face_mode = GL_POINTS; break;
+                case 2: face_mode = GL_LINES; break;
+                case 3: face_mode = GL_TRIANGLES; break;
+                default: face_mode = GL_POLYGON; break;
+            }
+
+            glBegin(face_mode);
+
+            for (i = 0; i < face->mNumIndices; i++) {
+                int index = face->mIndices[i];
+                if(mesh->mColors[0] != nullptr)
+                    glColor4fv((GLfloat*)&mesh->mColors[0][index]);
+                if(mesh->mNormals != nullptr)
+                    glNormal3fv(&mesh->mNormals[index].x);
+                glVertex3fv(&mesh->mVertices[index].x);
+            }
+
+            glEnd();
+        }
+
+        glPopAttrib();  // for applyMaterial()
+    }
+
+    // draw all children
+    for (n = 0; n < nd->mNumChildren; ++n) {
+        recursiveRender(sc, nd->mChildren[n]);
+    }
+
+    glPopMatrix();
+}
+
+
+
+void
+GUI::
+DrawMesh(const Eigen::Vector3d& scale, const aiScene* mesh,const Eigen::Vector3d& color)
+{
+ if (!mesh)
+    return;
+  glColor3f(color[0],color[1],color[2]);
+  glPushMatrix();
+
+  glScaled(scale[0], scale[1], scale[2]);
+  recursiveRender(mesh, mesh->mRootNode);
+
+  glPopMatrix();
+}
+
+
 void
 GUI::
 DrawStringOnScreen(float _x, float _y, const std::string& _s,bool _bigFont,const Eigen::Vector3d& color)

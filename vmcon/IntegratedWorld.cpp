@@ -19,7 +19,7 @@ TimeStepping()
 	if(mSoftWorld->GetTime()<=mRigidWorld->getTime())
 	{
 		need_fem_update = true;
-		mMusculoSkeletalSystem->SetActivationLevels(mController->ComputeActivationLevels());	
+		// mMusculoSkeletalSystem->SetActivationLevels(mController->ComputeActivationLevels());	
 	}
 
 

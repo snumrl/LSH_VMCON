@@ -12,8 +12,11 @@ DrawSkeleton(
 	{
 		auto bn = skel->getBodyNode(i);
 		auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
-		auto T = bn->getTransform();
-		DrawShape(T,shapeNodes[0]->getShape().get(),color);
+
+		for(int j=0;j<shapeNodes.size();j++){
+			auto T = shapeNodes[j]->getTransform();
+			DrawShape(T,shapeNodes[j]->getShape().get(),color);
+		}
 	}
 }
 
@@ -32,7 +35,7 @@ DrawShape(const Eigen::Isometry3d& T,
 	glMultMatrixd(T.data());
 	if(shape->is<SphereShape>())
 	{
-		const auto* sphere = static_cast<const SphereShape*>(shape);
+		const auto* sphere = dynamic_cast<const SphereShape*>(shape);
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 		GUI::DrawSphere(sphere->getRadius());
 		// glColor3f(0,0,0);
@@ -41,12 +44,16 @@ DrawShape(const Eigen::Isometry3d& T,
 	}
 	else if (shape->is<BoxShape>())
 	{
-		const auto* box = static_cast<const BoxShape*>(shape);
+		const auto* box = dynamic_cast<const BoxShape*>(shape);
 		glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
     	GUI::DrawCube(box->getSize());
-    	// glColor3f(0,0,0);
-    	// glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-    	// GUI::DrawCube(box->getSize());
+    	// GUI::DrawCube(Eigen::Vector3d(0.01,0.01,0.01));
+	}
+	else if(shape->is<MeshShape>())
+	{
+		auto* mesh = dynamic_cast<const MeshShape*>(shape);
+    	GUI::DrawMesh(mesh->getScale(),mesh->getMesh());
+
 	}
 
 	glPopMatrix();

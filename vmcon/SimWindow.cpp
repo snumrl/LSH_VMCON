@@ -26,6 +26,7 @@ TimeStepping()
 {
 	return mWorld->TimeStepping();
 }
+static Eigen::Vector3d random_target;
 void
 SimWindow::
 Display() 
@@ -36,11 +37,11 @@ Display()
 	initLights();
 	mCamera->Apply();
 	glDisable(GL_LIGHTING);
-	glLineWidth(2.0);
-	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(100,0,0),Eigen::Vector3d(1,0,0));
-	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,100,0),Eigen::Vector3d(0,1,0));
-	DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
-	glLineWidth(1.0);
+	// glLineWidth(2.0);
+	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(100,0,0),Eigen::Vector3d(1,0,0));
+	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,100,0),Eigen::Vector3d(0,1,0));
+	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
+	// glLineWidth(1.0);
 	glColor3f(0,0,0);
 	glLineWidth(1.0);
 	glBegin(GL_LINES);
@@ -68,15 +69,16 @@ Display()
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
 	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
 	auto save_pos = skel->getPositions();
-	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
 	skel->setPositions(mWorld->GetController()->mTargetPositions);
 	skel->computeForwardKinematics(true,false,false);
-	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2));
+	// DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2));
 	skel->setPositions(save_pos);
 	skel->computeForwardKinematics(true,false,false);
 	for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
 		DrawMuscleWayPoints(mus->origin_way_points);
 		DrawMuscleWayPoints(mus->insertion_way_points);
+		DrawArrow3D(GetPoint(mus->origin_way_points.back()),mus->origin_force.normalized(),mus->origin_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
+		DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 	}
 
 	glutSwapBuffers();
@@ -85,8 +87,25 @@ void
 SimWindow::
 Keyboard(unsigned char key,int x,int y) 
 {
+	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
+	Eigen::VectorXd act = mWorld->GetMusculoSkeletalSystem()->GetActivationLevels();
+	random_target[0] = dart::math::random(-0.5,0.0);
+	random_target[1] = dart::math::random(0.0,0.5);
+	random_target[2] = dart::math::random(0.0,0.4);
+
 	switch(key)
 	{
+		case '1' : act[0] += 0.1;break;
+		case '2' : act[2] += 0.1;break;
+		case '3' : act[3] += 0.1;break;
+		case '4' : act[4] += 0.1;break;
+		case '5' : act[5] += 0.1;break;
+		case '6' : act[6] += 0.1;break;
+		case '7' : act[7] += 0.1;break;
+		case '8' : act[8] += 0.1;break;
+		case '9' : act[9] += 0.1;break;
+		case '0' : act[0] += 0.1;break;
+		case 'r' : act.setZero();break;
 		case ' ' : mIsPlay = !mIsPlay; break;
 		case 'p' : 
 			if(!mIsReplay)
@@ -100,9 +119,18 @@ Keyboard(unsigned char key,int x,int y)
 			break;
 		case '[' : mRecordFrame--; break;
 		case ']' : mRecordFrame++; break;
+		case 'i' : 
+			mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
+			mWorld->GetController()->SolveIK();
+		break;
 		case 27: exit(0);break;
 		default : break;
 	}
+	for(int i=0;i<act.rows();i++)
+		act[i] = dart::math::clip<double>(act[i],0.0,1.0);
+
+	mWorld->GetMusculoSkeletalSystem()->SetActivationLevels(act);
+
 	glutPostRedisplay();
 }
 void

@@ -8,12 +8,20 @@ void
 MakeRootBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const std::string& name,
+	const std::string& obj_path,
+	const Eigen::Isometry3d& visual_T,
 	const Eigen::Vector3d& size,
 	const Eigen::Vector3d& c_to_joint,
 	JOINT_TYPE joint_type,
 	double mass)
 {
 	ShapePtr shape = std::shared_ptr<BoxShape>(new BoxShape(size));
+
+	char* curi;
+    curi = realpath(obj_path.c_str(), NULL);
+    const aiScene* mesh = MeshShape::loadMesh(std::string(curi));
+    ShapePtr visual_shape = std::shared_ptr<MeshShape>(new MeshShape(Eigen::Vector3d(0.01,0.01,0.01),mesh,obj_path));
+
 	dart::dynamics::Inertia inertia;
 	inertia.setMass(mass);
 	inertia.setMoment(shape->computeInertia(mass));
@@ -68,7 +76,10 @@ MakeRootBody(
 		bn = skel->createJointAndBodyNodePair<BallJoint>(
 			nullptr,prop,BodyNode::AspectProperties(name)).second;	
 	}
-	auto sn = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+	auto sn = bn->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+	auto vsn = bn->createShapeNodeWith<VisualAspect>(visual_shape);
+
+	vsn->setRelativeTransform(visual_T);
 	bn->setInertia(inertia);
 }
 
@@ -77,6 +88,8 @@ MakeBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const dart::dynamics::BodyNodePtr& parent,
 	const std::string& name,
+	const std::string& obj_path,
+	const Eigen::Isometry3d& visual_T,
 	const Eigen::Vector3d& size,
 	const Eigen::Vector3d& p_to_joint,
 	const Eigen::Vector3d& c_to_joint,
@@ -84,6 +97,11 @@ MakeBody(
 	double mass)
 {
 		ShapePtr shape = std::shared_ptr<BoxShape>(new BoxShape(size));
+		char* curi;
+    curi = realpath(obj_path.c_str(), NULL);
+    const aiScene* mesh = MeshShape::loadMesh(std::string(curi));
+    ShapePtr visual_shape = std::shared_ptr<MeshShape>(new MeshShape(Eigen::Vector3d(0.01,0.01,0.01),mesh,obj_path));
+
 	dart::dynamics::Inertia inertia;
 	inertia.setMass(mass);
 	inertia.setMoment(shape->computeInertia(mass));
@@ -143,6 +161,11 @@ MakeBody(
 		bn = skel->createJointAndBodyNodePair<BallJoint>(
 			parent,prop,BodyNode::AspectProperties(name)).second;	
 	}
-	auto sn = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+	auto sn = bn->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+
+	auto vsn = bn->createShapeNodeWith<VisualAspect>(visual_shape);
+
+	vsn->setRelativeTransform(visual_T);
+
 	bn->setInertia(inertia);
 }

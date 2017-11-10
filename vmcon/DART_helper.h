@@ -16,6 +16,8 @@ enum JOINT_TYPE
 void MakeRootBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const std::string& name,
+	const std::string& obj_path,
+	const Eigen::Isometry3d& visual_T,
 	const Eigen::Vector3d& size,
 	const Eigen::Vector3d& c_to_joint,
 	JOINT_TYPE joint_type,
@@ -25,6 +27,8 @@ void MakeBody(
 	const dart::dynamics::SkeletonPtr& skel,
 	const dart::dynamics::BodyNodePtr& parent,
 	const std::string& name,
+	const std::string& obj_path,
+	const Eigen::Isometry3d& visual_T,
 	const Eigen::Vector3d& size,
 	const Eigen::Vector3d& p_to_joint,
 	const Eigen::Vector3d& c_to_joint,

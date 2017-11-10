@@ -1,4 +1,5 @@
 #include "World.h"
+#include <chrono>
 using namespace FEM;
 #define BIG_EPSILON 1E-4
 #define EPSILON 1E-6
@@ -297,8 +298,11 @@ IntegrateProjectiveDynamics()
 
 	for(int k=0;k<mMaxIteration;k++)
 	{
+
 		EvaluateDVector(x_next,d);
+		
 		x_next = mSolver.solve(b+mJ*d);
+		
 	}
 	InversionFree(x_next);
 	return x_next;
@@ -396,7 +400,7 @@ EvaluateConstraintsEnergy(const Eigen::VectorXd& x)
 {
 	double energy=0;
 	
-#pragma omp for
+#pragma omp parallel for
 	for(int i=0;i<mConstraints.size();i++)
 	{
 		mConstraints[i]->EvaluatePotentialEnergy(x);
@@ -417,7 +421,7 @@ EvaluateConstraintsGradient(const Eigen::VectorXd& x,Eigen::VectorXd& g)
 	g.resize(mNumVertices*3);
 	g.setZero();
 
-#pragma omp for
+#pragma omp parallel for
 	for(int i=0;i<mConstraints.size();i++)
 	{
 		mConstraints[i]->EvaluateGradient(x);
@@ -436,7 +440,7 @@ EvaluateConstraintsHessian(const Eigen::VectorXd& x,Eigen::SparseMatrix<double>&
 	H.resize(mNumVertices*3,mNumVertices*3);
 	std::vector<Eigen::Triplet<double>> h_triplets;
 
-#pragma omp for
+#pragma omp parallel for
 	for(int i=0;i<mConstraints.size();i++)
 	{
 		mConstraints[i]->EvaluateHessian(x);
@@ -483,12 +487,12 @@ EvaluateDVector(const Eigen::VectorXd& x,Eigen::VectorXd& d)
 {
 	d.resize(mConstraintDofs*3);
 
-#pragma omp for
-	for(int i=0;i<mConstraints.size();i++)
+	int n = mConstraints.size();
+#pragma omp parallel for
+	for(int i=0;i<n;i++)
 	{
 		mConstraints[i]->EvaluateDVector(x);
 	}
-
 	int index = 0;
 	for(auto& c : mConstraints)
 	{
