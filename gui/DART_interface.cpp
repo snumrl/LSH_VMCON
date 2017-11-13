@@ -2,6 +2,7 @@
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
+static bool is_box = false;
 void
 GUI::
 DrawSkeleton(
@@ -13,11 +14,13 @@ DrawSkeleton(
 		auto bn = skel->getBodyNode(i);
 		auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
 
-		for(int j=0;j<shapeNodes.size();j++){
+		// for(int j=0;j<shapeNodes.size();j++){
+		int j = (is_box? 1:0);
 			auto T = shapeNodes[j]->getTransform();
 			DrawShape(T,shapeNodes[j]->getShape().get(),color);
-		}
+		// }
 	}
+	is_box = !is_box;
 }
 
 
@@ -71,7 +74,4 @@ DrawMuscleWayPoints(const std::vector<AnchorPoint>& ap)
 
 	for(int i=0;i<ap.size()-1;i++)
 		GUI::DrawLine(point[i],point[i+1],Eigen::Vector3d(0,0,0));
-	glPointSize(5.0);
-	for(int i=0;i<ap.size();i++)
-		GUI::DrawPoint(point[i],Eigen::Vector3d(1,0,0));
 }

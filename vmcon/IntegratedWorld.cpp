@@ -19,7 +19,7 @@ TimeStepping()
 	if(mSoftWorld->GetTime()<=mRigidWorld->getTime())
 	{
 		need_fem_update = true;
-		// mMusculoSkeletalSystem->SetActivationLevels(mController->ComputeActivationLevels());	
+		mMusculoSkeletalSystem->SetActivationLevels(mController->ComputeActivationLevels());	
 	}
 
 
@@ -67,13 +67,13 @@ Initialize()
 		FEM::IntegrationMethod::PROJECTIVE_QUASI_STATIC,	//Integration Method
 		// FEM::IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
 		1.0/120.0,							//Time Step
-		100,								//Max Iteration
+		10,								//Max Iteration
 		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
 		);
 	mRigidWorld = std::make_shared<dart::simulation::World>();
-	// mRigidWorld->setGravity(Eigen::Vector3d(0,-9.81,0));
-	mRigidWorld->setGravity(Eigen::Vector3d(0,0,0));
+	mRigidWorld->setGravity(Eigen::Vector3d(0,-9.81,0));
+	// mRigidWorld->setGravity(Eigen::Vector3d(0,0,0));
 	mMusculoSkeletalSystem = MusculoSkeletalSystem::Create();
 	MakeSkeleton(mMusculoSkeletalSystem);
 	MakeMuscles("../vmcon/export/muscle_params.xml",mMusculoSkeletalSystem);

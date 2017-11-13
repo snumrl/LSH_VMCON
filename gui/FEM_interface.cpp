@@ -16,6 +16,7 @@ void
 GUI::
 DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 {
+	glDisable(GL_LIGHTING);
 	if(dynamic_cast<AttachmentCst*>(c.get()) != nullptr)
 	{
 		AttachmentCst* ac = dynamic_cast<AttachmentCst*>(c.get());	
@@ -38,7 +39,7 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 		const Eigen::Vector3d& p2 = x.block<3,1>(i2*3,0);
 		const Eigen::Vector3d& p3 = x.block<3,1>(i3*3,0);
 
-			GUI::DrawTetrahedron(p0,p1,p2,p3);
+		GUI::DrawTetrahedron(p0,p1,p2,p3);
 		glLineWidth(2.0);
 		GUI::DrawLine(p0,p1,Eigen::Vector3d(0,0,0));
 		GUI::DrawLine(p0,p2,Eigen::Vector3d(0,0,0));
@@ -73,4 +74,5 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 
 		glLineWidth(1.0);
 	}
+	glEnable(GL_LIGHTING);
 }
