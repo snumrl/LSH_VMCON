@@ -216,6 +216,7 @@ AddMuscle(
 			mPoissonRatio,
 			i0,i1,i2,i3,1.0/6.0*Dm.determinant(),Dm.inverse()));
 
+		mAllMuscleConstraints.push_back(muscle->muscle_csts.back());
 		tet_index++;
 	}
 	for(auto c: muscle->muscle_csts)
@@ -314,8 +315,16 @@ Eigen::MatrixXd
 MusculoSkeletalSystem::
 ComputeForceDerivative(const FEM::WorldPtr& world)
 {
+
 	auto save_X = world->GetPositions();
-	
+	Eigen::MatrixXd J(mMuscles.size()*6,mMuscles.size());
+	J.setZero();
+
+
+
+	//TODO : off-diagonal term consideration
+#if 0
+	//Numerical Jacobian
 	Eigen::VectorXd a_plus_d,a_minus_d,a;
 	Eigen::VectorXd d = Eigen::VectorXd::Constant(mActivationLevels.rows(),0.01);
 
@@ -340,15 +349,92 @@ ComputeForceDerivative(const FEM::WorldPtr& world)
 	SetActivationLevels(a);
 	world->SetPositions(save_X);
 
-	Eigen::MatrixXd J(mMuscles.size()*6,mMuscles.size());
 
 	Eigen::VectorXd df = f_a_plus_d - f_a_minus_d;
 
-	J.setZero();
 	for(int i =0;i<mMuscles.size();i++){
 		J.block<6,1>(i*6,i) = (1.0/(a_plus_d[i]-a_minus_d[i]))*df.block<6,1>(i*6,0);
 	}
+	// std::cout<<"Numerical"<<std::endl;
+	// std::cout<<J.transpose()<<std::endl;
+#else
 
+													#define NO_OFF_DIAGONAL
+													#ifdef NO_OFF_DIAGONAL
+
+	Eigen::VectorXd Ji(mMuscles.size()*6);
+	Eigen::VectorXd dg_da(save_X.rows()),dx_da(save_X.rows());
+	Eigen::VectorXd temp_X(save_X.rows());
+	Ji.setZero();
+	dg_da.setZero();
+
+#pragma omp parallel for
+	for(int i=0;i<mAllMuscleConstraints.size();i++)
+	{
+		mAllMuscleConstraints[i]->Evaluatedgda(save_X);
+	}
+	for(int i=0;i<mAllMuscleConstraints.size();i++)
+	{
+		mAllMuscleConstraints[i]->Getdgda(dg_da);
+	}
+
+	world->Computedxda(dx_da,dg_da);
+
+	temp_X = save_X + dx_da;
+	world->SetPositions(temp_X);
+	Ji = ComputeForce(world);
+	world->SetPositions(save_X);
+	Ji -= ComputeForce(world);
+	for(int i =0;i<mMuscles.size();i++)
+		J.block<6,1>(i*6,i) = Ji.block<6,1>(i*6,0);
+
+													#else
+	//Analytic Jacobian
+	Eigen::VectorXd Ji(mMuscles.size()*6);
+	Eigen::VectorXd dg_da(save_X.rows()),dx_da(save_X.rows());
+	Eigen::VectorXd temp_X(save_X.rows());
+	for(int i=0;i<mMuscles.size();i++)
+	{
+		Ji.setZero();
+		dg_da.setZero();
+
+#pragma omp parallel for
+		for(int j=0;j<mMuscles[i]->muscle_csts.size();j++)
+		{
+			mMuscles[i]->muscle_csts[j]->Evaluatedgda(save_X);
+		}
+		for(int j=0;j<mMuscles[i]->muscle_csts.size();j++)
+		{
+			mMuscles[i]->muscle_csts[j]->Getdgda(dg_da);
+		}
+
+		world->Computedxda(dx_da,dg_da);
+
+		temp_X = save_X + dx_da;
+		world->SetPositions(temp_X);
+		Ji = ComputeForce(world);
+		world->SetPositions(save_X);
+		Ji -= ComputeForce(world);
+		// std::cout<<Ji.transpose()<<std::endl;
+		
+		// for(int j=0;j<mMuscles.size();j++)
+		// {
+		// 	Eigen::Vector3d fo,fi;
+		// 	fo = dg_da.block<3,1>(mMuscles[j]->origin->GetI0()*3,0);
+		// 	fi = dg_da.block<3,1>(mMuscles[j]->insertion->GetI0()*3,0);
+		// 	mMuscles[j]->TransferForce(fo,fi);
+		// 	Ji.block<3,1>(j*6,0) += fo;
+		// 	Ji.block<3,1>(j*6+3,0) += fi;
+
+		// }
+		// std::cout<<Ji.transpose()<<std::endl;
+		J.col(i) = Ji;
+	}
+	// std::cout<<"Analytic"<<std::endl;
+	// std::cout<<J.transpose()<<std::endl;
+	// exit(0);
+													#endif
+#endif
 	return J;
 }
 Eigen::VectorXd

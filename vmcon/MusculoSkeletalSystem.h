@@ -78,6 +78,9 @@ private:
 	double	mPoissonRatio;
 
 	Eigen::VectorXd							mActivationLevels;
+
+
+	std::vector<FEM::LinearMuscleCstPtr>	mAllMuscleConstraints;
 };
 
 void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>& ms);

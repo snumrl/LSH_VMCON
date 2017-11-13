@@ -25,6 +25,8 @@ public:
 	void AddConstraint(const std::shared_ptr<Cst>& c);
 	void RemoveConstraint(const std::shared_ptr<Cst>& c);
 
+	void Computedxda(Eigen::VectorXd& dx_da,const Eigen::VectorXd& dg_da);
+
 	int GetNumVertices(){return mNumVertices;}
 	double GetTime() {return mTime;}
 	double GetTimeStep() {return mTimeStep;}

@@ -228,6 +228,12 @@ RemoveConstraint(const std::shared_ptr<Cst>& c)
 		Precompute();
 	}
 }
+void
+World::
+Computedxda(Eigen::VectorXd& dx_da,const Eigen::VectorXd& dg_da)
+{
+	dx_da = -mSolver.solve(dg_da);
+}
 Eigen::VectorXd
 World::
 IntegrateNewtonMethod()

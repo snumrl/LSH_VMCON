@@ -24,12 +24,16 @@ public:
 	void GetPotentialEnergy(double& e) override;
 	void GetGradient(Eigen::VectorXd& g) override;
 	void GetHessian(std::vector<Eigen::Triplet<double>>& h_triplets) override;
+	void Evaluatedgda(const Eigen::VectorXd& x);
+	void Getdgda(Eigen::VectorXd& dgda);
 	void EvaluateDVector(const Eigen::VectorXd& x) override;
 	void GetDVector(int& index,Eigen::VectorXd& d) override;
 	void EvaluateJMatrix(int& index, std::vector<Eigen::Triplet<double>>& J_triplets) override;
 	void EvaluateLMatrix(std::vector<Eigen::Triplet<double>>& L_triplets) override;
 	int GetNumHessianTriplets() override;
 	void AddOffset(int offset) override;
+
+
 
 	int GetI0() {return mi0;}
 	int GetI1() {return mi1;}
@@ -55,6 +59,7 @@ protected:
 	Eigen::Vector12d mg;
 	Eigen::Matrix12d mH;
 	Eigen::Matrix3d md;
+	Eigen::Vector12d mdgda;
 
 	//For Cache
 	Eigen::Vector12d mX;
@@ -65,6 +70,7 @@ protected:
 	void ComputeP(Eigen::Matrix3d& P);
 	void ComputedPdF(Tensor3333& dPdF);
 	void Computep0();
+	void Computedp0(Eigen::Vector3d& dp0);
 };
 };
 

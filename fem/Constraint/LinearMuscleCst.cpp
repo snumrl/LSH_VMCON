@@ -120,6 +120,34 @@ GetHessian(std::vector<Eigen::Triplet<double>>& h_triplets)
 }
 void
 LinearMuscleCst::
+Evaluatedgda(const Eigen::VectorXd& x)
+{
+	ComputeF(x);
+	Computep0();
+
+	Eigen::Matrix3d dP_da;
+	Eigen::Vector3d dp0;
+	Computedp0(dp0);
+	dP_da = - mVolume*mStiffness*dp0*(mFiberDirection.transpose())*mInvDm.transpose();;
+
+	mdgda.block<3,1>(0*3,0) = -(dP_da.block<3,1>(0,0) + dP_da.block<3,1>(0,1) + dP_da.block<3,1>(0,2));
+	mdgda.block<3,1>(1*3,0) = dP_da.block<3,1>(0,0);
+	mdgda.block<3,1>(2*3,0) = dP_da.block<3,1>(0,1);
+	mdgda.block<3,1>(3*3,0) = dP_da.block<3,1>(0,2);
+}	
+void
+LinearMuscleCst::
+Getdgda(Eigen::VectorXd& dgda)
+{
+	dgda.block<3,1>(mi0*3,0) += mdgda.block<3,1>(0*3,0);
+	dgda.block<3,1>(mi1*3,0) += mdgda.block<3,1>(1*3,0);
+	dgda.block<3,1>(mi2*3,0) += mdgda.block<3,1>(2*3,0);
+	dgda.block<3,1>(mi3*3,0) += mdgda.block<3,1>(3*3,0);
+}
+
+
+void
+LinearMuscleCst::
 EvaluateDVector(const Eigen::VectorXd& x)
 {
 	ComputeF(x);
@@ -250,6 +278,7 @@ AddOffset(int offset)
 	mi3 +=offset;
 }
 
+
 void
 LinearMuscleCst::
 ComputeF(const Eigen::VectorXd& x)
@@ -288,4 +317,10 @@ LinearMuscleCst::
 Computep0()
 {
 	mp0 = (1.0-mActivationLevel)*mF*mFiberDirection;
+}
+void
+LinearMuscleCst::
+Computedp0(Eigen::Vector3d& dp0)
+{
+	dp0 = -mF*mFiberDirection;
 }
