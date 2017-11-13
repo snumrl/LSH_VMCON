@@ -72,6 +72,7 @@ Initialize()
 		0.999								//Damping
 		);
 	mRigidWorld = std::make_shared<dart::simulation::World>();
+	// mRigidWorld->setGravity(Eigen::Vector3d(0,-9.81,0));
 	mRigidWorld->setGravity(Eigen::Vector3d(0,0,0));
 	mMusculoSkeletalSystem = MusculoSkeletalSystem::Create();
 	MakeSkeleton(mMusculoSkeletalSystem);

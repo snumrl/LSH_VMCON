@@ -76,6 +76,7 @@ MakeRootBody(
 		bn = skel->createJointAndBodyNodePair<BallJoint>(
 			nullptr,prop,BodyNode::AspectProperties(name)).second;	
 	}
+	// auto sn = bn->createShapeNodeWith<VisualAspect,CollisionAspect, DynamicsAspect>(shape);
 	auto sn = bn->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
 	auto vsn = bn->createShapeNodeWith<VisualAspect>(visual_shape);
 
@@ -162,6 +163,7 @@ MakeBody(
 			parent,prop,BodyNode::AspectProperties(name)).second;	
 	}
 	auto sn = bn->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+	// auto sn = bn->createShapeNodeWith<VisualAspect,CollisionAspect, DynamicsAspect>(shape);
 
 	auto vsn = bn->createShapeNodeWith<VisualAspect>(visual_shape);
 

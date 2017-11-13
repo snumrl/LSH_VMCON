@@ -10,7 +10,7 @@ using namespace dart::simulation;
 using namespace dart::dynamics;
 SimWindow::
 SimWindow()
-	:GLUTWindow(),
+	:GLUTWindow(),mIsRotate(true),
 	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0)
 {
 	dart::math::seedRand();
@@ -95,16 +95,17 @@ Keyboard(unsigned char key,int x,int y)
 
 	switch(key)
 	{
+		case '`' : mIsRotate = !mIsRotate;break;
 		case '1' : act[0] += 0.1;break;
-		case '2' : act[2] += 0.1;break;
-		case '3' : act[3] += 0.1;break;
-		case '4' : act[4] += 0.1;break;
-		case '5' : act[5] += 0.1;break;
-		case '6' : act[6] += 0.1;break;
-		case '7' : act[7] += 0.1;break;
-		case '8' : act[8] += 0.1;break;
-		case '9' : act[9] += 0.1;break;
-		case '0' : act[0] += 0.1;break;
+		case '2' : act[1] += 0.1;break;
+		case '3' : act[2] += 0.1;break;
+		case '4' : act[3] += 0.1;break;
+		case '5' : act[4] += 0.1;break;
+		case '6' : act[5] += 0.1;break;
+		case '7' : act[6] += 0.1;break;
+		case '8' : act[7] += 0.1;break;
+		case '9' : act[8] += 0.1;break;
+		case '0' : act[9] += 0.1;break;
 		case 'r' : act.setZero();break;
 		case ' ' : mIsPlay = !mIsPlay; break;
 		case 'p' : 
@@ -160,18 +161,12 @@ Motion(int x, int y)
 		return;
 
 	int mod = glutGetModifiers();
-
 	if (mMouseType == GLUT_LEFT_BUTTON)
 	{
-		switch (mod)
-		{
-		case GLUT_ACTIVE_SHIFT:
-			mCamera->Translate(x,y,mPrevX,mPrevY);
-			break;
-		default:
-			mCamera->Rotate(x,y,mPrevX,mPrevY);
-			break;
-		}
+		if(!mIsRotate)
+		mCamera->Translate(x,y,mPrevX,mPrevY);
+		else
+		mCamera->Rotate(x,y,mPrevX,mPrevY);
 	}
 	else if (mMouseType == GLUT_RIGHT_BUTTON)
 	{

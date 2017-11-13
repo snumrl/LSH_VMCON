@@ -408,9 +408,16 @@ void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>&
             double x = std::stod(anc->Attribute("x"));
             double y = std::stod(anc->Attribute("y"));
             double z = std::stod(anc->Attribute("z"));
-            p_ori.push_back(AnchorPoint(skel->getBodyNode(body_name.c_str()),Eigen::Vector3d(x,y,z)));
+
+            auto T = skel->getBodyNode(body_name.c_str())->getShapeNodesWith<VisualAspect>()[0]->getRelativeTransform();
+            auto T1 = skel->getBodyNode(body_name.c_str())->getTransform();
+            Eigen::Vector3d body_coord(x,y,z);
+            body_coord*=0.01;
+            body_coord = T* body_coord;
+
+            p_ori.push_back(AnchorPoint(skel->getBodyNode(body_name.c_str()),body_coord));
         }
-        
+        std::reverse(p_ori.begin(),p_ori.end());
         TiXmlElement* ins = unit->FirstChildElement("insertion");
         for(TiXmlElement* anc = ins->FirstChildElement("anchor");anc!=nullptr;anc = anc->NextSiblingElement("anchor"))   
         {
@@ -418,7 +425,14 @@ void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>&
             double x = std::stod(anc->Attribute("x"));
             double y = std::stod(anc->Attribute("y"));
             double z = std::stod(anc->Attribute("z"));
-            p_ins.push_back(AnchorPoint(skel->getBodyNode(body_name.c_str()),Eigen::Vector3d(x,y,z)));
+
+            auto T = skel->getBodyNode(body_name.c_str())->getShapeNodesWith<VisualAspect>()[0]->getRelativeTransform();
+            auto T1 = skel->getBodyNode(body_name.c_str())->getTransform();
+            Eigen::Vector3d body_coord(x,y,z);
+            body_coord*=0.01;
+            body_coord = T* body_coord;
+
+            p_ins.push_back(AnchorPoint(skel->getBodyNode(body_name.c_str()),body_coord));
         }
 
         Eigen::Vector3d muscle_start,muscle_end;

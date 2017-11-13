@@ -84,17 +84,17 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 
 
 	T_ElbowR.linear() =	
-						Eigen::AngleAxisd(3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
-						Eigen::AngleAxisd(3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
+						Eigen::AngleAxisd(-3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
+						Eigen::AngleAxisd(-3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 						;
 					// Eigen::AngleAxisd(-3.141592*0.05,Eigen::Vector3d(0,1,0)).toRotationMatrix()).inverse();
-	T_ElbowR.translation() = Eigen::Vector3d(0.94,0.25,-0.28);
+	T_ElbowR.translation() = Eigen::Vector3d(-0.93,-0.24,-0.28);
 
 	T_ElbowL.linear() = 
-					Eigen::AngleAxisd(-3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
-					Eigen::AngleAxisd(-3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
+					Eigen::AngleAxisd(3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
+					Eigen::AngleAxisd(3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 					;
-	T_ElbowL.translation() = Eigen::Vector3d(-0.94,0.25,-0.28);
+	T_ElbowL.translation() = Eigen::Vector3d(0.93,-0.24,-0.28);
 
 	MakeBody(skel,skel->getBodyNode("ShoulderL"),"ElbowL",
 		path_export+"ElbowL.obj",
@@ -181,11 +181,11 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	skel->getDof(3*0+2)->setPositionLimits(-0.2,0.2);
 
 	// //Revolute Joint
-	skel->getDof(3*1+0)->setPositionLimits(-0.2,0.0);
-	skel->getDof(3*1+1)->setPositionLimits(0.0,0.2);
+	skel->getDof(3*1+0)->setPositionLimits(-0.3,0.2);
+	skel->getDof(3*1+1)->setPositionLimits(-0.2,0.3);
 
-	skel->getDof(3*1+0)->setPositionLimits(0.0,0.0);
-	skel->getDof(3*1+1)->setPositionLimits(0.0,0.0);
+	// skel->getDof(3*1+0)->setPositionLimits(0.0,0.0);
+	// skel->getDof(3*1+1)->setPositionLimits(0.0,0.0);
 
 	// //Shoulder JOint : Euler
 	skel->getDof(3*3+0-4)->setPositionLimits(0.0,1.57); //X

@@ -19,6 +19,7 @@ public:
 	double						mSimTime;
 
 	bool TimeStepping();
+	bool mIsRotate;
 protected:
 	void Display() override;
 	void Keyboard(unsigned char key,int x,int y) override;

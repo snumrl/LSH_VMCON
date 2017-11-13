@@ -70,5 +70,8 @@ DrawMuscleWayPoints(const std::vector<AnchorPoint>& ap)
 		point.push_back(ap[i].first->getTransform()*ap[i].second);
 
 	for(int i=0;i<ap.size()-1;i++)
-		GUI::DrawLine(point[i],point[i+1]);
+		GUI::DrawLine(point[i],point[i+1],Eigen::Vector3d(0,0,0));
+	glPointSize(5.0);
+	for(int i=0;i<ap.size();i++)
+		GUI::DrawPoint(point[i],Eigen::Vector3d(1,0,0));
 }

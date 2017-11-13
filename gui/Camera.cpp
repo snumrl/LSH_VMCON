@@ -73,7 +73,7 @@ Camera::
 Translate(int x,int y,int prev_x,int prev_y)
 {
 	Eigen::Vector3d delta((double)x - (double)prev_x, (double)y - (double)prev_y, 0);
-	delta = UnProject(delta) / 50.0;
+	delta = UnProject(delta) / 200.0;
 	lookAt += delta; eye += delta;
 }
 Ray
