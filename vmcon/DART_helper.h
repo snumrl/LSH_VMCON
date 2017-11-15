@@ -35,5 +35,10 @@ void MakeBody(
 	JOINT_TYPE joint_type,
 	double mass);
 
+void MakeBall(
+	const dart::dynamics::SkeletonPtr& skel,
+	const Eigen::Vector3d& init_pos,
+	double rad,
+	double mass);
 
 #endif

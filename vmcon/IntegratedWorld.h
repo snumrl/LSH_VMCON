@@ -7,6 +7,8 @@
 #include "dart/simulation/simulation.hpp"
 
 #include "fem/fem.h"
+
+class Ball;
 class MusculoSkeletalSystem;
 class Controller;
 class Record;
@@ -24,6 +26,7 @@ public:
 	const FEM::WorldPtr& GetSoftWorld(){return mSoftWorld;};	
 	const dart::simulation::WorldPtr& GetRigidWorld() {return mRigidWorld;};
 	const std::shared_ptr<MusculoSkeletalSystem>& GetMusculoSkeletalSystem(){return mMusculoSkeletalSystem;};
+	const std::vector<std::shared_ptr<Ball>>& GetBalls(){return mBalls;};
 	const std::shared_ptr<Controller>& GetController(){return mController;};
 	const std::vector<std::shared_ptr<Record>>& GetRecords(){return mRecords;};
 	void SetRecord(int& frame);
@@ -34,8 +37,8 @@ private:
 	FEM::WorldPtr mSoftWorld;
 	dart::simulation::WorldPtr mRigidWorld;
 	std::shared_ptr<MusculoSkeletalSystem> mMusculoSkeletalSystem;
+	std::vector<std::shared_ptr<Ball>> mBalls;
 	std::shared_ptr<Controller>	mController;
-
 };
 
 

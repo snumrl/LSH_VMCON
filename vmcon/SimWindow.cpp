@@ -2,6 +2,7 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "IKOptimization.h"
+#include "Ball.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -11,7 +12,7 @@ using namespace dart::dynamics;
 SimWindow::
 SimWindow()
 	:GLUTWindow(),mIsRotate(true),
-	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0)
+	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false)
 {
 	dart::math::seedRand();
 
@@ -65,22 +66,30 @@ Display()
     GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
 
-	DrawWorld(mWorld->GetSoftWorld());
-	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton());
+	
+	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
 	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
-	auto save_pos = skel->getPositions();
-	skel->setPositions(mWorld->GetController()->mTargetPositions);
-	skel->computeForwardKinematics(true,false,false);
-	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2));
-	skel->setPositions(save_pos);
-	skel->computeForwardKinematics(true,false,false);
-	for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
-		DrawMuscleWayPoints(mus->origin_way_points);
-		DrawMuscleWayPoints(mus->insertion_way_points);
-		// DrawArrow3D(GetPoint(mus->origin_way_points.back()),mus->origin_force.normalized(),mus->origin_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
-		// DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
+	
+	if(mRenderDetail)
+	{
+		DrawWorld(mWorld->GetSoftWorld());
+		auto save_pos = skel->getPositions();
+		skel->setPositions(mWorld->GetController()->mTargetPositions);
+		skel->computeForwardKinematics(true,false,false);
+		DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
+		skel->setPositions(save_pos);
+		skel->computeForwardKinematics(true,false,false);
+		for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
+			DrawMuscleWayPoints(mus->origin_way_points);
+			DrawMuscleWayPoints(mus->insertion_way_points);
+			// DrawArrow3D(GetPoint(mus->origin_way_points.back()),mus->origin_force.normalized(),mus->origin_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
+			// DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
+		}
 	}
-
+	for(auto& ball : mWorld->GetBalls())
+	{
+		DrawSkeleton(ball->GetSkeleton(),Eigen::Vector3d(0.2,0.8,0.2));
+	}
 	glutSwapBuffers();
 }
 void
@@ -96,6 +105,7 @@ Keyboard(unsigned char key,int x,int y)
 	switch(key)
 	{
 		case '`' : mIsRotate = !mIsRotate;break;
+		case 'w' : mRenderDetail = !mRenderDetail; break;
 		case '1' : act[0] += 0.1;break;
 		case '2' : act[1] += 0.1;break;
 		case '3' : act[2] += 0.1;break;

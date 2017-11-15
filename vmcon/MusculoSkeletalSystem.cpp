@@ -581,7 +581,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	MakeRootBody(skel,"Torso",
 		path_export+"Torso.obj",
 		T_torso,
-		Eigen::Vector3d(0.03,0.6,0.03),
+		Eigen::Vector3d(0.3,0.6,0.1),
 		Eigen::Vector3d(0,-0.3,0),
 		JOINT_TYPE::BALL_AND_SOCKET,10);
 

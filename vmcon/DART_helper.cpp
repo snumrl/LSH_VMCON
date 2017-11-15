@@ -171,3 +171,28 @@ MakeBody(
 
 	bn->setInertia(inertia);
 }
+void MakeBall(
+	const dart::dynamics::SkeletonPtr& skel,
+	const Eigen::Vector3d& init_pos,
+	double rad,
+	double mass)
+{
+	ShapePtr shape = std::shared_ptr<SphereShape>(new SphereShape(rad));
+    dart::dynamics::Inertia inertia;
+    inertia.setMass(mass);
+    inertia.setMoment(shape->computeInertia(mass));
+
+    FreeJoint::Properties prop;
+    prop.mT_ParentBodyToJoint.setIdentity();
+    prop.mT_ChildBodyToJoint.setIdentity();
+
+    BodyNodePtr bn = skel->createJointAndBodyNodePair<FreeJoint>(
+      nullptr,prop,BodyNode::AspectProperties("ball")).second;
+
+    auto sn = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
+    bn->setCollidable(false);
+    bn->setInertia(inertia);
+    auto pos =skel->getPositions();
+    pos.tail(3) = init_pos;
+    skel->setPositions(pos);
+}

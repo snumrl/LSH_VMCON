@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "Ball.h"
 #include "MusculoSkeletalSystem.h"
 #include "IKOptimization.h"
 #include "MuscleOptimization.h"
@@ -9,8 +10,8 @@ using namespace dart::simulation;
 using namespace Ipopt;
 
 Controller::
-Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
-	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system)
+Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
+	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
 	double k = 300;
@@ -45,13 +46,17 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mMuscleOptimizationSolver->Options()->SetIntegerValue("max_iter", 100);
 	mMuscleOptimizationSolver->Options()->SetNumericValue("tol", 1e-4);
 
-	
+	std::vector<int> V = {1};
+	mJuggling.GenerateStates(V);
+
+	MakeJugglingFSM(mFSM[0]);
+	MakeJugglingFSM(mFSM[1]);
 }
 std::shared_ptr<Controller>
 Controller::
-Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
 {
-	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system);
+	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	new_con->mKp = mKp;
 	new_con->mKv = mKv;
@@ -62,9 +67,9 @@ Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_wo
 }
 std::shared_ptr<Controller>
 Controller::
-Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
 {
-	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system);
+	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	return std::shared_ptr<Controller>(con);
 }
@@ -89,9 +94,9 @@ ComputeActivationLevels()
 	Eigen::VectorXd qdd = solution.head(skel->getNumDofs());
 	Eigen::VectorXd activation = solution.tail(mMusculoSkeletalSystem->GetNumMuscles());
 
-	std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
-	std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl;
-	std::cout<<"activation  :"<<activation.transpose()<<std::endl;
+	// std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
+	// std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl;
+	// std::cout<<"activation  :"<<activation.transpose()<<std::endl;
 	return activation;
 }
 
@@ -137,4 +142,56 @@ SolveIK()
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 
 	mTargetPositions = ik->GetSolution();
+}
+void
+Controller::
+MotionPlanning()
+{
+	std::cout<<"LEFT : "<<mFSM[0].GetName(mFSM[0].GetCurrentState())<<std::endl;
+	std::cout<<"RIGHT : "<<mFSM[1].GetName(mFSM[1].GetCurrentState())<<std::endl;
+
+	if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("THROW"))
+	{
+		
+	}
+	else if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("CATCH"))
+	{
+
+	}
+}
+bool
+Controller::
+CheckFSM()
+{
+	bool need_update = false;
+	int ji = mJuggling.mCurrent;
+	const auto& interest_ball = mBalls[mJuggling.mStateSequences[ji].ball];
+
+	int hand = mJuggling.mStateSequences[ji].hand;
+
+	if(interest_ball->IsAttached())
+	{
+		if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("STOP")){
+			need_update = true;
+			mFSM[hand].TriggerEvent("start");
+		}
+		else if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("CATCH"))
+		{
+			need_update = true;
+			mFSM[hand].TriggerEvent("swing");
+		}
+	}
+
+	return need_update;
+}
+void
+Controller::
+Step()
+{
+	//Check Condition & Change FSM if needed.
+	bool need_update = CheckFSM();
+	if(need_update)
+		MotionPlanning();
+
+	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

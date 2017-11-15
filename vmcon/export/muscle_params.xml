@@ -342,7 +342,7 @@
 	
 	
 	<unit name="R_Tricep_Lateral">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderR" x="-21.1179389954" y="140.631835938" z="-4.64039611816"/>
 			<anchor body="ShoulderR" x="-22.843328476" y="134.45350647" z="-5.44415807724"/>
@@ -366,7 +366,7 @@
 	</unit>
 
 	<unit name="R_Tricep_Long_1">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.3" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
 		<origin>
 			<anchor body="NeckR" x="-17.3159942627" y="141.196517944" z="-5.99028205872"/>
 			<anchor body="ShoulderR" x="-19.8823566437" y="138.592651367" z="-6.30519008636"/>
@@ -379,7 +379,7 @@
 	</unit>
 	
 	<unit name="R_Tricep_Medial_0">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderR" x="-20.7009963989" y="134.117919922" z="-4.68402194977"/>
 			<anchor body="ShoulderR" x="-19.4956188202" y="127.607902527" z="-4.91807508469"/>
@@ -391,7 +391,7 @@
 	</unit>
 
 	<unit name="R_Tricep_Medial_1">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderR" x="-21.1143856049" y="134.281082153" z="-4.96284294128"/>
 			<anchor body="ShoulderR" x="-22.5868587494" y="129.440002441" z="-6.16307878494"/>
@@ -1121,7 +1121,7 @@
 	
 	
 	<unit name="L_Tricep_Lateral">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderL" x="21.1179389954" y="140.631835938" z="-4.64039611816"/>
 			<anchor body="ShoulderL" x="22.843328476" y="134.45350647" z="-5.44415807724"/>
@@ -1145,7 +1145,7 @@
 	</unit>
 
 	<unit name="L_Tricep_Long_1">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.3" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
 		<origin>
 			<anchor body="NeckL" x="17.3159942627" y="141.196517944" z="-5.99028205872"/>
 			<anchor body="ShoulderL" x="19.8823566437" y="138.592651367" z="-6.30519008636"/>
@@ -1158,7 +1158,7 @@
 	</unit>
 	
 	<unit name="L_Tricep_Medial_0">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderL" x="20.7009963989" y="134.117919922" z="-4.68402194977"/>
 			<anchor body="ShoulderL" x="19.4956188202" y="127.607902527" z="-4.91807508469"/>
@@ -1170,7 +1170,7 @@
 	</unit>
 
 	<unit name="L_Tricep_Medial_1">
-		<mesh type="Rectangle" nx="1" ny="1" ratio="0.2" />
+		<mesh type="Rectangle" nx="1" ny="1" ratio="0.15" />
 		<origin>
 			<anchor body="ShoulderL" x="21.1143856049" y="134.281082153" z="-4.96284294128"/>
 			<anchor body="ShoulderL" x="22.5868587494" y="129.440002441" z="-6.16307878494"/>

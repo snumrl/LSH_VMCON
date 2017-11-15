@@ -2,12 +2,12 @@
 using namespace dart::dynamics;
 using namespace dart::simulation;
 
-static bool is_box = false;
 void
 GUI::
 DrawSkeleton(
 	const dart::dynamics::SkeletonPtr& skel,
-	const Eigen::Vector3d& color)
+	const Eigen::Vector3d& color,
+	bool box)
 {
 	for(int i=0;i<skel->getNumBodyNodes();i++)
 	{
@@ -15,12 +15,14 @@ DrawSkeleton(
 		auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
 
 		// for(int j=0;j<shapeNodes.size();j++){
-		int j = (is_box? 1:0);
-			auto T = shapeNodes[j]->getTransform();
-			DrawShape(T,shapeNodes[j]->getShape().get(),color);
+		int j = (box? 1:0);
+		if(shapeNodes.size() ==1)
+			j=0;
+		auto T = shapeNodes[j]->getTransform();
+		DrawShape(T,shapeNodes[j]->getShape().get(),color);
 		// }
 	}
-	is_box = !is_box;
+	// is_box = !is_box;
 }
 
 
