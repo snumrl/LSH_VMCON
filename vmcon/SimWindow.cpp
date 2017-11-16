@@ -68,23 +68,27 @@ Display()
 
 	
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
-	auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
 	
 	if(mRenderDetail)
 	{
 		DrawWorld(mWorld->GetSoftWorld());
-		auto save_pos = skel->getPositions();
-		skel->setPositions(mWorld->GetController()->mTargetPositions);
-		skel->computeForwardKinematics(true,false,false);
-		DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
-		skel->setPositions(save_pos);
-		skel->computeForwardKinematics(true,false,false);
+		
 		for(auto& mus: mWorld->GetMusculoSkeletalSystem()->GetMuscles()){
 			DrawMuscleWayPoints(mus->origin_way_points);
 			DrawMuscleWayPoints(mus->insertion_way_points);
 			// DrawArrow3D(GetPoint(mus->origin_way_points.back()),mus->origin_force.normalized(),mus->origin_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 			// DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 		}
+	}
+	else
+	{
+		auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
+	auto save_pos = skel->getPositions();
+	skel->setPositions(mWorld->GetController()->mTargetPositions);
+	skel->computeForwardKinematics(true,false,false);
+	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
+	skel->setPositions(save_pos);
+	skel->computeForwardKinematics(true,false,false);
 	}
 	for(auto& ball : mWorld->GetBalls())
 	{

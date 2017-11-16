@@ -3,6 +3,7 @@
 #include "MusculoSkeletalSystem.h"
 #include "IKOptimization.h"
 #include "MuscleOptimization.h"
+#include "BezierCurve.h"
 
 using namespace FEM;
 using namespace dart::dynamics;
@@ -51,6 +52,13 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 
 	MakeJugglingFSM(mFSM[0]);
 	MakeJugglingFSM(mFSM[1]);
+
+	Eigen::VectorXd init_pos = mMusculoSkeletalSystem->GetSkeleton()->getPositions();
+	Swing(0);
+	// mMotion.push_back(std::make_pair(0.0,init_pos*1.0));
+	// mMotion.push_back(std::make_pair(1.0,Eigen::VectorXd::Zero(init_pos.rows())));
+
+
 }
 std::shared_ptr<Controller>
 Controller::
@@ -133,7 +141,7 @@ AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 	ik->AddTargetPositions(ap,target);	
 }
-void
+Eigen::VectorXd
 Controller::
 SolveIK()
 {
@@ -141,23 +149,7 @@ SolveIK()
 
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 
-	mTargetPositions = ik->GetSolution();
-}
-void
-Controller::
-MotionPlanning()
-{
-	std::cout<<"LEFT : "<<mFSM[0].GetName(mFSM[0].GetCurrentState())<<std::endl;
-	std::cout<<"RIGHT : "<<mFSM[1].GetName(mFSM[1].GetCurrentState())<<std::endl;
-
-	if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("THROW"))
-	{
-		
-	}
-	else if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("CATCH"))
-	{
-
-	}
+	return ik->GetSolution();
 }
 bool
 Controller::
@@ -165,24 +157,88 @@ CheckFSM()
 {
 	bool need_update = false;
 	int ji = mJuggling.mCurrent;
-	const auto& interest_ball = mBalls[mJuggling.mStateSequences[ji].ball];
 
-	int hand = mJuggling.mStateSequences[ji].hand;
+	bool check_hand[2] = {false,false};
 
-	if(interest_ball->IsAttached())
-	{
-		if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("STOP")){
-			need_update = true;
-			mFSM[hand].TriggerEvent("start");
-		}
-		else if(mFSM[hand].GetCurrentState() == mFSM[hand].GetState("CATCH"))
+	for(int i = ji;i < mJuggling.mStateSequences.size();i++)
+	{		
+		int hand = mJuggling.mStateSequences[i].hand;
+		check_hand[hand] = true;
+
+		const auto& interest_ball = mBalls[mJuggling.mStateSequences[i].ball];
+
+		if(interest_ball->IsAttached())
 		{
-			need_update = true;
-			mFSM[hand].TriggerEvent("swing");
+
 		}
+
+
+
+
+
+		if(check_hand[0]&&check_hand[1])
+			break;
 	}
 
 	return need_update;
+}
+void
+Controller::
+UpdateTarget()
+{
+	double cur_time = mRigidWorld->getTime();
+	double dt = 0.01;
+	int looking,looking_next;
+	for(looking =0;looking<mMotion.size();looking++)
+	{
+		if(cur_time<mMotion[looking].first)
+			break;
+	}
+	looking--;
+
+	for(looking_next =0;looking_next<mMotion.size();looking_next++)
+	{
+		if(cur_time+dt<mMotion[looking_next].first)
+			break;
+	}
+
+	looking_next--;
+
+	double k = cur_time - mMotion[looking].first;
+	double dk = mMotion[looking+1].first - mMotion[looking].first;
+	k /= dk;
+
+	double k_next = cur_time+dt - mMotion[looking_next].first;
+	double dk_next =mMotion[looking_next+1].first - mMotion[looking_next].first;
+	k_next /= dk_next;
+
+	mTargetPositions = mMotion[looking].second *(1-k) + mMotion[looking+1].second *(k);
+	auto next_target_positions = mMotion[looking_next].second *(1-k_next) + mMotion[looking_next+1].second *(k_next);
+
+	mTargetVelocities = (next_target_positions - mTargetPositions)/dt;
+}
+void
+Controller::
+Swing(int hand)
+{
+	auto& skel = mMusculoSkeletalSystem->GetSkeleton();
+	auto ee = skel->getBodyNode(HAND_NAME[hand]);
+
+	AnchorPoint ap = std::make_pair(ee,Eigen::Vector3d(0,0,0));
+
+	BezierCurve bc(
+		Eigen::Vector3d(0.6,1.0,0.4),
+		Eigen::Vector3d(0.4,0.3,0.2),
+		Eigen::Vector3d(0.3,-0.2,0),
+		Eigen::Vector3d(0.1,0,0.2));
+
+	for(double t = 0.0;t<=1.0;t+=0.1)
+	{
+		Eigen::Vector3d target = bc.GetPoint(t);
+		AddIKTarget(ap,target);
+		Eigen::VectorXd pos = SolveIK();
+		mMotion.push_back(std::make_pair(t*0.5,pos));
+	}
 }
 void
 Controller::
@@ -190,8 +246,6 @@ Step()
 {
 	//Check Condition & Change FSM if needed.
 	bool need_update = CheckFSM();
-	if(need_update)
-		MotionPlanning();
-
+	UpdateTarget();
 	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

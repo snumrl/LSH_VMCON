@@ -31,14 +31,20 @@ void
 Ball::
 Release(const dart::simulation::WorldPtr& world)
 {
-	isAttached = false;
-	world->getConstraintSolver()->removeConstraint(mConstraint);
+	if(isAttached)
+	{
+		isAttached = false;
+		world->getConstraintSolver()->removeConstraint(mConstraint);
+	}
 }
 void
 Ball::
 Attach(const WorldPtr& world,BodyNode* bn)
 {
-	isAttached = true;
-	mConstraint = std::make_shared<WeldJointConstraint>(mSkeleton->getBodyNode(0),bn);
-	world->getConstraintSolver()->addConstraint(mConstraint);
+	if(!isAttached)
+	{
+		isAttached = true;
+		mConstraint = std::make_shared<WeldJointConstraint>(mSkeleton->getBodyNode(0),bn);
+		world->getConstraintSolver()->addConstraint(mConstraint);
+	}
 }

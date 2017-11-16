@@ -61,10 +61,8 @@ FSM()
 void
 MakeJugglingFSM(FSM& fsm)
 {
-	fsm.AddState("STOP");
-	fsm.AddState("THROW");
+	fsm.AddState("SWING");
 	fsm.AddState("CATCH");
-	fsm.AddEvent("start","STOP","THROW");
-	fsm.AddEvent("swing","CATCH","THROW");
-	fsm.AddEvent("catch_success","THROW","CATCH");
+	fsm.AddEvent("catch_success","CATCH","SWING");
+	fsm.AddEvent("swing_end","SWING","CATCH");
 }

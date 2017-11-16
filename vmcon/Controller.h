@@ -23,6 +23,7 @@ typedef std::vector<std::pair<double,Eigen::VectorXd>> Motion;
 class Controller
 {
 public:
+	const std::string HAND_NAME[2] = {"HandL","HandR"};
 	Controller(const Controller& other) = delete;
 	Controller& operator=(const Controller& other) = delete;
 	std::shared_ptr<Controller> Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls);
@@ -32,11 +33,13 @@ public:
 	Eigen::VectorXd ComputeActivationLevels();
 
 	void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
-	void SolveIK();
+	Eigen::VectorXd SolveIK();
 
 	void Step();
 	bool CheckFSM();
-	void MotionPlanning();
+
+	void UpdateTarget();
+	void Swing(int hand);
 public:
 	Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls);
 
@@ -59,9 +62,6 @@ public:
 	FSM 												mFSM[2];
 	Motion 												mMotion;
 };
-
-
-
 
 
 #endif

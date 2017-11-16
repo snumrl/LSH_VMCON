@@ -66,7 +66,7 @@ Initialize()
 	mSoftWorld = FEM::World::Create(
 		FEM::IntegrationMethod::PROJECTIVE_QUASI_STATIC,	//Integration Method
 		// FEM::IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
-		1.0/120.0,							//Time Step
+		1.0/100.0,							//Time Step
 		10,								//Max Iteration
 		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
