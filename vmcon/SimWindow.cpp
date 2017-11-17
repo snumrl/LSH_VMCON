@@ -2,7 +2,6 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "IKOptimization.h"
-#include "Ball.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -89,10 +88,6 @@ Display()
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
 	skel->setPositions(save_pos);
 	skel->computeForwardKinematics(true,false,false);
-	}
-	for(auto& ball : mWorld->GetBalls())
-	{
-		DrawSkeleton(ball->GetSkeleton(),Eigen::Vector3d(0.2,0.8,0.2));
 	}
 	glutSwapBuffers();
 }

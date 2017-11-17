@@ -2,7 +2,6 @@
 #include "DART_helper.h"
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
-#include "Ball.h"
 #include "Record.h"
 using namespace FEM;
 using namespace dart::dynamics;
@@ -81,16 +80,7 @@ Initialize()
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
 
-	for(int i=0;i<1;i++)
-	{
-		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
-		BodyNode* abn = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode((i%2==0?"HandL":"HandR"));
-		MakeBall(skel,abn->getCOM(),0.036,0.13);
-		mBalls.push_back(Ball::Create(skel));
-		mBalls.back()->Attach(mRigidWorld,abn);
-		mRigidWorld->addSkeleton(skel);
-	}
-	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
+	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
 }
 
 void
