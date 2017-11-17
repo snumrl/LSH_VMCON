@@ -89,6 +89,21 @@ Display()
 	skel->setPositions(save_pos);
 	skel->computeForwardKinematics(true,false,false);
 	}
+
+	Eigen::Vector3d clr[5] =
+	{
+		Eigen::Vector3d(0.8,0.2,0.2),
+		Eigen::Vector3d(0.2,0.8,0.2), 
+		Eigen::Vector3d(0.2,0.2,0.8),
+		Eigen::Vector3d(0.8,0.8,0.2),
+		Eigen::Vector3d(0.2,0.8,0.8)
+	};
+	int ball_index = 0;
+
+	for(auto& ball : mWorld->GetBalls())
+	{
+		DrawSkeleton(ball->skeleton,clr[ball_index++]);
+	}
 	glutSwapBuffers();
 }
 void

@@ -195,4 +195,6 @@ void MakeBall(
     auto pos =skel->getPositions();
     pos.tail(3) = init_pos;
     skel->setPositions(pos);
+    for(int i=0;i<skel->getNumBodyNodes();i++)
+		skel->getBodyNode(i)->setCollidable(false);
 }

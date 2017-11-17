@@ -72,6 +72,7 @@ Initialize()
 		);
 	mRigidWorld = std::make_shared<dart::simulation::World>();
 	mRigidWorld->setGravity(Eigen::Vector3d(0,-9.81,0));
+	mRigidWorld->checkCollision();
 	// mRigidWorld->setGravity(Eigen::Vector3d(0,0,0));
 	mMusculoSkeletalSystem = MusculoSkeletalSystem::Create();
 	MakeSkeleton(mMusculoSkeletalSystem);
@@ -80,7 +81,46 @@ Initialize()
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
 
-	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
+	for(int i =0;i<3;i++)
+	{
+		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
+
+		bool is_left_hand = i%2;
+		if(is_left_hand)
+		{
+			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			MakeBall(skel,abn->getCOM(),0.036,0.13);
+
+			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
+			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
+			mRigidWorld->addSkeleton(skel);
+			mBalls.back()->Attach(mRigidWorld,abn);
+		}
+		else
+		{
+			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			MakeBall(skel,abn->getCOM(),0.036,0.13);
+
+			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
+			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
+			mRigidWorld->addSkeleton(skel);
+			mBalls.back()->Attach(mRigidWorld,abn);	
+		}
+	
+	}
+
+	// for(int i=0;i<1;i++)
+	// {
+		
+	// 	BodyNode* abn = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode((i%2==0?"HandL":"HandR"));
+	// 	MakeBall(skel,abn->getCOM(),0.036,0.13);
+	// 	mBalls.push_back(std::make_shared<Ball>(skel));
+	// 	mBalls.back()->Attach(mRigidWorld,abn);
+	// 	mRigidWorld->addSkeleton(skel);
+	// }
+	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
 }
 
 void

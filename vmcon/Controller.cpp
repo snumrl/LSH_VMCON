@@ -9,8 +9,8 @@ using namespace dart::simulation;
 using namespace Ipopt;
 
 Controller::
-Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
-	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system)
+Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
+	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
 	double k = 300;
@@ -48,9 +48,9 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 }
 std::shared_ptr<Controller>
 Controller::
-Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
 {
-	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system);
+	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	new_con->mKp = mKp;
 	new_con->mKv = mKv;
@@ -61,9 +61,9 @@ Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_wo
 }
 std::shared_ptr<Controller>
 Controller::
-Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::vector<std::shared_ptr<Ball>>& balls)
 {
-	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system);
+	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	return std::shared_ptr<Controller>(con);
 }

@@ -9,7 +9,7 @@
 
 #include <IpTNLP.hpp>
 #include <IpIpoptApplication.hpp>	
-
+#include "Ball.h"
 struct Muscle;
 class MusculoSkeletalSystem;
 class MuscleOptimization;
@@ -20,8 +20,16 @@ class Controller
 public:
 	Controller(const Controller& other) = delete;
 	Controller& operator=(const Controller& other) = delete;
-	std::shared_ptr<Controller> Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
-	static std::shared_ptr<Controller> Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
+	std::shared_ptr<Controller> Clone(
+		const FEM::WorldPtr& soft_world,
+		const dart::simulation::WorldPtr& rigid_world,
+		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+		const std::vector<std::shared_ptr<Ball>>& balls);
+	static std::shared_ptr<Controller> Create(
+		const FEM::WorldPtr& soft_world,
+		const dart::simulation::WorldPtr& rigid_world,
+		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+		const std::vector<std::shared_ptr<Ball>>& balls);
 
 	Eigen::VectorXd ComputePDForces();
 	Eigen::VectorXd ComputeActivationLevels();
@@ -31,7 +39,11 @@ public:
 
 	void Step();
 public:
-	Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
+	Controller(
+		const FEM::WorldPtr& soft_world,
+		const dart::simulation::WorldPtr& rigid_world,
+		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+		const std::vector<std::shared_ptr<Ball>>& balls);
 
 	Eigen::VectorXd 									mKp,mKv;
 	Eigen::VectorXd										mTargetPositions;
@@ -40,6 +52,7 @@ public:
 	FEM::WorldPtr 										mSoftWorld;
 	dart::simulation::WorldPtr 							mRigidWorld;
 	std::shared_ptr<MusculoSkeletalSystem> 				mMusculoSkeletalSystem;
+	std::vector<std::shared_ptr<Ball>>					mBalls;
 
 	Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
