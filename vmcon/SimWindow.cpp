@@ -2,6 +2,7 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "IKOptimization.h"
+#include "FSM.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -11,7 +12,7 @@ using namespace dart::dynamics;
 SimWindow::
 SimWindow()
 	:GLUTWindow(),mIsRotate(true),
-	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false)
+	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false),mRenderIK(true)
 {
 	dart::math::seedRand();
 
@@ -79,15 +80,15 @@ Display()
 			// DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 		}
 	}
-	else
+	if(mRenderIK)
 	{
 		auto& skel = mWorld->GetMusculoSkeletalSystem()->GetSkeleton();
-	auto save_pos = skel->getPositions();
-	skel->setPositions(mWorld->GetController()->mTargetPositions);
-	skel->computeForwardKinematics(true,false,false);
-	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
-	skel->setPositions(save_pos);
-	skel->computeForwardKinematics(true,false,false);
+		auto save_pos = skel->getPositions();
+		skel->setPositions(mWorld->GetController()->GetTargetPositions());
+		skel->computeForwardKinematics(true,false,false);
+		DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
+		skel->setPositions(save_pos);
+		skel->computeForwardKinematics(true,false,false);
 	}
 
 	Eigen::Vector3d clr[5] =
@@ -104,6 +105,22 @@ Display()
 	{
 		DrawSkeleton(ball->skeleton,clr[ball_index++]);
 	}
+
+
+	auto& fsm = mWorld->GetController()->GetFSM();
+	auto& states = fsm->GetStates();
+	for(auto& state_pair : states)
+    {
+        State* state = state_pair.second;
+        IKState* ik_state = dynamic_cast<IKState*>(state);
+        BezierCurveState* bc_state = dynamic_cast<BezierCurveState*>(state);
+        if(bc_state != nullptr)
+        {
+            const BezierCurve& bc = bc_state->GetCurve();
+            GUI::DrawBezierCurve(bc.mp0,bc.mp1,bc.mp2,Eigen::Vector3d(0,0,0));
+        }
+
+    }
 	glutSwapBuffers();
 }
 void
@@ -120,6 +137,7 @@ Keyboard(unsigned char key,int x,int y)
 	{
 		case '`' : mIsRotate = !mIsRotate;break;
 		case 'w' : mRenderDetail = !mRenderDetail; break;
+		case 'e' : mRenderIK = !mRenderIK; break;
 		case '1' : act[0] += 0.1;break;
 		case '2' : act[1] += 0.1;break;
 		case '3' : act[2] += 0.1;break;
@@ -145,8 +163,8 @@ Keyboard(unsigned char key,int x,int y)
 		case '[' : mRecordFrame--; break;
 		case ']' : mRecordFrame++; break;
 		case 'i' : 
-			mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
-			mWorld->GetController()->SolveIK();
+			// mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
+			// mWorld->GetController()->SolveIK();
 		break;
 		case 27: exit(0);break;
 		default : break;

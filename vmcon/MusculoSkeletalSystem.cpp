@@ -581,7 +581,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	MakeRootBody(skel,"Torso",
 		path_export+"Torso.obj",
 		T_torso,
-		Eigen::Vector3d(0.3,0.6,0.1),
+		Eigen::Vector3d(0.03,0.6,0.03),
 		Eigen::Vector3d(0,-0.3,0),
 		JOINT_TYPE::BALL_AND_SOCKET,10);
 
@@ -721,9 +721,9 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 
 	//Root joint
 
-	skel->getDof(3*0+0)->setPositionLimits(-0.2,0.2);
-	skel->getDof(3*0+1)->setPositionLimits(-0.2,0.2);
-	skel->getDof(3*0+2)->setPositionLimits(-0.2,0.2);
+	skel->getDof(3*0+0)->setPositionLimits(-0.0,0.0);
+	skel->getDof(3*0+1)->setPositionLimits(-0.1,0.1);
+	skel->getDof(3*0+2)->setPositionLimits(-0.1,0.1);
 
 	// //Revolute Joint
 	skel->getDof(3*1+0)->setPositionLimits(-0.3,0.2);

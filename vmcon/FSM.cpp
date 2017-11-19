@@ -163,7 +163,7 @@ GenerateMotions(const BezierCurve& bc,std::vector<std::pair<Eigen::VectorXd,doub
 	Eigen::VectorXd save_positions = ik->GetSolution();
 
 	auto save_target = ik->GetTargets();
-	for(int i =0;i<mNumCurveSample+4;i++)
+	for(int i =0;i<mNumCurveSample+1;i++)
 	{
 		double tt = ((double)i)/((double)mNumCurveSample) * mD*mT;
 		
@@ -202,6 +202,7 @@ void
 BezierCurveState::
 Initialize(int ball_index,int V)
 {
+	mTimeElapsed = 0;
 	mBallIndex = ball_index;
 	mV = V;
 	double t = ((double)mV-2*mD+0.3)*mT;
@@ -212,28 +213,38 @@ Initialize(int ball_index,int V)
 	p2.setZero();
 	v2.setZero();
 
-	p0 = mBalls[mBallIndex]->GetPosition();
 	
 	bool isleft = false;
 	if(mAnchorPoint.first->getName().find("L")!=std::string::npos)
 		isleft = true;
 
-	if(isleft)
-		p2[0] = 0.3;
-	else
-		p2[0] = -0.3;
-	p2[1] = 0.2;
+	p0 = mBalls[mBallIndex]->GetPosition();
+	
+	if(isleft){
+		p0[0] +=0.1;
+		p2[0] = p0[0]-0.15;
+	}
+	else{
+		p0[0] -=0.1;
+		p2[0] = p0[0]+0.15;
+	}
+	p2[1] = 0.1;
+	p2[2] = p0[2];
 
-	v2[0] = -2.0*p2[0]/t;
+	
+
+	v2[0] = -2.0*p0[0]/t;
 	// v2[0] = 0;
 	v2[1] = 0.5*9.81*t;
+	v2[2] = -(p0[2]-0.3)/t;
+	
+	// p0[2] = 0.3;
+	p1 = p2 - 0.5*mD*mT*v2;
 
-	p0[1] = 0.2;
-	//Free parameter Optimization
-	p0[0] = p2[0] - mD*mT*v2[0];
-	p1[0] = p2[0] - 0.5*mD*mT*v2[0];
-	p1[1] = p2[1] - 0.5*mD*mT*v2[1];
-
+	std::cout<<"p0 : "<<p0.transpose()<<std::endl;
+	std::cout<<"p1 : "<<p1.transpose()<<std::endl;
+	std::cout<<"p2 : "<<p2.transpose()<<std::endl;
+	std::cout<<"v2 : "<<v2.transpose()<<std::endl;
 
 	mCurve.Initialize(p0,p1,p2,mD*mT);
 	GenerateMotions(mCurve,mMotions);

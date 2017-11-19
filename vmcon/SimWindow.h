@@ -21,6 +21,7 @@ public:
 	bool TimeStepping();
 	bool mIsRotate;
 	bool mRenderDetail;
+	bool mRenderIK;
 protected:
 	void Display() override;
 	void Keyboard(unsigned char key,int x,int y) override;

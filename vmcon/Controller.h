@@ -11,6 +11,7 @@
 #include <IpIpoptApplication.hpp>	
 #include "Ball.h"
 struct Muscle;
+class Machine;
 class MusculoSkeletalSystem;
 class MuscleOptimization;
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;
@@ -34,11 +35,15 @@ public:
 	Eigen::VectorXd ComputePDForces();
 	Eigen::VectorXd ComputeActivationLevels();
 
-	void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
-	Eigen::VectorXd SolveIK();
+	// void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
+	// Eigen::VectorXd SolveIK();
 
 	void Step();
-public:
+	const std::shared_ptr<Machine>& GetFSM() {return mFSM;}
+	const Eigen::VectorXd& GetTargetPositions() {return mTargetPositions;}
+
+	Eigen::VectorXd mPDForces;
+private:
 	Controller(
 		const FEM::WorldPtr& soft_world,
 		const dart::simulation::WorldPtr& rigid_world,
@@ -54,11 +59,13 @@ public:
 	std::shared_ptr<MusculoSkeletalSystem> 				mMusculoSkeletalSystem;
 	std::vector<std::shared_ptr<Ball>>					mBalls;
 
-	Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
-	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
+	// Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
+	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
 
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 			mMuscleOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mMuscleOptimizationSolver;
+
+	std::shared_ptr<Machine>							mFSM;
 };
 
 

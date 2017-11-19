@@ -204,7 +204,27 @@ void recursiveRender(const struct aiScene *sc, const struct aiNode* nd) {
     glPopMatrix();
 }
 
+void
+GUI::
+DrawBezierCurve(
+    const Eigen::Vector3d& p0,
+    const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& p2,
+    const Eigen::Vector3d& color)
+{
+    glColor3f(color[0],color[1],color[2]);
+    glBegin(GL_LINE_STRIP);
+    for(double s = 0;s<=1.0;s+=0.05)
+    {
+        Eigen::Vector3d p = 
+            p0*(1-s)*(1-s)+
+            p1*2*s*(1-s)+
+            p2*s*s;
 
+        glVertex3f(p[0],p[1],p[2]);
+    }
+    glEnd();
+}
 
 void
 GUI::

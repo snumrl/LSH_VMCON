@@ -27,7 +27,7 @@ public:
 			mp1*2*s*(1-s)+
 			mp2*s*s;
 	}
-private:
+public:
 	Eigen::Vector3d mp0,mp1,mp2;
 	double mInvT;
 

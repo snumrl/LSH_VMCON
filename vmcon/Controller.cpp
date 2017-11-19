@@ -2,7 +2,7 @@
 #include "MusculoSkeletalSystem.h"
 #include "IKOptimization.h"
 #include "MuscleOptimization.h"
-
+#include "FSM.h"
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -13,26 +13,26 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 300;
+	double k = 4000;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
 
 	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
+	mPDForces = Eigen::VectorXd::Constant(dof,0.0);
+	// mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
-	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
+	// mIKSolver = new IpoptApplication();
+	// mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	// mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
+	// mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
+	// mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	// mIKSolver->Options()->SetIntegerValue("print_level", 2);
+	// mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
+	// mIKSolver->Options()->SetNumericValue("tol", 1e-3);
 
-	mIKSolver = new IpoptApplication();
-	mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
-	mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
-	mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
-	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
-	mIKSolver->Options()->SetIntegerValue("print_level", 2);
-	mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
-	mIKSolver->Options()->SetNumericValue("tol", 1e-3);
-
-	mIKSolver->Initialize();
+	// mIKSolver->Initialize();
 
 	mMuscleOptimization = new MuscleOptimization(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
 	mMuscleOptimizationSolver = new IpoptApplication();
@@ -45,6 +45,9 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mMuscleOptimizationSolver->Options()->SetIntegerValue("max_iter", 100);
 	mMuscleOptimizationSolver->Options()->SetNumericValue("tol", 1e-4);
 
+	mFSM = std::make_shared<Machine>(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mBalls,std::shared_ptr<Controller>(this),mSoftWorld->GetTimeStep());
+	MakeMachine("../vmcon/export/juggling.xml",mFSM);
+	mFSM->Trigger("start");
 }
 std::shared_ptr<Controller>
 Controller::
@@ -100,6 +103,8 @@ ComputePDForces()
 {
 	auto& skel =mMusculoSkeletalSystem->GetSkeleton();
 
+	mFSM->GetMotion(mTargetPositions,mTargetVelocities);
+
 	Eigen::VectorXd pos_m = mTargetPositions;
 	Eigen::VectorXd vel_m = mTargetVelocities;
 
@@ -120,28 +125,30 @@ ComputePDForces()
 	return qdd_desired;
 }
 
-void
-Controller::
-AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
-{
-	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-	ik->AddTargetPositions(ap,target);	
-}
-Eigen::VectorXd
-Controller::
-SolveIK()
-{
-	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+// void
+// Controller::
+// AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
+// {
+// 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+// 	ik->AddTargetPositions(ap,target);	
+// }
+// Eigen::VectorXd
+// Controller::
+// SolveIK()
+// {
+// 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 
-	mIKSolver->OptimizeTNLP(mIKOptimization);
+// 	mIKSolver->OptimizeTNLP(mIKOptimization);
 
-	return ik->GetSolution();
-}
+// 	return ik->GetSolution();
+// }
 
 void
 Controller::
 Step()
 {
-	//Check Condition & Change FSM if needed.
+	// mPDForces = ComputePDForces();
+	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

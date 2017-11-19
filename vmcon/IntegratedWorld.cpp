@@ -22,6 +22,9 @@ TimeStepping()
 		need_fem_update = true;
 		mController->Step();
 	}
+	// auto pd_forces = mController->ComputePDForces();
+	// auto pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 	if(need_fem_update)
 	{
@@ -65,7 +68,7 @@ Initialize()
 	mSoftWorld = FEM::World::Create(
 		FEM::IntegrationMethod::PROJECTIVE_QUASI_STATIC,	//Integration Method
 		// FEM::IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
-		1.0/100.0,							//Time Step
+		1.0/200.0,							//Time Step
 		10,								//Max Iteration
 		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
