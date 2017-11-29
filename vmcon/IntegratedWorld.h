@@ -28,7 +28,8 @@ public:
 	const std::shared_ptr<MusculoSkeletalSystem>& GetMusculoSkeletalSystem(){return mMusculoSkeletalSystem;};
 	const std::shared_ptr<Controller>& GetController(){return mController;};
 	const std::vector<std::shared_ptr<Record>>& GetRecords(){return mRecords;};
-	void SetRecord(int& frame);
+	void SetRecord(int
+		& frame);
 private:
 	IntegratedWorld();
 
