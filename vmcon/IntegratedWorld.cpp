@@ -1,5 +1,6 @@
 #include "IntegratedWorld.h"
 #include "DART_helper.h"
+#include "Ball.h"
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "Record.h"
@@ -27,6 +28,14 @@ TimeStepping()
 	{
 		mMusculoSkeletalSystem->TransformAttachmentPoints();
 		mSoftWorld->TimeStepping();
+	}
+
+	auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+	Eigen::Vector3d x_a = abn->getCOM();
+	Eigen::Vector3d x = mBalls->GetPosition();
+	if((x-x_a).norm()<1E-2)
+	{
+		mBalls->Attach(mRigidWorld,abn);
 	}
 
 	mRigidWorld->step();
@@ -80,7 +89,18 @@ Initialize()
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
 
-	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
+	SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(0));
+
+	auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+	Eigen::Vector3d loc = abn->getTransform().translation();
+	loc[1] += 1.0;
+	MakeBall(skel,loc,0.036,0.13);
+
+	mBalls = std::make_shared<Ball>(nullptr,skel);
+	mRigidWorld->addSkeleton(skel);
+	
+
+	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
 }
 
 void

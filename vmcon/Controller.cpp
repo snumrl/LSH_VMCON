@@ -2,15 +2,15 @@
 #include "MusculoSkeletalSystem.h"
 #include "IKOptimization.h"
 #include "MuscleOptimization.h"
-
+#include "Ball.h"
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace Ipopt;
 
 Controller::
-Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
-	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system)
+Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::shared_ptr<Ball>& balls)
+	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
 	double k = 300;
@@ -18,7 +18,8 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
 
-	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
+	// mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
+	mTargetPositions = mMusculoSkeletalSystem->GetSkeleton()->getPositions();
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
 
 	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
@@ -48,9 +49,9 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 }
 std::shared_ptr<Controller>
 Controller::
-Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::shared_ptr<Ball>& balls)
 {
-	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system);
+	auto new_con = Create(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	new_con->mKp = mKp;
 	new_con->mKv = mKv;
@@ -61,9 +62,9 @@ Clone(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_wo
 }
 std::shared_ptr<Controller>
 Controller::
-Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system)
+Create(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rigid_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,const std::shared_ptr<Ball>& balls)
 {
-	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system);
+	auto con = new Controller(soft_world,rigid_world,musculo_skeletal_system,balls);
 
 	return std::shared_ptr<Controller>(con);
 }
@@ -106,9 +107,6 @@ ComputePDForces()
 	Eigen::VectorXd pos = skel->getPositions();
 	Eigen::VectorXd vel = skel->getVelocities();
 
-	// for(int i = 0;i<pos.rows();i++)
-	// 	pos[i] = dart::math::wrapToPi(pos[i]);
-	// skel->setPositions(pos);
 	Eigen::VectorXd pos_diff(pos.rows());
 
 	pos_diff = skel->getPositionDifferences(pos_m,pos);
@@ -135,6 +133,7 @@ SolveIK()
 
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 
+	mTargetPositions = ik->GetSolution();
 	return ik->GetSolution();
 }
 
