@@ -51,7 +51,7 @@ public:
 	double												mTimeElapsed;
 
 public:
-	State(		const dart::simulation::WorldPtr& rigid_world,
+	State(	const dart::simulation::WorldPtr& rigid_world,
 				const FEM::WorldPtr& soft_world,
 				const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
 				const std::shared_ptr<Controller>& controller,
