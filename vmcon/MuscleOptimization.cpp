@@ -81,12 +81,12 @@ void
 MuscleOptimization::
 UpdateConstraints(const Eigen::VectorXd& act)
 {
-	return;
+	// return;
 	//std::cout<<"UpdateConstraints"<<std::endl;
 	auto prev_act = mMusculoSkeletalSystem->GetActivationLevels();
 	int num_muscles =  mMusculoSkeletalSystem->GetNumMuscles();
 	int dofs 		=  mMusculoSkeletalSystem->GetSkeleton()->getNumDofs(); 
-	if(mSparseUpdateCount%3==0)
+	if(mSparseUpdateCount%20==0)
 		if( (act-prev_act).norm()>1E-5 || mSparseUpdateCount ==0)
 		{
 			mMusculoSkeletalSystem->SetActivationLevels(act);
