@@ -149,7 +149,6 @@ TimeStepping(bool integrate)
 		x_next = IntegrateNewtonMethod();
 		break;
 	case QUASI_STATIC:
-	
 		x_next = IntegrateQuasiStatic();
 		break;
 	case PROJECTIVE_DYNAMICS:
@@ -158,7 +157,7 @@ TimeStepping(bool integrate)
 		break;
 	case PROJECTIVE_QUASI_STATIC:
 		x_next = IntegrateProjectiveQuasiStatic();
-	break;
+		break;
 	default:
 	return;
 	};
@@ -232,7 +231,15 @@ void
 World::
 Computedxda(Eigen::VectorXd& dx_da,const Eigen::VectorXd& dg_da)
 {
-	dx_da = -mSolver.solve(dg_da);
+	if(mIntegrationMethod==PROJECTIVE_QUASI_STATIC)
+		dx_da = -mSolver.solve(dg_da);
+	else
+	{
+		Eigen::SparseMatrix<double> H(mNumVertices*3,mNumVertices*3);
+		EvaluateConstraintsHessian(mPositions,H);
+		FactorizeLDLT(H,mSolver);
+		dx_da = -mSolver.solve(dg_da);
+	}
 }
 Eigen::VectorXd
 World::
@@ -464,8 +471,8 @@ World::
 ComputeStepSize(const Eigen::VectorXd& x, const Eigen::VectorXd& g,const Eigen::VectorXd& d)
 {
 	double alpha = 1.0;
-	double c1 = 0.03;
-	double c2 = 0.5;
+	double c1 = 0.00;
+	double c2 = 0.1;
 	double f_x,f_x_next;
 	Eigen::VectorXd x_next;
 

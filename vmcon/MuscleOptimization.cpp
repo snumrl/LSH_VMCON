@@ -81,6 +81,7 @@ void
 MuscleOptimization::
 UpdateConstraints(const Eigen::VectorXd& act)
 {
+	return;
 	//std::cout<<"UpdateConstraints"<<std::endl;
 	auto prev_act = mMusculoSkeletalSystem->GetActivationLevels();
 	int num_muscles =  mMusculoSkeletalSystem->GetNumMuscles();

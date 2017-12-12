@@ -2,7 +2,6 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "IKOptimization.h"
-#include "FSM.h"
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -106,21 +105,6 @@ Display()
 		DrawSkeleton(ball->skeleton,clr[ball_index++]);
 	}
 
-
-	auto& fsm = mWorld->GetController()->GetFSM();
-	auto& states = fsm->GetStates();
-	for(auto& state_pair : states)
-    {
-        State* state = state_pair.second;
-        IKState* ik_state = dynamic_cast<IKState*>(state);
-        BezierCurveState* bc_state = dynamic_cast<BezierCurveState*>(state);
-        if(bc_state != nullptr)
-        {
-            const BezierCurve& bc = bc_state->GetCurve();
-            GUI::DrawBezierCurve(bc.mp0,bc.mp1,bc.mp2,Eigen::Vector3d(0,0,0));
-        }
-
-    }
 	glutSwapBuffers();
 }
 void

@@ -11,7 +11,6 @@
 #include <IpIpoptApplication.hpp>	
 #include "Ball.h"
 struct Muscle;
-class Machine;
 class MusculoSkeletalSystem;
 class MuscleOptimization;
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;
@@ -39,7 +38,6 @@ public:
 	// Eigen::VectorXd SolveIK();
 
 	void Step();
-	const std::shared_ptr<Machine>& GetFSM() {return mFSM;}
 	const Eigen::VectorXd& GetTargetPositions() {return mTargetPositions;}
 
 	Eigen::VectorXd mPDForces;
@@ -65,7 +63,6 @@ private:
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 			mMuscleOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mMuscleOptimizationSolver;
 
-	std::shared_ptr<Machine>							mFSM;
 };
 
 
