@@ -30,6 +30,7 @@ public:
 	std::vector<Eigen::VectorXd> rigid_body_positions;
 	std::vector<Eigen::VectorXd> rigid_body_velocities;
 	Eigen::VectorXd soft_body_positions;
+	Eigen::VectorXd target_positions;
 	Eigen::VectorXd activation_levels;
 	std::vector<std::pair<Eigen::Vector3d,Eigen::Vector3d>> muscle_forces;
 private:

@@ -275,10 +275,13 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	t/= dt;
 	p = (1.0-t)*(mMotions[k].first) + (t)*(mMotions[k1].first);
 
-	double t1 = t+0.01;
-	auto pdp =(1.0-t)*(mMotions[k].first) + (t)*(mMotions[k1].first);
+	std::cout<<t<<std::endl;
+	double t1 = t+0.001;
+	std::cout<<t1<<std::endl;
+	auto pdp =(1.0-t1)*(mMotions[k].first) + (t1)*(mMotions[k1].first);
 
-	v = (pdp-p)/0.01;
+	v = (pdp-p)/0.001;
+	std::cout<<v.transpose()<<std::endl;
 	mCount++;
 	return std::string("no_event");
 }

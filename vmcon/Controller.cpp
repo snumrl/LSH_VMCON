@@ -13,11 +13,14 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 4000;
+	double k = 1000;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
-
+	mKp[dof-2] = 2.0*mKp[dof-2];
+	mKp[dof-1] = 2.0*mKp[dof-1];
+	mKv[dof-2] = sqrt(2.0)*mKv[dof-1];
+	mKv[dof-1] = sqrt(2.0)*mKv[dof-1];
 	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
 	mPDForces = Eigen::VectorXd::Constant(dof,0.0);
@@ -109,17 +112,20 @@ ComputePDForces()
 	Eigen::VectorXd pos = skel->getPositions();
 	Eigen::VectorXd vel = skel->getVelocities();
 
-	// for(int i = 0;i<pos.rows();i++)
-	// 	pos[i] = dart::math::wrapToPi(pos[i]);
-	// skel->setPositions(pos);
 	Eigen::VectorXd pos_diff(pos.rows());
 
 	pos_diff = skel->getPositionDifferences(pos_m,pos);
-
+	for(int i = 0;i<pos_diff.rows();i++)
+			pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 
 	Eigen::VectorXd qdd_desired = 
-				pos_diff.cwiseProduct(mKp)+
-				(vel_m - vel).cwiseProduct(mKv);
+				pos_diff.cwiseProduct(mKp)+(vel_m - vel).cwiseProduct(mKv);
+
+	// std::cout<<pos_diff.transpose()<<std::endl;
+	// std::cout<<(vel_m - vel).transpose()<<std::endl;
+	// std::cout<<pos_diff.cwiseProduct(mKp).transpose()<<std::endl;
+	// std::cout<<(vel_m - vel).cwiseProduct(mKv).transpose()<<std::endl;
+	// std::cout<<std::endl;
 	return qdd_desired;
 }
 
@@ -145,9 +151,18 @@ void
 Controller::
 Step()
 {
-	// mPDForces = ComputePDForces();
+	
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+	
+	mPDForces = ComputePDForces();
+
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
+	// std::cout<<mTargetPositions.transpose()<<std::endl;
+	// std::cout<<mTargetVelocities.transpose()<<std::endl;
+	// std::cout<<mPDForces.transpose()<<std::endl;
+	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	// mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

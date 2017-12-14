@@ -4,31 +4,10 @@
 #include <fstream>
 using namespace Ipopt;
 iLQR::
-iLQR(int sx,int su,int n,int max_iteration)
-	:mSx(sx),mSu(su),mN(n),mMaxIteration(max_iteration),
+iLQR(int sx,int su,int max_iteration)
+	:mSx(sx),mSu(su),mN(0),mMaxIteration(max_iteration),
 	mMu(1.0),mMu_min(1E-6),mMu_max(1E10),mLambda(1.0),mLambda_0(2.0),mAlpha(1.0)
 {
-	mx.resize(mN,Eigen::VectorXd::Zero(mSx));
-	mu.resize(mN-1,Eigen::VectorXd::Zero(mSu));
-
-	mu_lower = Eigen::VectorXd::Zero(mSu);
-	mu_upper = Eigen::VectorXd::Zero(mSu);
-	
-	mCx.resize(mN-1,Eigen::VectorXd::Zero(mSx));	
-	mCu.resize(mN-1,Eigen::VectorXd::Zero(mSu));	
-	mCxx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
-	mCxu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
-	mCuu.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSu));
-
-	mfx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
-	mfu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
-
-	mK.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSx));
-	mk.resize(mN-1,Eigen::VectorXd::Zero(mSu));
-
-	mVx.resize(mN,Eigen::VectorXd::Zero(mSx));
-	mVxx.resize(mN,Eigen::MatrixXd::Zero(mSx,mSx));
-
 	mQPSolver = new IpoptApplication();
 	
 	mQPSolver->Options()->SetStringValue("mu_strategy", "adaptive");
@@ -43,8 +22,32 @@ iLQR(int sx,int su,int n,int max_iteration)
 }
 void
 iLQR::
-Init(const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,const Eigen::VectorXd& u_lower,const Eigen::VectorXd& u_upper)
+Init(int n,const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,const Eigen::VectorXd& u_lower,const Eigen::VectorXd& u_upper)
 {
+	mMu = 1.0;
+	mLambda = 1.0;
+	mN = n;
+	mx.resize(mN,Eigen::VectorXd::Zero(mSx));
+	mu.resize(mN-1,Eigen::VectorXd::Zero(mSu));
+
+	mu_lower = Eigen::VectorXd::Zero(mSu);
+	mu_upper = Eigen::VectorXd::Zero(mSu);
+	
+	mCx.resize(mN-1,Eigen::VectorXd::Zero(mSx));	
+	mCu.resize(mN-1,Eigen::VectorXd::Zero(mSu));	
+	mCxx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
+	mCxu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
+	mCuu.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSu));
+
+	mfx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
+	mfu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
+ 
+	mK.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSx));
+	mk.resize(mN-1,Eigen::VectorXd::Zero(mSu));
+
+	mVx.resize(mN,Eigen::VectorXd::Zero(mSx));
+	mVxx.resize(mN,Eigen::MatrixXd::Zero(mSx,mSx));
+
 	mx[0] = x0;
 	mu = u0;
 	mu_lower = u_lower;
@@ -68,8 +71,11 @@ ComputeDerivative()
 	mCost = 0;
 	double c,cf;
 	
+	
+
 	for(int t =0;t<mN-1;t++)
 	{
+		Evalf(mx[t],mu[t],t,mx[t+1]);
 		Evalfx(mx[t],mu[t],t,mfx[t]);
 		Evalfu(mx[t],mu[t],t,mfu[t]);
 
@@ -81,7 +87,7 @@ ComputeDerivative()
 		EvalCxu(mx[t],mu[t],t, mCxu[t]);
 		EvalCuu(mx[t],mu[t],t, mCuu[t]);
 		// std::cout<<mfx[t]<<std::endl;
-		// std::cout<<mfu[t]<<std::endl;
+		// std::cout<<mfu[t]<<std::endl<<std::endl;
 		// std::cout<<mCu[t]<<std::endl;
 		// std::cout<<mCuu[t]<<std::endl;
 		// exit(0);
@@ -180,6 +186,7 @@ BackwardPass()
 		// mk[t] = static_cast<BoxQP*>(GetRawPtr(QP))->GetSolution();
 		mK[t] = -Quu_inv*Qux;
 		
+		// std::cout<<mCu[t].transpose()<<std::endl;
 		
 		mdV[0] += mk[t].transpose()*Qu;
 		mdV[1] += 0.5*mk[t].transpose()*Quu*mk[t];
@@ -193,31 +200,26 @@ BackwardPass()
 
 	return true;
 }
+extern bool is_ioing;
+
 double
 iLQR::
 ForwardPass()
 {
-	std::vector<Eigen::VectorXd> x_new;
-	std::vector<Eigen::VectorXd> u_new;
-
-	x_new.resize(mN,Eigen::VectorXd::Zero(mSx));
-	u_new.resize(mN-1,Eigen::VectorXd::Zero(mSu));
-	x_new[0] = mx[0];
-
+	Eigen::VectorXd temp_x = mx[0];
 	for(int t = 0;t<mN-1;t++)
 	{
-		u_new[t] = mu[t] + mAlpha*mk[t] + mK[t]*(x_new[t]-mx[t]);
+		mu[t] = mu[t] + mAlpha*mk[t] + mK[t]*(mx[t]-temp_x);
 		// std::cout<<u_new[t].transpose()<<std::endl;
-		u_new[t] = u_new[t].cwiseMax(mu_lower);
-		u_new[t] = u_new[t].cwiseMin(mu_upper);
+		mu[t] = mu[t].cwiseMax(mu_lower);
+		mu[t] = mu[t].cwiseMin(mu_upper);
 
-		Evalf(x_new[t],u_new[t],t,x_new[t+1]);
+		temp_x = mx[t+1];
+		Evalf(mx[t],mu[t],t,mx[t+1]);
 
 	}
 
-	mx = x_new;
-	mu = u_new;
-
+	is_ioing = true;
 	double cost_new = 0;
 	double c = 0;
 	double cf = 0;
@@ -227,16 +229,50 @@ ForwardPass()
 	}
 	EvalCf(mx[mN-1],cf);
 	cost_new += cf;
+	is_ioing = false;
+	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
 
-	std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
+
+	// std::vector<Eigen::VectorXd> x_new;
+	// std::vector<Eigen::VectorXd> u_new;
+
+	// x_new.resize(mN,Eigen::VectorXd::Zero(mSx));
+	// u_new.resize(mN-1,Eigen::VectorXd::Zero(mSu));
+	// x_new[0] = mx[0];
+
+	// for(int t = 0;t<mN-1;t++)
+	// {
+	// 	u_new[t] = mu[t] + mAlpha*mk[t] + mK[t]*(x_new[t]-mx[t]);
+	// 	// std::cout<<u_new[t].transpose()<<std::endl;
+	// 	u_new[t] = u_new[t].cwiseMax(mu_lower);
+	// 	u_new[t] = u_new[t].cwiseMin(mu_upper);
+
+	// 	Evalf(x_new[t],u_new[t],t,x_new[t+1]);
+
+	// }
+
+	// mx = x_new;
+	// mu = u_new;
+	// is_ioing = true;
+	// double cost_new = 0;
+	// double c = 0;
+	// double cf = 0;
+	// for(int t =0;t<mN-1;t++){
+	// 	EvalC(mx[t],mu[t],t,c);
+	// 	cost_new +=c;
+	// }
+	// EvalCf(mx[mN-1],cf);
+	// cost_new += cf;
+	// is_ioing = false;
+	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
 	return cost_new;
 }
-
 const std::vector<Eigen::VectorXd>&
 iLQR::
 Solve()
 {
 	int fail_count = 0;
+
 	for(int i = 0;i<mMaxIteration;i++)
 	{
 		ComputeDerivative();
@@ -252,22 +288,22 @@ Solve()
 
 			mLambda = std::max(mLambda*mLambda_0,mLambda_0);
 			mMu = std::max(mMu*mLambda,mMu_min);
-			if(mMu>mMu_max)
+			if(mMu>mMu_max){
+				// std::cout<<"During backward"<<std::endl;
 				break;
+			}
 		}
 
 		
 		mForwardPassDone = false;	
-		auto xtemp = mx;
-		auto utemp = mu;
+		std::vector<Eigen::VectorXd> xtemp = mx;
+		std::vector<Eigen::VectorXd> utemp = mu;
 		mAlpha = 1.0;
 		double dcost;
 		if(mBackwardPassDone)
 		{
 			for(int k =0;k<10;k++)
 			{
-				mx = xtemp;	
-				mu = utemp;	
 				double cost_new = ForwardPass();
 				dcost = mCost - cost_new;
 				double expected = -mAlpha*(mdV[0] + mAlpha*mdV[1]);
@@ -277,13 +313,17 @@ Solve()
 					z = dcost/expected;
 				else
 					z = (dcost>0? 1:-1);
-				if(z>0.0){
+				if(z>0.03){
 					mForwardPassDone = true;
 					fail_count = 0;
+					// std::cout<<"forward done"<<std::endl;
+					// for(int t =0;t<10;t++)
+						// std::cout<<mu[t].transpose()<<std::endl;
 					break;
 				}
 				mAlpha *= 0.5;
-
+				mx = xtemp;	
+				mu = utemp;
 			}
 		}
 
@@ -292,11 +332,11 @@ Solve()
 			mLambda = std::min(mLambda/mLambda_0,1.0/mLambda_0);
 			mMu = mMu*mLambda;
 			mMu = (mMu>mMu_min? mMu : 0.0);
-			fail_count++;
-			if(fail_count == 3)
+			
+			if(dcost<1E-4){
+				// std::cout<<"dcost<1E-4"<<std::endl;
 				break;
-			if(dcost<1E-4)
-				break;
+			}
 		}
 		else
 		{
@@ -307,12 +347,24 @@ Solve()
 			mx = xtemp;
 			mu = utemp;
 
-			if(mMu>mMu_max)
+			fail_count++;
+			if(fail_count == 3){
+				// std::cout<<"fail_count ==3"<<std::endl;
+
 				break;
+			}
+			if(mMu>mMu_max){
+				// std::cout<<"During forward"<<std::endl;
+
+				break;
+			}
 		}
 		
-	}	
-
+	}
+	// for(int t =0;t<10;t++)
+		// std::cout<<mu[t].transpose()<<std::endl;
+	// std::cout<<mu[0].transpose()<<std::endl;
+	Finalize();
 
 	return mu;
 }

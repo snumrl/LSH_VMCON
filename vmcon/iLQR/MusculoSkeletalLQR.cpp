@@ -2,28 +2,30 @@
 #include "../MusculoSkeletalSystem.h"
 #include "../MuscleOptimization.h"
 #include "../IKOptimization.h"
+#include "../Ball.h"
 #include <fstream>
 using namespace Ipopt;
 MusculoSkeletalLQR::
 MusculoSkeletalLQR(
-		const Eigen::Vector3d& pos_desired,
-		const Eigen::Vector3d& vel_desired,
 		const dart::simulation::WorldPtr& rigid_world,
-		FEM::World* soft_world,
-		MusculoSkeletalSystem* musculo_skeletal_system,int n,int max_iteration)
-		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2, 			//State
+		const std::shared_ptr<FEM::World>& soft_world,
+		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+		const std::vector<std::shared_ptr<Ball>>& balls,int max_iteration)
+		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+12*balls.size(), 			//State
 				musculo_skeletal_system->GetSkeleton()->getNumDofs(),			//Signal
-				n,max_iteration),
-		mEndEffectorTargetPosition(pos_desired),
-		mEndEffectorTargetVelocity(vel_desired),
+				max_iteration),
 		mDofs(musculo_skeletal_system->GetSkeleton()->getNumDofs()),
-		mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),
+		mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
 		mTargetPositions(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mTargetVelocities(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),1000.0)),
 		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(1000.0))),
 		mSoftWorldX0(mSoftWorld->GetPositions())
 {
+	mKp[mDofs-2] = 2.0*mKp[mDofs-2];
+	mKp[mDofs-1] = 2.0*mKp[mDofs-1];
+	mKv[mDofs-2] = sqrt(2.0)*mKv[mDofs-1];
+	mKv[mDofs-1] = sqrt(2.0)*mKv[mDofs-1];
 	mMuscleOptimization = new MuscleOptimization(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
 	mMuscleOptimizationSolver = new IpoptApplication();
 	
@@ -51,27 +53,37 @@ MusculoSkeletalLQR(
 
 	// mIKSolver->Initialize();
 
-	mEndEffector = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
-	std::ifstream param("../vmcon2D/export/param.txt");
-	param>>w_regularization>>w_compliance>>w_pos_track>>w_vel_track;
+	// mEndEffector = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+	std::ifstream param("../vmcon/export/param.txt");
+	param>>w_regularization>>w_smooth>>w_pos_track>>w_vel_track;
 	param.close();
 }
 void
 MusculoSkeletalLQR::
 Initialze(
+	const Eigen::Vector3d& pos_desired,
+	const Eigen::Vector3d& vel_desired,
+	int index,
+	const std::vector<Eigen::VectorXd>& reference_motions,
 	const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0)
 {
-	mInitialGuess = u0;
+	mBallIndex = index;
+	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
+	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
+	mBallTargetPosition = pos_desired;
+	mBallTargetVelocity = vel_desired;
+	mReferenceMotions = reference_motions;
 	Eigen::VectorXd u_lower(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
 	Eigen::VectorXd u_upper(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
 	for(int i =0;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();i++)
 	{
-		u_lower[i] = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
-		u_upper[i] = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
+		u_lower[i] = -1;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
+		u_upper[i] = 1;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
 	}
 	// u_lower[mDofs] = 0.5;
 	// u_upper[mDofs] = 2.0;
-	Init(x0,u0,u_lower,u_upper);
+	// std::cout<<reference_motions.size()<<std::endl;
+	Init(reference_motions.size(),x0,u0,u_lower,u_upper);
 }
 void
 MusculoSkeletalLQR::
@@ -95,6 +107,7 @@ ClipX(int i,double& lx,double& ux)
 	// 		lx = mu_lower[i];
 	// }
 }
+bool is_ioing = false;
 
 void
 MusculoSkeletalLQR::
@@ -102,37 +115,50 @@ EvalCf(const Eigen::VectorXd& x,double& cf)
 {
 	SetState(x);
 
-	Eigen::Vector3d ee_pos = mEndEffector->getCOM();
-	Eigen::Vector3d ee_vel = mEndEffector->getCOMLinearVelocity();
+	Eigen::Vector3d ball_pos = mBalls[mBallIndex]->GetPosition();
+	Eigen::Vector3d ball_vel = mBalls[mBallIndex]->GetVelocity();
 
-	cf = 0.5*w_pos_track*(mEndEffectorTargetPosition - ee_pos).squaredNorm();
-	cf += 0.5*w_vel_track*(mEndEffectorTargetVelocity - ee_vel).squaredNorm();
+	if(is_ioing)
+	{
+		// std::cout<<"POS : "<<0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm()<<std::endl;
+		// std::cout<<"VEL : "<<0.5*w_vel_track*(mBallTargetVelocity - ball_vel).squaredNorm()<<std::endl;
+		// std::cout<<"VEL : "<<(mBallTargetVelocity - ball_vel).transpose()<<std::endl;
+	}
+	// std::cout<<ball_vel.transpose()<<std::endl;
+	cf = 0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm();
+	cf += 0.5*w_vel_track*(mBallTargetVelocity - ball_vel).squaredNorm();
 }
 
 void
 MusculoSkeletalLQR::
 EvalC( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,double& c)
 {
-	// if(t == 0)
-		// c = 0.5*w_smooth*(u-mInitialGuess[0]).squaredNorm();
-	// else
-	c = 0.5*w_regularization*((u-mInitialGuess[t]).head(mDofs)).squaredNorm();
-	// c += 0.5*w_compliance*(u[mDofs]*u[mDofs]);
-	// SetState(x);
-	
-	// Eigen::Vector3d ee_pos = mEndEffector->getTransform()*Eigen::Vector3d(0,0,0);
-	// c += 1E-2*(double)t/(double)mN*0.5*w_tracking*(mEndEffectorTarget - ee_pos).squaredNorm();
-	// c += 1E-2*(double)t/(double)mN*0.5*w_stable*(mEndEffector->getCOMLinearVelocity()).squaredNorm();	
+	c = 0.5*w_regularization*(u).squaredNorm();
+	if(t==0)
+		c+= 0.5*w_smooth*(u).squaredNorm();
+	else
+		c+= 0.5*w_smooth*(u-mu[t-1]).squaredNorm();
 }
 
 void
 MusculoSkeletalLQR::
 Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f)
 {
-	if(t==0)
-		mSoftWorld->SetPositions(mSoftWorldX0);
-
 	SetState(x);
+	// if(t==0){
+	// 	mSoftWorld->SetPositions(mSoftWorldX0);
+	// 	auto cons = mRigidWorld->getConstraintSolver()->mManualConstraints;
+	// 	for(int i =0;i<cons.size();i++)
+	// 	{
+	// 		Eigen::Isometry3d T = ((dart::constraint::WeldJointConstraint*)cons[i].get())->mRelativeTransform;
+	// 		BodyNdoe* bn1 = ((dart::constraint::WeldJointConstraint*)cons[i].get())->mBodyNode1;
+	// 		BodyNdoe* bn2 = ((dart::constraint::WeldJointConstraint*)cons[i].get())->mBodyNode2;
+
+	// 		mRigidWorld->getConstraintSolver()->removeConstraint(cons[i]);
+
+	// 		mRigidWorld->getConstraintSolver()->addConstraint(bn1,bn2);
+	// 	}
+	// }
 	SetControl(u,t);
 	Step();
 	GetState(f);
@@ -143,28 +169,44 @@ MusculoSkeletalLQR::
 SetState(const Eigen::VectorXd& x)
 {
 	mMusculoSkeletalSystem->GetSkeleton()->setPositions(x.head(mDofs));
-	mMusculoSkeletalSystem->GetSkeleton()->setVelocities(x.tail(mDofs));
-	mMusculoSkeletalSystem->GetSkeleton()->computeForwardKinematics(true,false,false);
+	mMusculoSkeletalSystem->GetSkeleton()->setVelocities(x.block(mDofs,0,mDofs,1));
+	
+	mMusculoSkeletalSystem->GetSkeleton()->computeForwardKinematics(true,true,false);
+
+	for(int i = 0;i<mBalls.size();i++)
+	{
+		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+12*i+0,0,6,1));
+		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
+		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,true,false);	
+	}
+	
 }
 void
 MusculoSkeletalLQR::
 SetControl(const Eigen::VectorXd& u,double t)
 {
-	mTargetPositions = u.head(mDofs);
-	if(t == 0)
-		mTargetVelocities.setZero();
-	else
-		mTargetVelocities = (u.head(mDofs)-mu[t-1].head(mDofs))/mSoftWorld->GetTimeStep();
-
-	// mKp = Eigen::VectorXd::Constant(mDofs,1000.0*u[mDofs]);
-	// mKv = Eigen::VectorXd::Constant(mDofs,2*sqrt(mKp[0]));
+	mTargetPositions = u+mReferenceMotions[t];
+	if(t == 0){
+		mTargetVelocities = (mReferenceMotions[t+1] - mReferenceMotions[t])/mSoftWorld->GetTimeStep();
+	}
+	else{
+		mTargetVelocities = (mTargetPositions-(mReferenceMotions[t-1]+mu[t-1]))/mSoftWorld->GetTimeStep();
+	}
 }
 void
 MusculoSkeletalLQR::
 GetState(Eigen::VectorXd& x)
 {
 	x.head(mDofs) = mMusculoSkeletalSystem->GetSkeleton()->getPositions();
-	x.tail(mDofs) = mMusculoSkeletalSystem->GetSkeleton()->getVelocities();
+	x.block(mDofs,0,mDofs,1) = mMusculoSkeletalSystem->GetSkeleton()->getVelocities();
+
+	for(int i = 0;i<mBalls.size();i++)
+	{
+		x.block(2*mDofs+12*i+0,0,6,1) = mBalls[i]->GetSkeleton()->getPositions();
+		x.block(2*mDofs+12*i+6,0,6,1) = mBalls[i]->GetSkeleton()->getVelocities();
+	}
+
+	
 }
 void
 MusculoSkeletalLQR::
@@ -175,28 +217,132 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	mMusculoSkeletalSystem->SetActivationLevel(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	mSoftWorld->TimeStepping(false);
+	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	// mMusculoSkeletalSystem->TransformAttachmentPoints();
+	// mSoftWorld->TimeStepping(false);
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
+	if(is_ioing){
+		// std::cout<<mTargetPositions.transpose()<<std::endl;
+		// std::cout<<mTargetVelocities.transpose()<<std::endl;
+		// std::cout<<qdd_desired.transpose()<<std::endl;
+	}
 	for(int i =0; i<nn;i++)
 	{
-		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
-		// mMusculoSkeletalSystem->GetSkeleton()->setForces(
-		// 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
-			// mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces());
+		// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
+		// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
+		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
+									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		if(is_ioing)
+		{
+			// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
+			// for(int i =0;i<6;i++)
+			// std::cout<<((dart::constraint::WeldJointConstraint*)interesting.get())->mJacobian2<<std::endl;
+			// dart::constraint::ConstraintInfo* ci = new dart::constraint::ConstraintInfo();
+			// mRigidWorld->getConstraintSolver()->mManualConstraints[0]->getInformation(ci);
+			// qdd_desired<<
+			// std::cout<<(torque).transpose()<<std::endl;
+			// std::cout<<(mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix())<<std::endl<<std::endl;
+
+			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
+			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
+			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
+			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
+			// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
+		}
+		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
+
 		mRigidWorld->step();
 	}
 }
 
 
+void
+MusculoSkeletalLQR::
+Finalize()
+{
+	// std::cout<<"X : "<<std::endl;
+	// std::cout<<"Before : \n"<<std::endl;
+	// for(int t =0;t<mN;t++)
+	// {
+	// 	std::cout<<mx[t].transpose()<<std::endl;
+	// }
+	is_ioing = true;
+	for(int t = 0;t<mN-1;t++)
+	{
+		Evalf(mx[t],mu[t],t,mx[t+1]);
+		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
+		// SetState(mx[t]);
+		// SetControl(mu[t],t);
+		// std::cout<<mTargetPositions.transpose()<<std::endl;
+		// std::cout<<mTargetVelocities.transpose()<<std::endl;
+		// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
+	}
+	// std::cout<<"After : \n"<<std::endl;
+	// for(int t =0;t<mN;t++)
+	// {
+		// std::cout<<mx[t].transpose()<<std::endl;
+	// }
 
+	// for(int t = 0;t<mN-1;t++)
+	// {
+		// Evalf(mx[t],mu[t],t,mx[t+1]);
+		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
+		// SetState(mx[t]);
+		// SetControl(mu[t],t);
+		// std::cout<<mTargetPositions.transpose()<<std::endl;
+		// std::cout<<mTargetVelocities.transpose()<<std::endl;
+		// std::cout<<mBall->GetVelocity().transpose()<<std::endl;
+	// }
+	// std::cout<<"After2 : \n"<<std::endl;
+	// for(int t =0;t<mN;t++)
+	// {
+	// 	std::cout<<mx[t].transpose()<<std::endl;
+	// }
+
+	double cf;
+	EvalCf(mx[mN-1],cf);
+	std::cout<<cf<<std::endl<<std::endl;
+	// std::cout<<std::endl;
+	// std::cout<<"U : "<<std::endl;
+	// for(int t = 0;t<mN-1;t++)
+	// {
+	// 	std::cout<<(mReferenceMotions[t]+mu[t]).transpose()<<std::endl;
+	// }
+
+	// for(int t=0;t<mN-1;t++)
+	// {
+		
+		
+
+		
+		// std::cout<<skel->getPositions().transpose()<<std::endl;
+		// std::cout<<pos_diff.transpose()<<std::endl;
+		// std::cout<<(mTargetVelocities - skel->getVelocities()).transpose()<<std::endl;
+		
+		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
+		// std::cout<<mx[t].block(mDofs,0,mDofs,1).transpose()<<std::endl;
+		// Evalf(mx[t],mu[t],t,mx[t+1]);
+		// auto& skel = mMusculoSkeletalSystem->GetSkeleton();
+		// Eigen::VectorXd pos_diff = skel->getPositionDifferences(mTargetPositions,skel->getPositions());
+		// for(int i = 0;i<pos_diff.rows();i++)
+		// 	pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
+		// Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
+		// std::cout<<mTargetPositions.transpose()<<std::endl;
+		// std::cout<<mTargetVelocities.transpose()<<std::endl;
+		// std::cout<<qdd_desired.transpose()<<std::endl;
+		// std::cout<<std::endl;
+	// }	
+
+	// std::cout<<std::endl;
+
+}
 
 
 

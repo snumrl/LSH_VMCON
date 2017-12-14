@@ -48,6 +48,7 @@ Set(const dart::simulation::WorldPtr& rigid_world,
 	activation_levels = musculo_skeletal_system->GetActivationLevels();
 	for(auto& muscle : musculo_skeletal_system->GetMuscles())
 		muscle_forces.push_back(std::make_pair(muscle->origin_force,muscle->insertion_force));
+	target_positions = controller->GetTargetPositions();
 }
 
 void
@@ -75,5 +76,6 @@ Get(const dart::simulation::WorldPtr& rigid_world,
         muscle->insertion->SetP(GetPoint(muscle->insertion_way_points[0]));
         count++;
     }
+    controller->SetTargetPositions(target_positions);
 }
 

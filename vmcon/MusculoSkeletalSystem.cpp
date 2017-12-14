@@ -685,7 +685,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 		Eigen::Vector3d(0.07,0.07,0.07),
 		Eigen::Vector3d(-0.17,0,0),
 		Eigen::Vector3d(0,0,0),
-		JOINT_TYPE::WELD,
+		JOINT_TYPE::REVOLUTE,
 		3);
 
 	MakeBody(skel,skel->getBodyNode("ElbowL"),"HandL",
@@ -694,7 +694,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 		Eigen::Vector3d(0.07,0.07,0.07),
 		Eigen::Vector3d(0.17,0.0,0),
 		Eigen::Vector3d(0,0,0),
-		JOINT_TYPE::WELD,
+		JOINT_TYPE::REVOLUTE,
 		3);
 
 	Eigen::VectorXd pos = skel->getPositions();

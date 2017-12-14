@@ -15,6 +15,7 @@
 #include "BezierCurve.h"
 class IKOptimization;
 class MusculoSkeletalSystem;
+class MusculoSkeletalLQR;
 class Record;
 class Controller;
 class Ball;
@@ -92,17 +93,7 @@ public:
 
 class BezierCurveState : public State
 {
-public:
-	BezierCurve mCurve;
-	// Eigen::Vector3d								   mTargetVelocity;
-	std::vector<std::pair<Eigen::VectorXd,double>> mMotions;
-	double mD,mT;
-	int mNumCurveSample;
-	int mReleaseCount;
-	int mCount;
 
-	
-	void GenerateMotions(const BezierCurve& bc,std::vector<std::pair<Eigen::VectorXd,double>>& motions);
 public:
 	BezierCurveState(const dart::simulation::WorldPtr& rigid_world,
 				const FEM::WorldPtr& soft_world,
@@ -118,8 +109,30 @@ public:
 				);
 
 	void Initialize(int ball_index,int V) override;
+	void InitializeLQR();
+	void SynchronizeLQR();
 	std::string GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v) override;
 	const BezierCurve& GetCurve() {return mCurve;};
+
+public:
+	BezierCurve mCurve;
+	// Eigen::Vector3d								   mTargetVelocity;
+	std::vector<std::pair<Eigen::VectorXd,double>> mMotions;
+	double mD,mT;
+	int mNumCurveSample;
+	int mReleaseCount;
+	int mCount;
+
+	FEM::WorldPtr 								mLQRSoftWorld;
+	dart::simulation::WorldPtr  				mLQRRigidWorld;
+	std::shared_ptr<MusculoSkeletalSystem>		mLQRMusculoSkeletalSystem;
+	std::vector<std::shared_ptr<Ball>>			mLQRBalls;
+
+	std::shared_ptr<MusculoSkeletalLQR>			mLQR;
+	std::vector<Eigen::VectorXd> 				mU;
+
+	void GenerateMotions(const BezierCurve& bc,std::vector<std::pair<Eigen::VectorXd,double>>& motions);
+	void OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des);
 };
 
 

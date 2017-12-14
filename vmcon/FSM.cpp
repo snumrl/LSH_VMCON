@@ -1,9 +1,11 @@
 #include "FSM.h"
+#include "DART_helper.h"
 #include "Ball.h"
 #include "Record.h"
 #include "BezierCurve.h"
 #include "IKOptimization.h"
 #include "MusculoSkeletalSystem.h"
+#include "iLQR/MusculoSkeletalLQR.h"
 #include "Controller.h"
 #include <tinyxml.h>
 #include <iostream>
@@ -86,8 +88,10 @@ void
 IKState::
 Solve()
 {
+	// std::cout<<"SOLVE IK : "<<mBallIndex<<std::endl;
 	bool need_ik_update= true;
 	
+
 	Eigen::Vector3d target;
 	mBalls[mBallIndex]->ComputeFallingPosition(mBalls[mBallIndex]->releasedPoint[1],target);
 	
@@ -104,8 +108,12 @@ Solve()
 	}
 	if(need_ik_update)
 	{
-		ik->AddTargetPositions(mAnchorPoint,target);
-		mIKSolver->ReOptimizeTNLP(mIKOptimization);
+		// std::cout<<target.transpose()<<std::endl;
+		if(target.norm()>1E-6){
+			ik->AddTargetPositions(mAnchorPoint,target);
+		mIKSolver->ReOptimizeTNLP(mIKOptimization);	
+		}
+		
 	}
 }
 void 
@@ -153,35 +161,6 @@ GetTarget()
 	return Eigen::Vector3d(0,0,0);
 }
 
-void
-BezierCurveState::
-GenerateMotions(const BezierCurve& bc,std::vector<std::pair<Eigen::VectorXd,double>>& motions)
-{
-	motions.clear();
-
-	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-	Eigen::VectorXd save_positions = ik->GetSolution();
-
-	auto save_target = ik->GetTargets();
-	for(int i =0;i<mNumCurveSample+1;i++)
-	{
-		double tt = ((double)i)/((double)mNumCurveSample) * mD*mT;
-		
-		Eigen::Vector3d p_ee = bc.GetPosition(tt);
-
-		ik->AddTargetPositions(mAnchorPoint,p_ee);
-		mIKSolver->ReOptimizeTNLP(mIKOptimization);
-		Eigen::VectorXd sol = ik->GetSolution();
-		motions.push_back(std::make_pair(sol,tt));
-	}
-
-	for(auto& target : save_target)
-		ik->AddTargetPositions(target.first,target.second);
-
-	ik->SetSolution(save_positions);
-}
-
-
 BezierCurveState::
 BezierCurveState(const dart::simulation::WorldPtr& rigid_world,
 				const FEM::WorldPtr& soft_world,
@@ -196,16 +175,18 @@ BezierCurveState(const dart::simulation::WorldPtr& rigid_world,
 	:State(rigid_world,soft_world,musculo_skeletal_system,controller,bn,balls,ik_optimization,ik_solver),mCurve(BezierCurve())
 	,mD(D),mT(T),mNumCurveSample(num_curve_sample)
 {
+	InitializeLQR();
 }
 
 void 
 BezierCurveState::
 Initialize(int ball_index,int V)
 {
+	mCount = 0;
 	mTimeElapsed = 0;
 	mBallIndex = ball_index;
 	mV = V;
-	double t = ((double)mV-2*mD+0.3)*mT;
+	double t = ((double)mV-2*mD+0.1)*mT;
 
 	Eigen::Vector3d p0,p1,p2,v2;
 	p0.setZero();
@@ -233,7 +214,7 @@ Initialize(int ball_index,int V)
 
 	
 
-	v2[0] = -2.0*p0[0]/t;
+	v2[0] = -p0[0]/t;
 	// v2[0] = 0;
 	v2[1] = 0.5*9.81*t;
 	v2[2] = -(p0[2]-0.3)/t;
@@ -241,49 +222,271 @@ Initialize(int ball_index,int V)
 	// p0[2] = 0.3;
 	p1 = p2 - 0.5*mD*mT*v2;
 
-	std::cout<<"p0 : "<<p0.transpose()<<std::endl;
-	std::cout<<"p1 : "<<p1.transpose()<<std::endl;
-	std::cout<<"p2 : "<<p2.transpose()<<std::endl;
-	std::cout<<"v2 : "<<v2.transpose()<<std::endl;
+	// std::cout<<"p0 : "<<p0.transpose()<<std::endl;
+	// std::cout<<"p1 : "<<p1.transpose()<<std::endl;
+	// std::cout<<"p2 : "<<p2.transpose()<<std::endl;
+	// std::cout<<"v2 : "<<v2.transpose()<<std::endl;
 
 	mCurve.Initialize(p0,p1,p2,mD*mT);
+
+	
 	GenerateMotions(mCurve,mMotions);
+	Eigen::VectorXd p,v;
+	std::vector<std::pair<Eigen::VectorXd,double>> fine_motions;
+	mTimeElapsed=0.0;
+	while(true)
+	{
+		int k =0,k1 =0;
+		for(int i =0;i<mMotions.size();i++)
+		{
+			if(mMotions[i].second<mTimeElapsed)
+				k=i;
+		}
+		if(k ==mMotions.size()-1)
+			break;
+		k1 = k+1;
+		double t = mTimeElapsed-mMotions[k].second;
+		double dt = mMotions[k1].second-mMotions[k].second;
+
+		p = (1.0-t/dt)*(mMotions[k].first) + (t/dt)*(mMotions[k1].first);
+		double t1 = t+0.001;
+		auto pdp =(1.0-t1/dt)*(mMotions[k].first) + (t1/dt)*(mMotions[k1].first);
+
+		v = (pdp-p)/0.001;
+		fine_motions.push_back(std::make_pair(p,mTimeElapsed));
+		mTimeElapsed+=mSoftWorld->GetTimeStep();
+	}
+
+
+	// while(GetMotion(p,v).compare("end"))
+	// {
+	// 	fine_motions.push_back(std::make_pair(p,mTimeElapsed));
+	// 	mTimeElapsed += mSoftWorld->GetTimeStep();
+	// }
+	mBalls[mBallIndex]->Attach(mRigidWorld,mAnchorPoint.first);
+	mCount=0;
+	mTimeElapsed = 0.0;
+
+	mMotions = fine_motions;
+	// std::cout<<"FINE MOTION SIZE : "<<mMotions.size()<<std::endl;
+
+	SynchronizeLQR();
+	OptimizeLQR(p2,v2);
+
+	// std::cout<<mMotions.size()<<std::endl;
+	// std::cout<<mU.size()<<std::endl;
+	// std::cout<<mU.size()<<std::endl;
+	// for(int i =0;i<mMotions.size()-2;i++)
+	// {
+		// std::cout<<mMotions[i].first.rows()<<std::endl;
+		// std::cout<<mU[i].transpose()<<std::endl;
+		// mMotions[i].first = mMotions[i].first + mU[i];
+	// }
 }
+void
+BezierCurveState::
+SynchronizeLQR()
+{
+	mLQRSoftWorld->SetPositions(mSoftWorld->GetPositions());
+	// std::vector<bool> is_attacheds;
+	// for(int i =0;i<mBalls.size();i++)
+	// {
+	// 	is_attacheds.push_back(mBalls[i]->IsAttached());
+	// 	mLQRBalls[i]->Release(mLQRRigidWorld);
+	// }
+	for(int i =0;i<mLQRRigidWorld->getNumSkeletons();i++){
+		mLQRRigidWorld->getSkeleton(i)->setPositions(mRigidWorld->getSkeleton(i)->getPositions());
+		mLQRRigidWorld->getSkeleton(i)->setVelocities(mRigidWorld->getSkeleton(i)->getVelocities());
+	}
+
+	for(int i =0;i<mBalls.size();i++)
+	{
+		if(!mBalls[i]->IsReleased())
+		{
+			mLQRBalls[i]->Attach(mLQRRigidWorld,mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mBalls[i]->GetConstraint()->getBodyNode2()->getName()));
+		}
+		else
+		{
+			mLQRBalls[i]->Release(mLQRRigidWorld);
+		}
+	}
+}
+void
+BezierCurveState::
+OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
+{
+	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
+	Eigen::VectorXd x0(dofs*2+12*mBalls.size());
+	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
+	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
+	for(int i =0;i<mBalls.size();i++)
+	{
+		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getPositions();
+		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getVelocities();
+	}	
+	std::vector<Eigen::VectorXd> ref,u0;
+	ref.resize(mMotions.size()-1);
+	u0.resize(mMotions.size()-1);
+
+
+	for(int i=0;i<u0.size();i++){
+		ref[i] = mMotions[i].first;
+		u0[i] = ref[i];
+		u0[i].setZero();
+	}
+	// mLQR->Initialze(p_des,v_des,mBallIndex,ref,x0,u0);
+	// mU = mLQR->Solve();
+
+	// std::cout<<std::endl;
+	// for(int i=0;i<mU.size();i++)
+	// {
+		// std::cout<<mU[i].transpose()<<std::endl;
+	// }
+	mU = u0;
+}
+
+void
+BezierCurveState::
+InitializeLQR()
+{
+	mLQRSoftWorld = FEM::World::Create(
+		mSoftWorld->GetIntegrationMethod(),
+		mSoftWorld->GetTimeStep(),
+		mSoftWorld->GetMaxIteration());
+	mLQRRigidWorld = std::make_shared<World>();
+	mLQRRigidWorld->setGravity(Eigen::Vector3d(0,-9.81,0));
+
+	mLQRMusculoSkeletalSystem = MusculoSkeletalSystem::Create();
+	MakeSkeleton(mLQRMusculoSkeletalSystem);
+	MakeMuscles("../vmcon/export/muscle_params.xml",mLQRMusculoSkeletalSystem);
+
+	mLQRMusculoSkeletalSystem->Initialize(mLQRSoftWorld,mLQRRigidWorld);
+	mLQRSoftWorld->Initialize();
+
+	for(int i =0;i<5;i++)
+	{
+		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
+
+		bool is_left_hand = i%2;
+		if(is_left_hand)
+		{
+			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			MakeBall(skel,abn->getCOM(),0.036,0.13);
+
+			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
+			mLQRRigidWorld->addSkeleton(skel);
+			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);
+		}
+		else
+		{
+			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			MakeBall(skel,abn->getCOM(),0.036,0.13);
+
+			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
+			mLQRRigidWorld->addSkeleton(skel);
+			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);	
+		}
+	}
+
+	mLQR = std::make_shared<MusculoSkeletalLQR>(
+			mLQRRigidWorld,
+			mLQRSoftWorld,
+			mLQRMusculoSkeletalSystem,mLQRBalls,5);
+}
+
+
 std::string 
 BezierCurveState::
 GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 {
-	int k =0,k1 =0;
-	for(int i =0;i<mMotions.size();i++)
-	{
-		if(mMotions[i].second<mTimeElapsed)
-			k=i;
-	}
+	// int k =0,k1 =0;
+	// for(int i =0;i<mMotions.size();i++)
+	// {
+	// 	if(mMotions[i].second<mTimeElapsed)
+	// 		k=i;
+	// }
 
-	
-	if(k == mMotions.size()-1)
+	if(mCount == mU.size()-1)
 	{
+		// std::cout<<"dasdf"<<std::endl;
+		// std::cout<<k<<std::endl;
+		// std::cout<<mCount<<std::endl;
 		mBalls[mBallIndex]->Release(mRigidWorld);
+		std::cout<<"Released Velocity : "<<mBalls[mBallIndex]->releasedVelocity.transpose()<<std::endl;
 
 		return std::string("end");
 	}
 
-	k1 = k+1;
-	double t = mTimeElapsed-mMotions[k].second;
-	double dt = mMotions[k1].second-mMotions[k].second;
+	// k1 = k+1;
+	// double t = mTimeElapsed-mMotions[k].second;
+	// double dt = mMotions[k1].second-mMotions[k].second;
 
-	t/= dt;
-	p = (1.0-t)*(mMotions[k].first) + (t)*(mMotions[k1].first);
 
-	double t1 = t+0.01;
-	auto pdp =(1.0-t)*(mMotions[k].first) + (t)*(mMotions[k1].first);
+	// // p = (1.0-t/dt)*(mMotions[k].first) + (t/dt)*(mMotions[k1].first);
+	// p = mMotions[k].first;
+	// if(k==0)
+	// 	v = (mMotions[0].first-mMotions[0].first)/mSoftWorld->GetTimeStep();
+	// else
+	// 	v = (mMotions[k].first-mMotions[k-1].first)/mSoftWorld->GetTimeStep();
+	// double t1 = t+0.001;
+	// std::cout<<t<<std::endl;
+	// std::cout<<t1<<std::endl;
+	// auto pdp =(1.0-t1/dt)*(mMotions[k].first) + (t1/dt)*(mMotions[k1].first);
 
-	v = (pdp-p)/0.01;
+	// v = (pdp-p)/0.001;
+	// std::cout<<mMotions.size()<<std::endl;
+	// std::cout<<k<<std::endl;
+	// std::cout<<mTimeElapsed<<std::endl;
+	
+	// std::cout<<p.transpose()<<std::endl;
+	// std::cout<<v.transpose()<<std::endl;
+	p = mMotions[mCount].first + mU[mCount];
+	if(mCount == 0){
+		v = (mMotions[mCount+1].first - mMotions[mCount].first)/mSoftWorld->GetTimeStep();
+	}
+	else{
+		v = (p-(mMotions[mCount-1].first+mU[mCount-1]))/mSoftWorld->GetTimeStep();
+	}
+	// std::cout<<p.transpose()<<std::endl;
+	// std::cout<<v.transpose()<<std::endl;
+	// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
 	mCount++;
 	return std::string("no_event");
 }
 
 
+
+
+
+void
+BezierCurveState::
+GenerateMotions(const BezierCurve& bc,std::vector<std::pair<Eigen::VectorXd,double>>& motions)
+{
+	motions.clear();
+
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+	Eigen::VectorXd save_positions = ik->GetSolution();
+
+	auto save_target = ik->GetTargets();
+	for(int i =0;i<mNumCurveSample+1;i++)
+	{
+		double tt = ((double)i)/((double)mNumCurveSample) * mD*mT;
+		
+		Eigen::Vector3d p_ee = bc.GetPosition(tt);
+
+		ik->AddTargetPositions(mAnchorPoint,p_ee);
+		mIKSolver->ReOptimizeTNLP(mIKOptimization);
+		Eigen::VectorXd sol = ik->GetSolution();
+		motions.push_back(std::make_pair(sol,tt));
+	}
+
+	for(auto& target : save_target)
+		ik->AddTargetPositions(target.first,target.second);
+
+	ik->SetSolution(save_positions);
+}
 
 
 
@@ -361,7 +564,7 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
-	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
+	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
 	// std::vector<int> V_list{7,7,7,7,7,7,7,7,7};
 	InitializeJugglingState(V_list);
 }
@@ -372,24 +575,13 @@ Machine::
 AddState(const std::string& name)
 {
 	bool is_left =false;
-	bool is_catch = false;
+	bool is_swing = false;
 	if(name.find("LEFT")!=std::string::npos)
 		is_left = true;
-	if(name.find("CATCH")!=std::string::npos)
-		is_catch = true;
-	if(is_catch)
-	mStates.insert(std::make_pair(name,
-		new IKState(
-			mRigidWorld,
-			mSoftWorld,
-			mMusculoSkeletalSystem,
-			mController,
-			mMusculoSkeletalSystem->GetSkeleton()->getBodyNode((is_left?"HandL":"HandR")),
-			mBalls,
-			mIKOptimization,
-			mIKSolver)));
-	else
-	mStates.insert(std::make_pair(name,
+	if(name.find("SWING")!=std::string::npos)
+		is_swing = true;
+	if(is_swing)
+			mStates.insert(std::make_pair(name,
 		new BezierCurveState(
 			mRigidWorld,
 			mSoftWorld,
@@ -399,6 +591,18 @@ AddState(const std::string& name)
 			mBalls,
 			mIKOptimization,
 			mIKSolver)));
+	else
+			mStates.insert(std::make_pair(name,
+		new IKState(
+			mRigidWorld,
+			mSoftWorld,
+			mMusculoSkeletalSystem,
+			mController,
+			mMusculoSkeletalSystem->GetSkeleton()->getBodyNode((is_left?"HandL":"HandR")),
+			mBalls,
+			mIKOptimization,
+			mIKSolver)));
+	
 	if(mStates.size()==1)
 		mCurrentState = mStates.at(name);
 	
@@ -449,6 +653,7 @@ Trigger(const std::string& name)
 				{
 					
 					IKState* ikstate = dynamic_cast<IKState*>(mCurrentState->GetNextState(name +"_same_hand"));
+					
 					ikstate->Initialize(mJugglingStates[i].ball_index,mJugglingStates[i].V);
 					
 				}
@@ -500,8 +705,8 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 		}
 		}
 	}
-	mCurrentState->TimeStepping(mdt);
 	std::string event = mCurrentState->GetMotion(p,v);	
+	mCurrentState->TimeStepping(mdt);
 	Trigger(event);
 
 }

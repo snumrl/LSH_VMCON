@@ -27,6 +27,8 @@ public:
 
 	void Computedxda(Eigen::VectorXd& dx_da,const Eigen::VectorXd& dg_da);
 
+	IntegrationMethod GetIntegrationMethod(){return mIntegrationMethod;}
+	int GetMaxIteration() {return mMaxIteration;}
 	int GetNumVertices(){return mNumVertices;}
 	double GetTime() {return mTime;}
 	double GetTimeStep() {return mTimeStep;}

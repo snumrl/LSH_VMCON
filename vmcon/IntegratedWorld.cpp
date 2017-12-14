@@ -17,19 +17,41 @@ TimeStepping()
 {
 	bool need_fem_update = false;
 
+	// std::cout<<"timestepping"<<std::endl;
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
+
 	if(mSoftWorld->GetTime()<=mRigidWorld->getTime())
 	{
 		need_fem_update = true;
+		// std::cout<<"mController step"<<std::endl;
 		mController->Step();
 	}
+
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
+	// std::cout<<std::endl;
 	// auto pd_forces = mController->ComputePDForces();
-	// auto pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
-	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
+	mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
+
+	Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	// std::cout<<mBalls[0]->GetPosition().transpose()<<std::endl;
+	// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
+	// std::cout<<((dart::constraint::WeldJointConstraint*)interesting.get())->mJacobian2<<std::endl;
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
+	// std::cout<<mBalls[0]->GetVelocity().transpose()<<std::endl;
+			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
+	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
+	// std::cout<<pd_forces.transpose()<<std::endl;
+	mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+
+
+
+	// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 	if(need_fem_update)
 	{
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping();
+		// mMusculoSkeletalSystem->TransformAttachmentPoints();
+		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+		// mSoftWorld->TimeStepping();
 	}
 
 	mRigidWorld->step();
@@ -85,7 +107,7 @@ Initialize()
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
 
-	for(int i =0;i<3;i++)
+	for(int i =0;i<5;i++)
 	{
 		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
 

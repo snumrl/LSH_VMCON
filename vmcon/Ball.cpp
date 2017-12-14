@@ -20,7 +20,8 @@ ComputeFallingPosition(double h,Eigen::Vector3d& fp)
 	double v2_plus_2gdx = v[1]*v[1] + 2.0*g*dx;
 	if(v2_plus_2gdx<0)
 	{
-		std::cout<<"no solution"<<std::endl;
+		// std::cout<<"no solution"<<std::endl;
+		fp.setZero();
 		return;
 	}
 
@@ -38,12 +39,14 @@ Eigen::Vector3d
 Ball::
 GetPosition()
 {
+	// std::cout<<skeleton->getBodyNode(0)->getCOM().transpose()<<std::endl;
 	return skeleton->getBodyNode(0)->getCOM();
 }
 Eigen::Vector3d
 Ball::
 GetVelocity()
 {
+	// std::cout<<skeleton->getBodyNode(0)->getCOMLinearVelocity().transpose()<<std::endl;
 	return skeleton->getBodyNode(0)->getCOMLinearVelocity();
 }
 void
@@ -52,13 +55,14 @@ Release(const dart::simulation::WorldPtr& world)
 {
 	if(!isReleased){
 		world->getConstraintSolver()->removeConstraint(constraint);
+		constraint = nullptr;
 		isReleased = true;
 	}
 
 	releasedPoint = skeleton->getBodyNode(0)->getCOM();
 	releasedVelocity = skeleton->getBodyNode(0)->getCOMLinearVelocity();
 	
-	std::cout<<"Released Velocity : "<<releasedVelocity.transpose()<<std::endl;
+	// std::cout<<"Released Velocity : "<<releasedVelocity.transpose()<<std::endl;
 }
 
 void

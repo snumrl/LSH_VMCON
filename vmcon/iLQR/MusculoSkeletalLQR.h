@@ -3,9 +3,10 @@
 #include "iLQR.h"
 #include <IpTNLP.hpp>
 #include <IpIpoptApplication.hpp>
-#include "fem2D/World.h"
+#include "fem/fem.h"
 #include "dart/dart.hpp"
 #include "dart/simulation/simulation.hpp"
+class Ball;
 class MusculoSkeletalSystem;
 class MuscleOptimization;
 class IKOptimization;
@@ -14,12 +15,15 @@ class MusculoSkeletalLQR : public iLQR
 {
 public:
 	MusculoSkeletalLQR(
+		const dart::simulation::WorldPtr& rigid_world,
+		const std::shared_ptr<FEM::World>& soft_world,
+		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+		const std::vector<std::shared_ptr<Ball>>& balls,int max_iteration);
+	void Initialze(
 		const Eigen::Vector3d& pos_desired,
 		const Eigen::Vector3d& vel_desired,
-		const dart::simulation::WorldPtr& rigid_world,
-		FEM::World* soft_world,
-		MusculoSkeletalSystem* musculo_skeletal_system,int n,int max_iteration);
-	void Initialze(
+		int index,
+		const std::vector<Eigen::VectorXd>& reference_motions,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0);
 
 public:
@@ -38,7 +42,7 @@ public:
 	void Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f) override;
 	void Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fx) override;
 	void Evalfu( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fu) override;
-
+	void Finalize() override;
 protected:
 	void SetState(const Eigen::VectorXd& x);
 	void SetControl(const Eigen::VectorXd& u,double t);
@@ -48,8 +52,9 @@ protected:
 	void ClipX(int i,double& lx,double& ux);
 	int 										mDofs;
 	dart::simulation::WorldPtr 					mRigidWorld;
-	FEM::World*									mSoftWorld;
-	MusculoSkeletalSystem* 						mMusculoSkeletalSystem;
+	std::shared_ptr<FEM::World>					mSoftWorld;
+	std::shared_ptr<MusculoSkeletalSystem>		mMusculoSkeletalSystem;
+	
 
 	Eigen::VectorXd								mTargetPositions,mTargetVelocities;
 	Eigen::VectorXd 							mKp,mKv;
@@ -59,12 +64,14 @@ protected:
 	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
 
 	Eigen::VectorXd								mSoftWorldX0;
-	std::vector<Eigen::VectorXd>				mInitialGuess;
+	std::vector<Eigen::VectorXd>				mReferenceMotions;
 
-	double 										w_regularization,w_compliance,w_pos_track,w_vel_track;
-	dart::dynamics::BodyNode* 					mEndEffector;
-	Eigen::Vector3d								mEndEffectorTargetPosition;
-	Eigen::Vector3d								mEndEffectorTargetVelocity;
+	double 										w_regularization,w_smooth,w_compliance,w_pos_track,w_vel_track;
+
+	std::vector<std::shared_ptr<Ball>>		 	mBalls;
+	int 										mBallIndex;
+	Eigen::Vector3d								mBallTargetPosition;
+	Eigen::Vector3d								mBallTargetVelocity;
 };
 
 

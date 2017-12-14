@@ -40,6 +40,7 @@ public:
 
 	void Step();
 	const Eigen::VectorXd& GetTargetPositions() {return mTargetPositions;}
+	void SetTargetPositions(const Eigen::VectorXd& x) { mTargetPositions=x;}
 
 	Eigen::VectorXd mPDForces;
 private:
