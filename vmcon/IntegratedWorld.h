@@ -30,6 +30,8 @@ public:
 	const std::shared_ptr<Controller>& GetController(){return mController;};
 	const std::vector<std::shared_ptr<Record>>& GetRecords(){return mRecords;};
 	void SetRecord(int& frame);
+	void WriteXML(const std::string& path);
+	void WriteRecord(const std::string& path);
 private:
 	IntegratedWorld();
 

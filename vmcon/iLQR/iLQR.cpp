@@ -2,6 +2,8 @@
 #include "BoxQP.h"
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <ctime>
 using namespace Ipopt;
 iLQR::
 iLQR(int sx,int su,int max_iteration)
@@ -24,6 +26,10 @@ void
 iLQR::
 Init(int n,const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,const Eigen::VectorXd& u_lower,const Eigen::VectorXd& u_upper)
 {
+	std::cout<<"Window size : "<<n<<std::endl;
+	std::cout<<"State size : "<<mSx<<std::endl;
+	std::cout<<"control size : "<<mSu<<std::endl;
+	std::cout<<std::endl;
 	mMu = 1.0;
 	mLambda = 1.0;
 	mN = n;
@@ -71,10 +77,14 @@ ComputeDerivative()
 	mCost = 0;
 	double c,cf;
 	
+    
+    
+	
 	
 
 	for(int t =0;t<mN-1;t++)
 	{
+		auto start = std::chrono::system_clock::now();
 		Evalf(mx[t],mu[t],t,mx[t+1]);
 		Evalfx(mx[t],mu[t],t,mfx[t]);
 		Evalfu(mx[t],mu[t],t,mfu[t]);
@@ -91,6 +101,12 @@ ComputeDerivative()
 		// std::cout<<mCu[t]<<std::endl;
 		// std::cout<<mCuu[t]<<std::endl;
 		// exit(0);
+		auto end = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = end-start;
+    	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+ 
+    	std::cout << "finished computation at " << std::ctime(&end_time)
+        	<< "elapsed time: " << elapsed_seconds.count() << "s\n";
 	}
 	EvalCf(mx[mN-1],cf);
 	mCost +=cf;

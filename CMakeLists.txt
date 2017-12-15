@@ -8,6 +8,7 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
 #	FORCE
 	)
 SET( ENABLE_VMCON ON CACHE BOOL "Enable vmcon3d" )
+SET( ENABLE_RENDER ON CACHE BOOL "Enable vmcon3d render" )
 
 add_subdirectory( fem )
 add_subdirectory( gui )
@@ -32,6 +33,7 @@ link_directories(./fem/)
 link_directories(./gui/)
 
 file(GLOB vmcon_srcs "vmcon/*.h" "vmcon/*.cpp" "vmcon/iLQR/*.h" "vmcon/iLQR/*.cpp")
+file(GLOB render_srcs "render/*.h" "render/*.cpp")
 
 if (ENABLE_VMCON)
 	project(vmcon)
@@ -41,4 +43,14 @@ if (ENABLE_VMCON)
 
 	add_executable(vmcon ${vmcon_srcs})
 	target_link_libraries(vmcon ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} fem gui)
+endif()
+
+if (ENABLE_RENDER)
+	project(render)
+	find_package(DART REQUIRED COMPONENTS utils-urdf gui optimizer-ipopt CONFIG)
+	add_compile_options(-DHAVE_CSTDDEF)
+	include_directories(${DART_INCLUDE_DIRS})
+
+	add_executable(render ${render_srcs})
+	target_link_libraries(render ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${DART_LIBRARIES} fem gui)
 endif()

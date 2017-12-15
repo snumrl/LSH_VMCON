@@ -22,9 +22,9 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 		AttachmentCst* ac = dynamic_cast<AttachmentCst*>(c.get());	
 		int i0 = ac->GetI0();
 		const Eigen::Vector3d& p = ac->GetP();
-		glLineWidth(3.0);
-		GUI::DrawLine(x.block<3,1>(i0*3,0),p,Eigen::Vector3d(0.8,0,0));
-		glLineWidth(1.0);
+		// glLineWidth(3.0);
+		// GUI::DrawLine(x.block<3,1>(i0*3,0),p,Eigen::Vector3d(0.8,0,0));
+		// glLineWidth(1.0);
 	}
 	else if(dynamic_cast<CorotateFEMCst*>(c.get()) != nullptr)
 	{

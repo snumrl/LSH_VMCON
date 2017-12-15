@@ -321,8 +321,8 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
 	{
-		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getPositions();
-		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getVelocities();
+		x0.block(2*dofs+6*i,0,3,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getPositions();
+		x0.block(2*dofs+6*i+3,0,3,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getVelocities();
 	}	
 	std::vector<Eigen::VectorXd> ref,u0;
 	ref.resize(mMotions.size()-1);
@@ -334,15 +334,15 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 		u0[i] = ref[i];
 		u0[i].setZero();
 	}
-	// mLQR->Initialze(p_des,v_des,mBallIndex,ref,x0,u0);
-	// mU = mLQR->Solve();
+	mLQR->Initialze(p_des,v_des,mBallIndex,ref,x0,u0);
+	mU = mLQR->Solve();
 
 	// std::cout<<std::endl;
 	// for(int i=0;i<mU.size();i++)
 	// {
 		// std::cout<<mU[i].transpose()<<std::endl;
 	// }
-	mU = u0;
+	// mU = u0;
 }
 
 void
@@ -363,7 +363,7 @@ InitializeLQR()
 	mLQRMusculoSkeletalSystem->Initialize(mLQRSoftWorld,mLQRRigidWorld);
 	mLQRSoftWorld->Initialize();
 
-	for(int i =0;i<5;i++)
+	for(int i =0;i<3;i++)
 	{
 		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
 

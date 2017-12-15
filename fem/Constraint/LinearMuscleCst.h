@@ -40,6 +40,7 @@ public:
 	int GetI2() {return mi2;}
 	int GetI3() {return mi3;}
 
+	Eigen::Vector3d GetFiberDirection() {return mFiberDirection;}
 	double GetActivationLevel() {return mActivationLevel;}
 	void SetActivationLevel(double a) { mActivationLevel = a;}
 

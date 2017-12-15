@@ -3,6 +3,7 @@
 #include "../MuscleOptimization.h"
 #include "../IKOptimization.h"
 #include "../Ball.h"
+
 #include <fstream>
 using namespace Ipopt;
 MusculoSkeletalLQR::
@@ -11,7 +12,7 @@ MusculoSkeletalLQR(
 		const std::shared_ptr<FEM::World>& soft_world,
 		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
 		const std::vector<std::shared_ptr<Ball>>& balls,int max_iteration)
-		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+12*balls.size(), 			//State
+		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+6*balls.size(), 			//State
 				musculo_skeletal_system->GetSkeleton()->getNumDofs(),			//Signal
 				max_iteration),
 		mDofs(musculo_skeletal_system->GetSkeleton()->getNumDofs()),
@@ -144,9 +145,10 @@ void
 MusculoSkeletalLQR::
 Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f)
 {
+	
 	SetState(x);
-	// if(t==0){
-	// 	mSoftWorld->SetPositions(mSoftWorldX0);
+	if(t==0)
+		mSoftWorld->SetPositions(mSoftWorldX0);
 	// 	auto cons = mRigidWorld->getConstraintSolver()->mManualConstraints;
 	// 	for(int i =0;i<cons.size();i++)
 	// 	{
@@ -175,8 +177,8 @@ SetState(const Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+12*i+0,0,6,1));
-		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
+		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+6*i+0,0,3,1));
+		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+6*i+3,0,3,1));
 		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,true,false);	
 	}
 	
@@ -202,8 +204,8 @@ GetState(Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		x.block(2*mDofs+12*i+0,0,6,1) = mBalls[i]->GetSkeleton()->getPositions();
-		x.block(2*mDofs+12*i+6,0,6,1) = mBalls[i]->GetSkeleton()->getVelocities();
+		x.block(2*mDofs+6*i+0,0,3,1) = mBalls[i]->GetSkeleton()->getPositions();
+		x.block(2*mDofs+6*i+3,0,3,1) = mBalls[i]->GetSkeleton()->getVelocities();
 	}
 
 	
@@ -217,14 +219,14 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	// mMusculoSkeletalSystem->TransformAttachmentPoints();
-	// mSoftWorld->TimeStepping(false);
+	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	mSoftWorld->TimeStepping(false);
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 	if(is_ioing){
@@ -234,11 +236,11 @@ Step()
 	}
 	for(int i =0; i<nn;i++)
 	{
-		// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 		// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
 		// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
-		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
-									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		// Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
+									// mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 		if(is_ioing)
 		{
 			// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
@@ -256,7 +258,7 @@ Step()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
 			// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
 		}
-		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
+		// mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
 
 		mRigidWorld->step();
 	}
