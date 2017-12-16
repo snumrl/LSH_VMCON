@@ -590,16 +590,9 @@ Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd&
 	double x_i_minus,x_i_plus;
 	for(int i = 0;i<mSx;i++)
 	{
-<<<<<<< HEAD
 		if(i<2*mDofs)//||(i>=2*mDofs+6*mBallIndex&&i<2*mDofs+6*mBallIndex+6 ))
 		{
 			x_i = x;
-=======
-		if(i<2*mDofs)
-		{
-
-		x_i = x;
->>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 
 			fx_i_minus.setZero();
 			fx_i_plus.setZero();
@@ -613,19 +606,10 @@ Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd&
 			Evalf(x_i,u,t,fx_i_minus);
 			x_i[i] = x_i_plus;
 			Evalf(x_i,u,t,fx_i_plus);
-
 			fx.col(i) = (fx_i_plus - fx_i_minus)/(x_i_plus - x_i_minus);
 		}
 		else
-			fx.col(i).setZero();
-
-<<<<<<< HEAD
-=======
-		fx.col(i) = (fx_i_plus - fx_i_minus)/(x_i_plus - x_i_minus);
-		}
-		else
 		fx.col(i).setZero();
->>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 	}
 }
 void

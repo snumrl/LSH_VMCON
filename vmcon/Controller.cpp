@@ -120,6 +120,7 @@ ComputePDForces()
 
 	Eigen::VectorXd qdd_desired = 
 				pos_diff.cwiseProduct(mKp)+(vel_m - vel).cwiseProduct(mKv);
+				
 	mPDForces = qdd_desired;
 	// std::cout<<pos_diff.transpose()<<std::endl;
 	// std::cout<<(vel_m - vel).transpose()<<std::endl;
@@ -155,13 +156,7 @@ Step()
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
-<<<<<<< HEAD
-	mPDForces = ComputePDForces();
-
-=======
-	
 	ComputePDForces();
->>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
@@ -169,10 +164,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-<<<<<<< HEAD
-	// mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
-}
-=======
 	//mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }
->>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6

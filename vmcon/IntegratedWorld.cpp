@@ -278,6 +278,8 @@ WriteRecord(const std::string& path)
 		ofs<<"rvel ";
 		ofs<<mRigidWorld->getSkeleton(i)->getVelocities().transpose()<<std::endl;
 	}
+
+	ofs<<"A "<<mMusculoSkeletalSystem->GetActivationLevels().transpose()<<std::endl;
 	ofs<<"time "<<mRigidWorld->getTime();
 	ofs.close();
 }
