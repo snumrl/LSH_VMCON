@@ -36,7 +36,8 @@ State(const dart::simulation::WorldPtr& rigid_world,
 	mIKSolver(ik_solver),
 	mTimeElapsed(0.0)
 {
-
+	auto T_hb = bn->getTransform().inverse()*mBalls[0]->GetSkeleton()->getBodyNode(0)->getTransform();
+	mAnchorPoint.second = T_hb.translation();
 }
 void
 State::
@@ -94,7 +95,7 @@ Solve()
 
 	Eigen::Vector3d target;
 	mBalls[mBallIndex]->ComputeFallingPosition(mBalls[mBallIndex]->releasedPoint[1],target);
-	
+	std::cout<<target.transpose()<<std::endl;
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 	
 	const auto& ik_targets = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization))->GetTargets();
@@ -102,16 +103,18 @@ Solve()
 	{
 		if(!t.first.first->getName().compare(mAnchorPoint.first->getName()))
 		{
-			if((t.second-target).norm()<5E-3)
+			if((t.second-target).norm()<5E-6)
 				need_ik_update = false;
 		}
 	}
+	if(!mBalls[mBallIndex]->isReleased)
+		need_ik_update = false;
 	if(need_ik_update)
 	{
 		// std::cout<<target.transpose()<<std::endl;
 		if(target.norm()>1E-6){
 			ik->AddTargetPositions(mAnchorPoint,target);
-		mIKSolver->ReOptimizeTNLP(mIKOptimization);	
+			mIKSolver->ReOptimizeTNLP(mIKOptimization);	
 		}
 		
 	}
@@ -144,7 +147,7 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	if((body_COM-ball_COM).norm()<5E-2){
 		// std::cout<<"Attach "<<mBallIndex<<std::endl;
 		mBalls[mBallIndex]->Attach(mRigidWorld,mAnchorPoint.first);
-		event = "catch";
+		// event = "catch";
 	}
 
 	return event;
@@ -177,7 +180,7 @@ BezierCurveState(const dart::simulation::WorldPtr& rigid_world,
 {
 	InitializeLQR();
 }
-
+extern int v_target_from_argv;
 void 
 BezierCurveState::
 Initialize(int ball_index,int V)
@@ -217,8 +220,16 @@ Initialize(int ball_index,int V)
 	v2[0] = -p0[0]/t;
 	// v2[0] = 0;
 	v2[1] = 0.5*9.81*t;
-	v2[2] = -(p0[2]-0.3)/t;
+
+	v2.setZero();
+	v2[1] = 4;
+	// v2[1] = v_target_from_argv;
+	v2[2] = -0.1;
 	
+	// v2 = v_target_from_argv;
+
+	
+	// v2 = Eigen::Vector3d(0,8,0);
 	// p0[2] = 0.3;
 	p1 = p2 - 0.5*mD*mT*v2;
 
@@ -342,7 +353,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	// {
 		// std::cout<<mU[i].transpose()<<std::endl;
 	// }
-	//mU = u0;
+	// mU = u0;
 }
 
 void
@@ -362,8 +373,9 @@ InitializeLQR()
 
 	mLQRMusculoSkeletalSystem->Initialize(mLQRSoftWorld,mLQRRigidWorld);
 	mLQRSoftWorld->Initialize();
+	double ball_mass[10] = {0.13,0.5,1.0,3.0,5.0,10.0,20.0};
 
-	for(int i =0;i<3;i++)
+	for(int i =0;i<1;i++)
 	{
 		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
 
@@ -372,7 +384,8 @@ InitializeLQR()
 		{
 			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
+			// MakeBall(skel,abn->getCOM(),0.036,0.13);
+			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
 
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
@@ -382,8 +395,12 @@ InitializeLQR()
 		{
 			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
-
+			Eigen::Vector3d bp = abn->getCOM();
+			// bp[1] -=0.02;
+			bp[0] +=0.02;
+			bp[2] +=0.03;
+			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			// MakeBall(skel,bp,0.036,0.13);
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
 			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);	
@@ -393,7 +410,7 @@ InitializeLQR()
 	mLQR = std::make_shared<MusculoSkeletalLQR>(
 			mLQRRigidWorld,
 			mLQRSoftWorld,
-			mLQRMusculoSkeletalSystem,mLQRBalls,20);
+			mLQRMusculoSkeletalSystem,mLQRBalls,10);
 }
 
 
@@ -408,15 +425,25 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	// 		k=i;
 	// }
 
-	if(mCount == mU.size()-1)
+	if(mCount >= mU.size()-1)
 	{
 		// std::cout<<"dasdf"<<std::endl;
 		// std::cout<<k<<std::endl;
 		// std::cout<<mCount<<std::endl;
+
 		mBalls[mBallIndex]->Release(mRigidWorld);
+
 		std::cout<<"Released Velocity : "<<mBalls[mBallIndex]->releasedVelocity.transpose()<<std::endl;
 
-		return std::string("end");
+		p = mMotions.back().first+mU.back();
+		v = mMotions[0].first;
+		v.setZero();
+		mCount++;
+		if(mCount>=mU.size()+10)
+			return std::string("end_same_hand");
+		else
+			return std::string("no_event");
+
 	}
 
 	// k1 = k+1;
@@ -561,8 +588,9 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 
 
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
-	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
+	std::vector<int> V_list{1,1,1,1};
+// 	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+// 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};

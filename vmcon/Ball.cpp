@@ -57,10 +57,11 @@ Release(const dart::simulation::WorldPtr& world)
 		world->getConstraintSolver()->removeConstraint(constraint);
 		constraint = nullptr;
 		isReleased = true;
+		releasedPoint = skeleton->getBodyNode(0)->getCOM();
+		releasedVelocity = skeleton->getBodyNode(0)->getCOMLinearVelocity();
 	}
 
-	releasedPoint = skeleton->getBodyNode(0)->getCOM();
-	releasedVelocity = skeleton->getBodyNode(0)->getCOMLinearVelocity();
+
 	
 	// std::cout<<"Released Velocity : "<<releasedVelocity.transpose()<<std::endl;
 }

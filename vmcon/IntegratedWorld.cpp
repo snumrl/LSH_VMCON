@@ -14,6 +14,7 @@ IntegratedWorld()
 {
 
 }
+extern int v_target_from_argv;
 bool
 IntegratedWorld::
 TimeStepping()
@@ -65,7 +66,10 @@ TimeStepping()
 
 	rec->Set(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mController);
 	
-	std::string output_path("../output/");
+
+	std::string output_path("../output_"+std::to_string(v_target_from_argv)+"/");
+	if(mRigidWorld->getTime()>3.0)
+		exit(0);
 	WriteRecord(output_path);
 
 
@@ -115,7 +119,9 @@ Initialize()
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
 
-	for(int i =0;i<3;i++)
+	double ball_mass[10] = {0.13,0.5,1.0,3.0,5.0,10.0,20.0};
+	
+	for(int i =0;i<1;i++)
 	{
 		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
 
@@ -124,7 +130,11 @@ Initialize()
 		{
 			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
+			Eigen::Vector3d bp = abn->getCOM();
+			bp[1] +=0.1;
+			// bp[0] +=0.1;
+			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			// MakeBall(skel,bp,0.036,0.13);
 
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -135,8 +145,12 @@ Initialize()
 		{
 			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
-
+			Eigen::Vector3d bp = abn->getCOM();
+			// bp[1] -=0.02;
+			bp[0] +=0.02;
+			bp[2] +=0.03;
+			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			// MakeBall(skel,bp,0.036,0.13);
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mRigidWorld->addSkeleton(skel);

@@ -11,13 +11,13 @@ public:
 	SimWindow();
 
 	std::shared_ptr<IntegratedWorld> mWorld;
-	std::vector<std::shared_ptr<Record>>		mRecords;
+	std::vector<std::vector<std::shared_ptr<Record>>> mRecords;
 	int 						mFrame;
 	bool 						mIsPlay;
 	bool 						mIsRotate;
 	bool 						mIsDrag;
 
-	
+	std::vector<bool> mIsRender;
 	void LoadFromFolder(const std::string& path);
 protected:
 	void Display() override;
