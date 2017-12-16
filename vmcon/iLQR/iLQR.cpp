@@ -80,7 +80,6 @@ ComputeDerivative()
     
     
 	
-	
 
 	for(int t =0;t<mN-1;t++)
 	{
@@ -102,8 +101,9 @@ ComputeDerivative()
 		// std::cout<<mCuu[t]<<std::endl;
 		// exit(0);
 
-		
+
  
+
 	}
 
 
@@ -289,16 +289,15 @@ Solve()
 	int fail_count = 0;
 
 	for(int i = 0;i<mMaxIteration;i++)
-	{	
-
+	{
 		auto start = std::chrono::system_clock::now();
-		
 		ComputeDerivative();
 		auto end = std::chrono::system_clock::now();
 		std::chrono::duration<double> elapsed_seconds = end-start;
-    	std::cout << "ComputeDerivative elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
-    	start = std::chrono::system_clock::now();
+
+	    	std::cout<< "ComputeDerivative elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
 		mBackwardPassDone = false;
+		start = std::chrono::system_clock::now();
 		while(true)
 		{
 			bool success = BackwardPass();
@@ -316,8 +315,8 @@ Solve()
 		}
 		end = std::chrono::system_clock::now();
 		elapsed_seconds = end-start;
-		std::cout << "BackwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
-    	start = std::chrono::system_clock::now();
+	    	std::cout<< "BackwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
+		start = std::chrono::system_clock::now();
 		mForwardPassDone = false;	
 		std::vector<Eigen::VectorXd> xtemp = mx;
 		std::vector<Eigen::VectorXd> utemp = mu;
@@ -351,7 +350,7 @@ Solve()
 		}
 		end = std::chrono::system_clock::now();
 		elapsed_seconds = end-start;
-		std::cout << "ForwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
+	    	std::cout<< "ForwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
 		if(mForwardPassDone)
 		{
 			mLambda = std::min(mLambda/mLambda_0,1.0/mLambda_0);

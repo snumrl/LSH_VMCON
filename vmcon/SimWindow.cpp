@@ -24,6 +24,8 @@ bool
 SimWindow::
 TimeStepping()
 {
+	if(mWorld->GetRigidWorld()->getTime()>10.0)
+		Keyboard(' ',0,0);
 	return mWorld->TimeStepping();
 }
 static Eigen::Vector3d random_target;

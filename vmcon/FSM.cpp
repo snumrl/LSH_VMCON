@@ -342,7 +342,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	// {
 		// std::cout<<mU[i].transpose()<<std::endl;
 	// }
-	// mU = u0;
+	//mU = u0;
 }
 
 void
@@ -393,7 +393,11 @@ InitializeLQR()
 	mLQR = std::make_shared<MusculoSkeletalLQR>(
 			mLQRRigidWorld,
 			mLQRSoftWorld,
+<<<<<<< HEAD
 			mLQRMusculoSkeletalSystem,mLQRBalls,10);
+=======
+			mLQRMusculoSkeletalSystem,mLQRBalls,20);
+>>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 }
 
 
@@ -561,7 +565,8 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 
 
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
-	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
+	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};

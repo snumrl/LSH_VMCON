@@ -19,9 +19,8 @@ MusculoSkeletalLQR(
 		mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
 		mTargetPositions(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mTargetVelocities(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
-		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),300.0)),
-		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(300.0))),
-		mSoftWorldX0(mSoftWorld->GetPositions())
+		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),500.0)),
+		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(500.0)))
 {
 	mKp[mDofs-2] = 2.0*mKp[mDofs-2];
 	mKp[mDofs-1] = 2.0*mKp[mDofs-1];
@@ -68,6 +67,7 @@ Initialze(
 	const std::vector<Eigen::VectorXd>& reference_motions,
 	const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0)
 {
+	mSoftWorldX0 = mSoftWorld->GetPositions();
 	mBallIndex = index;
 	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
@@ -219,14 +219,14 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	// mMusculoSkeletalSystem->TransformAttachmentPoints();
-	// mSoftWorld->TimeStepping(false);
+	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	mSoftWorld->TimeStepping(false);
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 	if(is_ioing){
@@ -236,11 +236,12 @@ Step()
 	}
 	for(int i =0; i<nn;i++)
 	{
-		// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		//mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 		// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
 		// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
 		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
 									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
 		if(is_ioing)
 		{
 			// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
@@ -258,7 +259,7 @@ Step()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
 			// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
 		}
-		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
+		
 
 		mRigidWorld->step();
 	}
@@ -589,9 +590,16 @@ Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd&
 	double x_i_minus,x_i_plus;
 	for(int i = 0;i<mSx;i++)
 	{
+<<<<<<< HEAD
 		if(i<2*mDofs)//||(i>=2*mDofs+6*mBallIndex&&i<2*mDofs+6*mBallIndex+6 ))
 		{
 			x_i = x;
+=======
+		if(i<2*mDofs)
+		{
+
+		x_i = x;
+>>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 
 			fx_i_minus.setZero();
 			fx_i_plus.setZero();
@@ -611,6 +619,13 @@ Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd&
 		else
 			fx.col(i).setZero();
 
+<<<<<<< HEAD
+=======
+		fx.col(i) = (fx_i_plus - fx_i_minus)/(x_i_plus - x_i_minus);
+		}
+		else
+		fx.col(i).setZero();
+>>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 	}
 }
 void

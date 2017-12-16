@@ -302,7 +302,7 @@ void MakeSkeleton(dart::simulation::WorldPtr& world)
 }
 void MakeBalls(dart::simulation::WorldPtr& world)
 {
-	for(int i =0;i<5;i++)
+	for(int i =0;i<3;i++)
 	{
 		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
 
