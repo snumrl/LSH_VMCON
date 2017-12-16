@@ -11,7 +11,7 @@ using namespace dart::dynamics;
 SimWindow::
 SimWindow()
 	:GLUTWindow(),mIsRotate(true),
-	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false),mRenderIK(true)
+	mIsPlay(true),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false),mRenderIK(true)
 {
 	dart::math::seedRand();
 

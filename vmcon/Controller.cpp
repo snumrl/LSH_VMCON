@@ -13,7 +13,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 1000;
+	double k = 300;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
@@ -155,7 +155,7 @@ Step()
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
-	// mPDForces = ComputePDForces();
+	mPDForces = ComputePDForces();
 
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
@@ -164,5 +164,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	// mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

@@ -19,8 +19,8 @@ MusculoSkeletalLQR(
 		mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
 		mTargetPositions(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mTargetVelocities(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
-		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),1000.0)),
-		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(1000.0))),
+		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),300.0)),
+		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(300.0))),
 		mSoftWorldX0(mSoftWorld->GetPositions())
 {
 	mKp[mDofs-2] = 2.0*mKp[mDofs-2];
@@ -219,14 +219,14 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	mSoftWorld->TimeStepping(false);
+	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	// mMusculoSkeletalSystem->TransformAttachmentPoints();
+	// mSoftWorld->TimeStepping(false);
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 	if(is_ioing){
@@ -236,11 +236,11 @@ Step()
 	}
 	for(int i =0; i<nn;i++)
 	{
-		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 		// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
 		// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
-		// Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
-									// mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
+									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 		if(is_ioing)
 		{
 			// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
@@ -258,7 +258,7 @@ Step()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
 			// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
 		}
-		// mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
+		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
 
 		mRigidWorld->step();
 	}
@@ -589,22 +589,28 @@ Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd&
 	double x_i_minus,x_i_plus;
 	for(int i = 0;i<mSx;i++)
 	{
-		x_i = x;
+		if(i<2*mDofs)//||(i>=2*mDofs+6*mBallIndex&&i<2*mDofs+6*mBallIndex+6 ))
+		{
+			x_i = x;
 
-		fx_i_minus.setZero();
-		fx_i_plus.setZero();
+			fx_i_minus.setZero();
+			fx_i_plus.setZero();
 
-		x_i_minus = x[i] - delta;
-		x_i_plus = x[i] + delta;
+			x_i_minus = x[i] - delta;
+			x_i_plus = x[i] + delta;
 
-		ClipX(i,x_i_minus,x_i_plus);
+			ClipX(i,x_i_minus,x_i_plus);
 
-		x_i[i] = x_i_minus;
-		Evalf(x_i,u,t,fx_i_minus);
-		x_i[i] = x_i_plus;
-		Evalf(x_i,u,t,fx_i_plus);
+			x_i[i] = x_i_minus;
+			Evalf(x_i,u,t,fx_i_minus);
+			x_i[i] = x_i_plus;
+			Evalf(x_i,u,t,fx_i_plus);
 
-		fx.col(i) = (fx_i_plus - fx_i_minus)/(x_i_plus - x_i_minus);
+			fx.col(i) = (fx_i_plus - fx_i_minus)/(x_i_plus - x_i_minus);
+		}
+		else
+			fx.col(i).setZero();
+
 	}
 }
 void

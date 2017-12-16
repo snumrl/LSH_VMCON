@@ -359,7 +359,7 @@ ComputeForceDerivative(const FEM::WorldPtr& world)
 	// std::cout<<J.transpose()<<std::endl;
 #else
 
-													#define NO_OFF_DIAGONAL
+													// #define NO_OFF_DIAGONAL
 													#ifdef NO_OFF_DIAGONAL
 
 	Eigen::VectorXd Ji(mMuscles.size()*6);
@@ -742,7 +742,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	skel->getDof(3*4+2-4)->setPositionLimits(-0.75,1.8); //Z
 
 	skel->getDof(3*5+0-4)->setPositionLimits(-2.2,0.1); 
-	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2); 
+	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2);
 
 	for(int i =0;i<skel->getNumDofs();i++){
 	// 	skel->getDof(i)->setPositionLimits(-100,100);
