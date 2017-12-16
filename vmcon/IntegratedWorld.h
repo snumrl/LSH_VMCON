@@ -32,6 +32,7 @@ public:
 	void SetRecord(int& frame);
 	void WriteXML(const std::string& path);
 	void WriteRecord(const std::string& path);
+	void ReadRecord(const std::string& path);
 private:
 	IntegratedWorld();
 

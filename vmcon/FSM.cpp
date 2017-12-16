@@ -393,11 +393,7 @@ InitializeLQR()
 	mLQR = std::make_shared<MusculoSkeletalLQR>(
 			mLQRRigidWorld,
 			mLQRSoftWorld,
-<<<<<<< HEAD
-			mLQRMusculoSkeletalSystem,mLQRBalls,10);
-=======
 			mLQRMusculoSkeletalSystem,mLQRBalls,20);
->>>>>>> ed9b5dfd6354f6f33a6820d7ad02e239d91e2ca6
 }
 
 

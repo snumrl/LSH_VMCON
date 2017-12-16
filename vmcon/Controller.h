@@ -43,7 +43,7 @@ public:
 	void SetTargetPositions(const Eigen::VectorXd& x) { mTargetPositions=x;}
 
 	Eigen::VectorXd mPDForces;
-private:
+public:
 	Controller(
 		const FEM::WorldPtr& soft_world,
 		const dart::simulation::WorldPtr& rigid_world,

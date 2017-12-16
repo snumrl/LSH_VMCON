@@ -3,6 +3,7 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "Record.h"
+#include "FSM.h"
 #include <fstream>
 #include <sstream>
 #include <tinyxml.h>
@@ -155,7 +156,10 @@ Initialize()
 	// 	mRigidWorld->addSkeleton(skel);
 	// }
 	WriteXML("../output/world_state.xml");
+
+
 	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
+	ReadRecord("../output/204");
 
 }
 
@@ -279,7 +283,137 @@ WriteRecord(const std::string& path)
 		ofs<<mRigidWorld->getSkeleton(i)->getVelocities().transpose()<<std::endl;
 	}
 
-	ofs<<"A "<<mMusculoSkeletalSystem->GetActivationLevels().transpose()<<std::endl;
+	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels().transpose()<<std::endl;
+	ofs<<"release ";
+	for(int i=0;i<mBalls.size();i++)
+	{
+		ofs<<mBalls->isReleased<<" ";
+	}
+	ofs<<std::endl;
 	ofs<<"time "<<mRigidWorld->getTime();
 	ofs.close();
+}
+
+void
+IntegratedWorld::
+ReadRecord(const std::string& path)
+{
+	std::ifstream ifs(path);
+	if(!(ifs.is_open()))
+	{
+		std::cout<<"Can't read file "<<path<<std::endl;
+		return;
+	}
+	std::string str;
+	std::string index;
+	std::stringstream ss;
+	std::shared_ptr<Record> new_record = Record::Create();
+	while(!ifs.eof())
+	{
+		str.clear();
+		index.clear();
+		ss.clear();
+
+		std::getline(ifs,str);
+		ss.str(str);	
+		ss>>index;
+
+		Eigen::VectorXd eigen_vec;
+		std::vector<double> vec;
+		double val;
+		if(!index.compare("soft"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			new_record->soft_body_positions = eigen_vec;
+		}
+		else if(!index.compare("rpos"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			new_record->rigid_body_positions.push_back(eigen_vec);
+		}
+		else if(!index.compare("rvel"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			new_record->rigid_body_velocities.push_back(eigen_vec);
+
+		}
+		else if(!index.compare("act"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			new_record->activation_levels = (eigen_vec);
+		}
+		else if(!index.compare("release"))
+		{
+			int rel;
+			int count = 0;
+			while(!ss.eof())
+			{
+				ss>>rel;
+				if(rel==0)
+					mBalls[count++]->Release(mRigidWorld);
+				
+			}
+		}
+		else if(!index.compare("time"))
+		{
+			ss>>val;
+			new_record->t = val;
+		}
+		
+	}
+	ifs.close();
+
+	mRigidWorld->setTime(new_record->t);
+	for(int i =0;i<mRigidWorld->getNumSkeletons();i++)
+		mRigidWorld->getSkeleton(i)->setPositions(new_record->rigid_body_positions[i]);
+	for(int i =0;i<mRigidWorld->getNumSkeletons();i++)
+		mRigidWorld->getSkeleton(i)->setVelocities(new_record->rigid_body_velocities[i]);
+
+	mSoftWorld->SetTime(new_record->t);
+	mSoftWorld->SetPositions(new_record->soft_body_positions);
+	mMusculoSkeletalSystem->SetActivationLevels(new_record->activation_levels);
+
+
+	int juggling_count =1;
+	mController->mFSM->mJugglingFrame = juggling_count;
+	for(int i =0;i<juggling_count;i++){
+		mController->mFSM->Trigger("end");
+		mController->mFSM->Trigger("catch");
+	}
 }

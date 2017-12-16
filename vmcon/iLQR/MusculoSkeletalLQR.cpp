@@ -219,14 +219,14 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	mSoftWorld->TimeStepping(false);
+	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	// mMusculoSkeletalSystem->TransformAttachmentPoints();
+	// mSoftWorld->TimeStepping(false);
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 	if(is_ioing){
