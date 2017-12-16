@@ -11,7 +11,7 @@ using namespace dart::dynamics;
 SimWindow::
 SimWindow()
 	:GLUTWindow(),mIsRotate(true),
-	mIsPlay(false),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false),mRenderIK(true)
+	mIsPlay(true),mIsReplay(false),mIsPaused(false),mSimTime(0.0),mRecordFrame(0),mRenderDetail(false),mRenderIK(true)
 {
 	dart::math::seedRand();
 
@@ -24,6 +24,8 @@ bool
 SimWindow::
 TimeStepping()
 {
+	if(mWorld->GetRigidWorld()->getTime()>10.0)
+		Keyboard(' ',0,0);
 	return mWorld->TimeStepping();
 }
 static Eigen::Vector3d random_target;

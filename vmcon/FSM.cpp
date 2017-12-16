@@ -316,7 +316,7 @@ BezierCurveState::
 OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	Eigen::VectorXd x0(dofs*2+12*mBalls.size());
+	Eigen::VectorXd x0(dofs*2+6*mBalls.size());
 	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
 	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
@@ -342,7 +342,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	// {
 		// std::cout<<mU[i].transpose()<<std::endl;
 	// }
-	// mU = u0;
+	//mU = u0;
 }
 
 void
@@ -393,7 +393,7 @@ InitializeLQR()
 	mLQR = std::make_shared<MusculoSkeletalLQR>(
 			mLQRRigidWorld,
 			mLQRSoftWorld,
-			mLQRMusculoSkeletalSystem,mLQRBalls,5);
+			mLQRMusculoSkeletalSystem,mLQRBalls,20);
 }
 
 
@@ -561,7 +561,8 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 
 
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
-	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
+	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};

@@ -13,7 +13,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 1000;
+	double k = 500;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
@@ -93,8 +93,8 @@ ComputeActivationLevels()
 	Eigen::VectorXd qdd = solution.head(skel->getNumDofs());
 	Eigen::VectorXd activation = solution.tail(mMusculoSkeletalSystem->GetNumMuscles());
 
-	// std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
-	// std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl;
+//	std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
+//	std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl<<std::endl;
 	// std::cout<<"activation  :"<<activation.transpose()<<std::endl;
 	return activation;
 }
@@ -120,7 +120,7 @@ ComputePDForces()
 
 	Eigen::VectorXd qdd_desired = 
 				pos_diff.cwiseProduct(mKp)+(vel_m - vel).cwiseProduct(mKv);
-
+	mPDForces = qdd_desired;
 	// std::cout<<pos_diff.transpose()<<std::endl;
 	// std::cout<<(vel_m - vel).transpose()<<std::endl;
 	// std::cout<<pos_diff.cwiseProduct(mKp).transpose()<<std::endl;
@@ -155,8 +155,8 @@ Step()
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
-	// mPDForces = ComputePDForces();
-
+	
+	ComputePDForces();
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
@@ -164,5 +164,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	//mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

@@ -80,11 +80,10 @@ ComputeDerivative()
     
     
 	
-	
 
 	for(int t =0;t<mN-1;t++)
 	{
-		auto start = std::chrono::system_clock::now();
+
 		Evalf(mx[t],mu[t],t,mx[t+1]);
 		Evalfx(mx[t],mu[t],t,mfx[t]);
 		Evalfu(mx[t],mu[t],t,mfu[t]);
@@ -101,13 +100,13 @@ ComputeDerivative()
 		// std::cout<<mCu[t]<<std::endl;
 		// std::cout<<mCuu[t]<<std::endl;
 		// exit(0);
-		auto end = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = end-start;
-    	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+
  
-    	std::cout << "finished computation at " << std::ctime(&end_time)
-        	<< "elapsed time: " << elapsed_seconds.count() << "s\n";
+
 	}
+
+
 	EvalCf(mx[mN-1],cf);
 	mCost +=cf;
 	std::cout<<"Cost : "<<mCost<<"(cf : "<<cf<<")"<<std::endl;
@@ -291,9 +290,14 @@ Solve()
 
 	for(int i = 0;i<mMaxIteration;i++)
 	{
+		auto start = std::chrono::system_clock::now();
 		ComputeDerivative();
-		
+		auto end = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = end-start;
+
+	    	std::cout<< "ComputeDerivative elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
 		mBackwardPassDone = false;
+		start = std::chrono::system_clock::now();
 		while(true)
 		{
 			bool success = BackwardPass();
@@ -309,8 +313,10 @@ Solve()
 				break;
 			}
 		}
-
-		
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end-start;
+	    	std::cout<< "BackwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
+		start = std::chrono::system_clock::now();
 		mForwardPassDone = false;	
 		std::vector<Eigen::VectorXd> xtemp = mx;
 		std::vector<Eigen::VectorXd> utemp = mu;
@@ -342,7 +348,9 @@ Solve()
 				mu = utemp;
 			}
 		}
-
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end-start;
+	    	std::cout<< "ForwardPass elapsed time: " << elapsed_seconds.count() << "s"<<std::endl;
 		if(mForwardPassDone)
 		{
 			mLambda = std::min(mLambda/mLambda_0,1.0/mLambda_0);

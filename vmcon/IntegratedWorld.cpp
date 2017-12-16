@@ -36,7 +36,7 @@ TimeStepping()
 	// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
 	// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
 
-	// Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+
 	// std::cout<<mBalls[0]->GetPosition().transpose()<<std::endl;
 	// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
 	// std::cout<<((dart::constraint::WeldJointConstraint*)interesting.get())->mJacobian2<<std::endl;
@@ -45,16 +45,17 @@ TimeStepping()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
 	// std::cout<<pd_forces.transpose()<<std::endl;
-	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+	Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 
 
 
-	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	//mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 	if(need_fem_update)
 	{
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping();
-		// mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+		//mMusculoSkeletalSystem->TransformAttachmentPoints();
+		//mSoftWorld->TimeStepping();
+		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
 	}
 
 	mRigidWorld->step();
@@ -99,7 +100,7 @@ Initialize()
 		// FEM::IntegrationMethod::QUASI_STATIC,	//Integration Method
 		// FEM::IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
 		1.0/200.0,							//Time Step
-		10,								//Max Iteration
+		20,								//Max Iteration
 		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
 		);

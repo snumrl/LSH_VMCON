@@ -153,7 +153,7 @@ LoadFromFolder(const std::string& path)
 	std::string state_path = path +"world_state.xml";
 	mWorld = std::make_shared<IntegratedWorld>(state_path);
 
-	for(int i=0;i<100;i++)
+	for(int i=0;i<200;i++)
 	{
 		std::string real_path = path+std::to_string(i);
 		mRecords.push_back(Record::Create());

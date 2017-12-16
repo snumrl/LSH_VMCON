@@ -182,11 +182,11 @@ void MakeBall(
     inertia.setMass(mass);
     inertia.setMoment(shape->computeInertia(mass));
 
-    FreeJoint::Properties prop;
+    TranslationalJoint::Properties prop;
     prop.mT_ParentBodyToJoint.setIdentity();
     prop.mT_ChildBodyToJoint.setIdentity();
 
-    BodyNodePtr bn = skel->createJointAndBodyNodePair<FreeJoint>(
+    BodyNodePtr bn = skel->createJointAndBodyNodePair<TranslationalJoint>(
       nullptr,prop,BodyNode::AspectProperties("ball")).second;
 
     auto sn = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
