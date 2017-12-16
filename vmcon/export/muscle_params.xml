@@ -1,5 +1,5 @@
 <Muscles>
- 		<!--<unit name="R_Levator_Scapulae_0">
+ 		<unit name="R_Levator_Scapulae_0">
 		<mesh type="Rectangle" nx="1" ny="1" ratio="0.1" />
 		<origin>
 			<anchor body="Torso" x="-2.6677570343" y="157.077835083" z="-0.615386009216"/>
@@ -1555,6 +1555,6 @@
 			<anchor body="HandL" x="26.8743782043" y="91.7415237427" z="2.03889489174"/>
 			<anchor body="HandL" x="27.8102798462" y="86.2441101074" z="2.75670194626"/>
 		</insertion>
-	</unit>-->
+	</unit>
 </Muscles>
 

@@ -46,17 +46,19 @@ TimeStepping()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
 	// std::cout<<pd_forces.transpose()<<std::endl;
-	Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-	mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+
+	
+	// Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 
 
 
-	//mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 	if(need_fem_update)
 	{
-		//mMusculoSkeletalSystem->TransformAttachmentPoints();
-		//mSoftWorld->TimeStepping();
-		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+		mMusculoSkeletalSystem->TransformAttachmentPoints();
+		mSoftWorld->TimeStepping();
+		// mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
 	}
 
 	mRigidWorld->step();
@@ -133,8 +135,8 @@ Initialize()
 			Eigen::Vector3d bp = abn->getCOM();
 			bp[1] +=0.1;
 			// bp[0] +=0.1;
-			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
-			// MakeBall(skel,bp,0.036,0.13);
+			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			MakeBall(skel,bp,0.036,0.13);
 
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -149,8 +151,8 @@ Initialize()
 			// bp[1] -=0.02;
 			bp[0] +=0.02;
 			bp[2] +=0.03;
-			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
-			// MakeBall(skel,bp,0.036,0.13);
+			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			MakeBall(skel,bp,0.036,0.13);
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mRigidWorld->addSkeleton(skel);

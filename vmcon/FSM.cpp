@@ -222,9 +222,9 @@ Initialize(int ball_index,int V)
 	v2[1] = 0.5*9.81*t;
 
 	v2.setZero();
-	v2[1] = 4;
-	// v2[1] = v_target_from_argv;
-	v2[2] = -0.1;
+	// v2[1] = 4;
+	v2[1] = v_target_from_argv;
+	v2[2] = -0.05;
 	
 	// v2 = v_target_from_argv;
 
@@ -384,7 +384,7 @@ InitializeLQR()
 		{
 			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			// MakeBall(skel,abn->getCOM(),0.036,0.13);
+			MakeBall(skel,abn->getCOM(),0.036,0.13);
 			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
 
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -399,8 +399,8 @@ InitializeLQR()
 			// bp[1] -=0.02;
 			bp[0] +=0.02;
 			bp[2] +=0.03;
-			MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
-			// MakeBall(skel,bp,0.036,0.13);
+			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
+			MakeBall(skel,bp,0.036,0.13);
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
 			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);	

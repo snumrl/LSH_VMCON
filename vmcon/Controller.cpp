@@ -156,7 +156,7 @@ Step()
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
 	
-	ComputePDForces();
+	// ComputePDForces();
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
@@ -164,5 +164,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	//mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

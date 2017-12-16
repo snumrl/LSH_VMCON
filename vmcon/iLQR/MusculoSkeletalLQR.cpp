@@ -236,12 +236,12 @@ Step()
 	}
 	for(int i =0; i<nn;i++)
 	{
-		//mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 		// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
 		// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
-		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
-									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
+		// Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
+									// mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		// mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
 		if(is_ioing)
 		{
 			// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
