@@ -224,7 +224,7 @@ Initialize(int ball_index,int V)
 	v2.setZero();
 	// v2[1] = 4;
 	v2[1] = v_target_from_argv;
-	v2[2] = -0.05;
+	v2[2] = -0.1;
 	
 	// v2 = v_target_from_argv;
 

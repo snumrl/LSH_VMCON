@@ -106,7 +106,7 @@ Initialize()
 		// FEM::IntegrationMethod::QUASI_STATIC,	//Integration Method
 		// FEM::IntegrationMethod::PROJECTIVE_DYNAMICS,	//Integration Method
 		1.0/200.0,							//Time Step
-		20,								//Max Iteration
+		10,								//Max Iteration
 		Eigen::Vector3d(0,-9.81,0),					//Gravity
 		0.999								//Damping
 		);

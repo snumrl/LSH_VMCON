@@ -65,7 +65,7 @@ Display()
 
 
 		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld());
-		DrawWorld(mWorld->GetSoftWorld());
+		// DrawWorld(mWorld->GetSoftWorld());
 
     	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
     	{
@@ -197,7 +197,7 @@ LoadFromFolder(const std::string& path)
 {
 
 	std::vector<std::shared_ptr<Record>> records;
-	for(int i=0;i<3000;i++)
+	for(int i=0;i<2000;i++)
 	{
 		std::string real_path = path+std::to_string(i);
 		records.push_back(Record::Create());
