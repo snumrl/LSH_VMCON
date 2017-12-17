@@ -16,7 +16,9 @@ public:
 	bool 						mIsPlay;
 	bool 						mIsRotate;
 	bool 						mIsDrag;
+	bool 						mRenderFEM;
 
+	double						mDisplayRatio;
 	std::vector<bool> mIsRender;
 	void LoadFromFolder(const std::string& path);
 protected:

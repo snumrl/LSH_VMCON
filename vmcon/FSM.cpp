@@ -95,7 +95,6 @@ Solve()
 
 	Eigen::Vector3d target;
 	mBalls[mBallIndex]->ComputeFallingPosition(mBalls[mBallIndex]->releasedPoint[1],target);
-	std::cout<<target.transpose()<<std::endl;
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 	
 	const auto& ik_targets = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization))->GetTargets();
@@ -327,13 +326,13 @@ BezierCurveState::
 OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	Eigen::VectorXd x0(dofs*2+6*mBalls.size());
+	Eigen::VectorXd x0(dofs*2+12*mBalls.size());
 	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
 	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
 	{
-		x0.block(2*dofs+6*i,0,3,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getPositions();
-		x0.block(2*dofs+6*i+3,0,3,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getVelocities();
+		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getPositions();
+		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[mBallIndex]->GetSkeleton()->getVelocities();
 	}	
 	std::vector<Eigen::VectorXd> ref,u0;
 	ref.resize(mMotions.size()-1);

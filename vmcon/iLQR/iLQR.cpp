@@ -215,7 +215,6 @@ BackwardPass()
 
 	return true;
 }
-extern bool is_ioing;
 
 double
 iLQR::
@@ -234,7 +233,6 @@ ForwardPass()
 
 	}
 
-	is_ioing = true;
 	double cost_new = 0;
 	double c = 0;
 	double cf = 0;
@@ -244,7 +242,6 @@ ForwardPass()
 	}
 	EvalCf(mx[mN-1],cf);
 	cost_new += cf;
-	is_ioing = false;
 	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
 
 
@@ -282,6 +279,7 @@ ForwardPass()
 	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
 	return cost_new;
 }
+extern bool is_ioing;
 const std::vector<Eigen::VectorXd>&
 iLQR::
 Solve()
@@ -290,6 +288,10 @@ Solve()
 
 	for(int i = 0;i<mMaxIteration;i++)
 	{
+		is_ioing = true;
+		double cf;
+		EvalCf(mx[mN-1],cf);
+		is_ioing = false;
 		auto start = std::chrono::system_clock::now();
 		ComputeDerivative();
 		auto end = std::chrono::system_clock::now();
@@ -383,7 +385,7 @@ Solve()
 				break;
 			}
 		}
-		
+
 	}
 	// for(int t =0;t<10;t++)
 		// std::cout<<mu[t].transpose()<<std::endl;
