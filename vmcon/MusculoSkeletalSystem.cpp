@@ -741,16 +741,16 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	pos[3*3+0-4] = 0.3;
 	pos[3*4+0-4] = 0.3;
 
-	pos[3*3+1-4] = -0.7;
-	pos[3*4+1-4] = 0.7;
+	pos[3*3+1-4] = -0.2;
+	pos[3*4+1-4] = 0.2;
 
 	pos[3*3+2-4] = -1.0;
 	pos[3*4+2-4] = 1.0;
 
 	// //Revolute Joint
 
-	pos[3*5-4] = -0.5;
-	pos[3*5+1-4] = 0.5;
+	pos[3*5-4] = -1.7;
+	pos[3*5+1-4] = 1.7;
 
 	//Root joint
 

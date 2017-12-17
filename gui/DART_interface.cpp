@@ -19,6 +19,22 @@ DrawSkeleton(
 		if(shapeNodes.size() ==1)
 			j=0;
 		auto T = shapeNodes[j]->getTransform();
+		glPushMatrix();
+		glMultMatrixd(T.data());
+		glBegin(GL_LINES);
+		glColor3f(1,0,0);
+		glVertex3f(0,0,0);
+		glVertex3f(0.1,0,0);
+
+		glColor3f(0,1,0);
+		glVertex3f(0,0,0);
+		glVertex3f(0,0.1,0);
+
+		glColor3f(0,0,1);
+		glVertex3f(0,0,0);
+		glVertex3f(0,0,0.1);
+		glEnd();
+		glPopMatrix();
 		DrawShape(T,shapeNodes[j]->getShape().get(),color);
 		// }
 	}

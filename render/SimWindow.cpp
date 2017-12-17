@@ -7,16 +7,26 @@ using namespace FEM;
 
 using namespace dart::simulation;
 using namespace dart::dynamics;
+extern std::string g_state_path;
+extern std::vector<std::string> g_record_path;
 SimWindow::
 SimWindow()
-	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0)
+	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0),mRenderDetail(false)
 {
-	std::string state_path = "../output/world_state.xml";
-	mWorld = std::make_shared<IntegratedWorld>(state_path);
-	for(int i =1;i<=7;i++){
-		LoadFromFolder("../output_"+std::to_string(i)+"/");
+	// std::string state_path = "../output/world_state.xml";
+	mWorld = std::make_shared<IntegratedWorld>(g_state_path);
+	std::cout<<g_state_path<<std::endl;
+	for(int i =0;i<g_record_path.size();i++)
+	{
+		std::cout<<g_record_path[i]<<std::endl;
+
+		LoadFromFolder(g_record_path[i]);
 		mIsRender.push_back(true);
 	}
+	// for(int i =1;i<=7;i++){
+	// 	LoadFromFolder("../output_"+std::to_string(i)+"/");
+	// 	mIsRender.push_back(true);
+	// }
 
 	mDisplayTimeout = 33;
 }
@@ -73,7 +83,7 @@ Display()
     		if(i==1)
     			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.2,0.2));
     		else
-    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i));
+    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
 	    }
 	    }
 	}
@@ -99,6 +109,7 @@ case '9' : mIsRender[8] = !mIsRender[8];break;
 
 		case '-' : mDisplayRatio*=0.9;break;
 		case '+' : mDisplayRatio*=1.1;break;
+		case 'w' :mRenderDetail =!mRenderDetail;break;
 		case 'q' : mRenderFEM =!mRenderFEM;break;
 		case ' ' : mIsPlay =!mIsPlay;break;
 		case 'r' : mFrame = 0;break;
@@ -202,7 +213,7 @@ LoadFromFolder(const std::string& path)
 {
 
 	std::vector<std::shared_ptr<Record>> records;
-	for(int i=0;i<1000;i++)
+	for(int i=0;i<400;i++)
 	{
 		std::string real_path = path+std::to_string(i);
 		records.push_back(Record::Create());

@@ -288,6 +288,7 @@ Solve()
 
 	for(int i = 0;i<mMaxIteration;i++)
 	{
+		Finalize(i);
 		is_ioing = true;
 		double cf;
 		EvalCf(mx[mN-1],cf);
@@ -390,7 +391,7 @@ Solve()
 	// for(int t =0;t<10;t++)
 		// std::cout<<mu[t].transpose()<<std::endl;
 	// std::cout<<mu[0].transpose()<<std::endl;
-	Finalize();
+	
 
 	return mu;
 }

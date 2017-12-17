@@ -247,20 +247,20 @@ void MakeSkeleton(dart::simulation::WorldPtr& world)
 
 	//Ball Joints
 
+
 	pos[3*3+0-4] = 0.3;
 	pos[3*4+0-4] = 0.3;
 
-	pos[3*3+1-4] = -0.7;
-	pos[3*4+1-4] = 0.7;
+	pos[3*3+1-4] = -0.2;
+	pos[3*4+1-4] = 0.2;
 
 	pos[3*3+2-4] = -1.0;
 	pos[3*4+2-4] = 1.0;
 
 	// //Revolute Joint
 
-	pos[3*5-4] = -0.5;
-	pos[3*5+1-4] = 0.5;
-
+	pos[3*5-4] = -1.7;
+	pos[3*5+1-4] = 1.7;
 	//Root joint
 
 	skel->getDof(3*0+0)->setPositionLimits(-0.0,0.0);
@@ -319,7 +319,11 @@ void MakeBalls(dart::simulation::WorldPtr& world)
 		{
 			auto* abn =world->getSkeleton(0)->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
+			Eigen::Vector3d bp = abn->getCOM();
+			bp[1] += 0.03;
+			bp[0] += 0.03;
+			bp[2] += 0.02;
+			MakeBall(skel,bp,0.036,0.13);
 
 			world->addSkeleton(skel);
 		}

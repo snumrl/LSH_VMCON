@@ -1,0 +1,8 @@
+./render ../output_lqr/state.xml ../output_lqr1/iteration0/ ../output_lqr2/iteration0/ ../output_lqr3/iteration0/ ../output_lqr4/iteration0/ ../output_lqr5/iteration0/ ../output_lqr6/iteration0/ ../output_lqr7/iteration0/
+
+
+
+./render ../output_lqr/state.xml ../output_lqr1/iteration2/ ../output_lqr2/iteration2/ ../output_lqr3/iteration2/ ../output_lqr4/iteration2/ ../output_lqr5/iteration2/ ../output_lqr6/iteration6/ ../output_lqr7/iteration2/
+
+
+./render ../output_lqr/state.xml ../output_lqr5/iteration0/ ../output_lqr5/iteration3/ 

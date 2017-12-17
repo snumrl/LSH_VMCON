@@ -202,17 +202,19 @@ Initialize(int ball_index,int V)
 		isleft = true;
 
 	p0 = mBalls[mBallIndex]->GetPosition();
-	
-	if(isleft){
-		p0[0] +=0.1;
-		p2[0] = p0[0]-0.15;
-	}
-	else{
-		p0[0] -=0.1;
-		p2[0] = p0[0]+0.15;
-	}
-	p2[1] = 0.1;
-	p2[2] = p0[2];
+	p2 = p0;
+	p2[2] += 0.05;
+	// if(isleft){
+	// 	p0[0] +=0.1;
+	// 	p2[0] = p0[0]-0.15;
+	// }
+	// else{
+	// 	p0[0] -=0.1;
+	// 	p2[0] = p0[0]+0.15;
+	// }
+	// p0[1] +=0.2;
+	// p2[1] = 0.1;
+	// p2[2] = p0[2];
 
 	
 
@@ -396,8 +398,12 @@ InitializeLQR()
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			Eigen::Vector3d bp = abn->getCOM();
 			// bp[1] -=0.02;
-			bp[0] +=0.02;
-			bp[2] +=0.03;
+			// bp[1] +=0.06;
+			// bp[0] += 1.0;
+			bp[0] -= 0.03;
+			bp[1] += 0.03;
+			bp[2] += 0.02;
+			// std::cout<<bp.transpose()<<std::endl;
 			// MakeBall(skel,bp,0.036,ball_mass[v_target_from_argv]);
 			MakeBall(skel,bp,0.036,0.13);
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
