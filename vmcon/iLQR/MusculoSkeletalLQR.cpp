@@ -5,6 +5,7 @@
 #include "../Ball.h"
 
 #include <fstream>
+// #define USE_LS_MUSCLE
 using namespace Ipopt;
 MusculoSkeletalLQR::
 MusculoSkeletalLQR(
@@ -12,7 +13,7 @@ MusculoSkeletalLQR(
 		const std::shared_ptr<FEM::World>& soft_world,
 		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
 		const std::vector<std::shared_ptr<Ball>>& balls,int max_iteration)
-		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+6*balls.size(), 			//State
+		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+12*balls.size(), 			//State
 				musculo_skeletal_system->GetSkeleton()->getNumDofs(),			//Signal
 				max_iteration),
 		mDofs(musculo_skeletal_system->GetSkeleton()->getNumDofs()),
@@ -123,7 +124,7 @@ EvalCf(const Eigen::VectorXd& x,double& cf)
 	{
 		// std::cout<<"POS : "<<0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm()<<std::endl;
 		// std::cout<<"VEL : "<<0.5*w_vel_track*(mBallTargetVelocity - ball_vel).squaredNorm()<<std::endl;
-		// std::cout<<"VEL : "<<(mBallTargetVelocity - ball_vel).transpose()<<std::endl;
+		std::cout<<"VEL : "<<(ball_vel).transpose()<<std::endl;
 	}
 	// std::cout<<ball_vel.transpose()<<std::endl;
 	cf = 0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm();
@@ -145,10 +146,10 @@ void
 MusculoSkeletalLQR::
 Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f)
 {
-	
-	SetState(x);
 	if(t==0)
 		mSoftWorld->SetPositions(mSoftWorldX0);
+	SetState(x);
+	
 	// 	auto cons = mRigidWorld->getConstraintSolver()->mManualConstraints;
 	// 	for(int i =0;i<cons.size();i++)
 	// 	{
@@ -177,11 +178,12 @@ SetState(const Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+6*i+0,0,3,1));
-		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+6*i+3,0,3,1));
+		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+12*i+0,0,6,1));
+		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
 		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,true,false);	
 	}
-	
+
+	mMusculoSkeletalSystem->TransformAttachmentPoints();	
 }
 void
 MusculoSkeletalLQR::
@@ -204,8 +206,8 @@ GetState(Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		x.block(2*mDofs+6*i+0,0,3,1) = mBalls[i]->GetSkeleton()->getPositions();
-		x.block(2*mDofs+6*i+3,0,3,1) = mBalls[i]->GetSkeleton()->getVelocities();
+		x.block(2*mDofs+12*i+0,0,6,1) = mBalls[i]->GetSkeleton()->getPositions();
+		x.block(2*mDofs+12*i+6,0,6,1) = mBalls[i]->GetSkeleton()->getVelocities();
 	}
 
 	
@@ -225,8 +227,10 @@ Step()
 	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
 	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	mMusculoSkeletalSystem->TransformAttachmentPoints();
+#ifndef USE_LS_MUSCLE	
 	mSoftWorld->TimeStepping(false);
+#endif
+	
 
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 	if(is_ioing){

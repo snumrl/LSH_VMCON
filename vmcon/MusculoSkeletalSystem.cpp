@@ -5,7 +5,7 @@
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
-
+// #define USE_LS_MUSCLE
 Muscle::
 Muscle()
 {
@@ -116,9 +116,11 @@ SetActivationLevel(double a)
 
 MusculoSkeletalSystem::
 MusculoSkeletalSystem()
-	:mTendonStiffness(1E5),mMuscleStiffness(1E6),mYoungsModulus(1E6),mPoissonRatio(0.3)
+	:mTendonStiffness(1E6),mMuscleStiffness(5E6),mYoungsModulus(1E6),mPoissonRatio(0.3)
 {
-
+#ifdef USE_LS_MUSCLE
+	mMuscleStiffness = 2E3;
+#endif
 }
 std::shared_ptr<MusculoSkeletalSystem>
 MusculoSkeletalSystem::
@@ -290,6 +292,7 @@ ApplyForcesToSkeletons(const std::shared_ptr<FEM::World>& soft_world)
 		int no = origin_way_points.size();
 		int ni = insertion_way_points.size();
 
+
 		force_origin.setZero();
 		force_insertion.setZero();
 
@@ -301,6 +304,12 @@ ApplyForcesToSkeletons(const std::shared_ptr<FEM::World>& soft_world)
 
 		fo = force_origin.block<3,1>(muscle->origin->GetI0()*3,0);
 		fi = force_insertion.block<3,1>(muscle->insertion->GetI0()*3,0);
+
+#ifdef USE_LS_MUSCLE
+		Eigen::Vector3d dir = muscle->insertion->GetP()-muscle->origin->GetP();
+		fo = mMuscleStiffness*muscle->activation_level*dir.normalized();
+		fi = -mMuscleStiffness*muscle->activation_level*dir.normalized();
+#endif
 		muscle->TransferForce(fo,fi);
 
 		origin_way_points.back().first->addExtForce(fo,origin_way_points.back().second);
@@ -308,8 +317,10 @@ ApplyForcesToSkeletons(const std::shared_ptr<FEM::World>& soft_world)
 
 		muscle->origin_force = fo;
 		muscle->insertion_force = fi;
-	}
 
+		// std::cout<<muscle->name<<"\t"<<fo.norm()<<std::endl;
+	}
+	// std::cout<<std::endl;
 }
 Eigen::MatrixXd
 MusculoSkeletalSystem::
@@ -368,6 +379,7 @@ ComputeForceDerivative(const FEM::WorldPtr& world)
 	Ji.setZero();
 	dg_da.setZero();
 
+#ifndef USE_LS_MUSCLE
 #pragma omp parallel for
 	for(int i=0;i<mAllMuscleConstraints.size();i++)
 	{
@@ -385,6 +397,21 @@ ComputeForceDerivative(const FEM::WorldPtr& world)
 	Ji = ComputeForce(world);
 	world->SetPositions(save_X);
 	Ji -= ComputeForce(world);
+#else
+	for(int i =0;i<mMuscles.size();i++)
+	{
+		auto& muscle = mMuscles[i];
+		Eigen::Vector3d fo,fi;
+		Eigen::Vector3d dir = muscle->insertion->GetP()-muscle->origin->GetP();
+		fo = mMuscleStiffness*dir.normalized();
+		fi = -mMuscleStiffness*dir.normalized();
+		muscle->TransferForce(fo,fi);
+		Ji.block<3,1>(i*6+0,0) = fo;
+		Ji.block<3,1>(i*6+3,0) = fi;
+	}
+		
+
+#endif
 	for(int i =0;i<mMuscles.size();i++)
 		J.block<6,1>(i*6,i) = Ji.block<6,1>(i*6,0);
 
@@ -461,6 +488,12 @@ ComputeForce(const FEM::WorldPtr& world)
 
 		fo = force_origin.block<3,1>(muscle->origin->GetI0()*3,0);
 		fi = force_insertion.block<3,1>(muscle->insertion->GetI0()*3,0);
+		
+#ifdef USE_LS_MUSCLE
+		Eigen::Vector3d dir = muscle->insertion->GetP()-muscle->origin->GetP();
+		fo = mMuscleStiffness*muscle->activation_level*dir.normalized();
+		fi = -mMuscleStiffness*muscle->activation_level*dir.normalized();
+#endif
 
 		muscle->TransferForce(fo,fi);
 

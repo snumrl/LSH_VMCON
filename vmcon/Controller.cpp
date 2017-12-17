@@ -121,6 +121,10 @@ ComputePDForces()
 	Eigen::VectorXd qdd_desired = 
 				pos_diff.cwiseProduct(mKp)+(vel_m - vel).cwiseProduct(mKv);
 	mPDForces = qdd_desired;
+
+	// Eigen::Vector6d F_b = skel->getBodyNode("HandR")->getConstraintImpulse()*(1.0/mRigidWorld->getTimeStep());
+	// std::cout<<F_b.transpose()<<std::endl;
+	// qdd_desired = qdd_desired - skel->getInvMassMatrix()*skel->getJacobian(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)).transpose()*F_b;
 	// std::cout<<pos_diff.transpose()<<std::endl;
 	// std::cout<<(vel_m - vel).transpose()<<std::endl;
 	// std::cout<<pos_diff.cwiseProduct(mKp).transpose()<<std::endl;
@@ -165,4 +169,8 @@ Step()
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
 	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	// Eigen::VectorXd act = mMusculoSkeletalSystem->GetActivationLevels();
+	// for(int i =0;i<act.rows();i++)
+	// 	act[i] = 1.0;
+	// mMusculoSkeletalSystem->SetActivationLevels(act);
 }

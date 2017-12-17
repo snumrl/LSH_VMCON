@@ -9,11 +9,11 @@ using namespace dart::simulation;
 using namespace dart::dynamics;
 SimWindow::
 SimWindow()
-	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0)
+	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0)
 {
 	std::string state_path = "../output/world_state.xml";
 	mWorld = std::make_shared<IntegratedWorld>(state_path);
-	for(int i =1;i<7;i++){
+	for(int i =1;i<=7;i++){
 		LoadFromFolder("../output_"+std::to_string(i)+"/");
 		mIsRender.push_back(true);
 	}
@@ -65,7 +65,8 @@ Display()
 
 
 		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld());
-		// DrawWorld(mWorld->GetSoftWorld());
+		if(mRenderFEM)
+			DrawWorld(mWorld->GetSoftWorld());
 
     	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
     	{
@@ -96,9 +97,11 @@ case '7' : mIsRender[6] = !mIsRender[6];break;
 case '8' : mIsRender[7] = !mIsRender[7];break;
 case '9' : mIsRender[8] = !mIsRender[8];break;
 
-
-
+		case '-' : mDisplayRatio*=0.9;break;
+		case '+' : mDisplayRatio*=1.1;break;
+		case 'q' : mRenderFEM =!mRenderFEM;break;
 		case ' ' : mIsPlay =!mIsPlay;break;
+		case 'r' : mFrame = 0;break;
 		case '[' : mFrame--;break;
 		case ']' : mFrame++;break;
 		case 27: exit(0);break;
@@ -114,6 +117,8 @@ case '9' : mIsRender[8] = !mIsRender[8];break;
 		std::cout<<mIsRender[i]<<" ";
 	}
 	std::cout<<std::endl;
+
+	std::cout<<mDisplayRatio<<std::endl;
 	glutPostRedisplay();
 }
 void
@@ -179,8 +184,8 @@ Timer(int value)
 	
 
 	if(mIsPlay){
-			mFrame+=33;
-			if(mFrame>mRecords[0].size())
+			mFrame+=(int)33.0*mDisplayRatio;
+			if(mFrame>=mRecords[0].size())
 				mFrame = 0;
 		}
 		
@@ -197,7 +202,7 @@ LoadFromFolder(const std::string& path)
 {
 
 	std::vector<std::shared_ptr<Record>> records;
-	for(int i=0;i<2000;i++)
+	for(int i=0;i<1000;i++)
 	{
 		std::string real_path = path+std::to_string(i);
 		records.push_back(Record::Create());

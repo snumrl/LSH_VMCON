@@ -9,6 +9,7 @@
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+// #define USE_LS_MUSCLE
 IntegratedWorld::
 IntegratedWorld()
 {
@@ -47,7 +48,7 @@ TimeStepping()
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
 	// std::cout<<pd_forces.transpose()<<std::endl;
 
-	
+
 	// Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 
@@ -57,8 +58,11 @@ TimeStepping()
 	if(need_fem_update)
 	{
 		mMusculoSkeletalSystem->TransformAttachmentPoints();
+#ifndef USE_LS_MUSCLE
 		mSoftWorld->TimeStepping();
-		// mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+#else
+		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+#endif
 	}
 
 	mRigidWorld->step();
@@ -156,7 +160,8 @@ Initialize()
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mRigidWorld->addSkeleton(skel);
-			mBalls.back()->Attach(mRigidWorld,abn);	
+			// mBalls.back()->Attach(mRigidWorld,abn);	
+			mBalls.back()->Release(mRigidWorld);	
 		}
 	
 	}
