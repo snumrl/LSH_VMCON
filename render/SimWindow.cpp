@@ -7,11 +7,26 @@ using namespace FEM;
 
 using namespace dart::simulation;
 using namespace dart::dynamics;
+extern std::string g_state_path;
+extern std::vector<std::string> g_record_path;
 SimWindow::
 SimWindow()
-	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0)
+	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0),mRenderDetail(false)
 {
-	LoadFromFolder("../output/");
+	// std::string state_path = "../output/world_state.xml";
+	mWorld = std::make_shared<IntegratedWorld>(g_state_path);
+	std::cout<<g_state_path<<std::endl;
+	for(int i =0;i<g_record_path.size();i++)
+	{
+		std::cout<<g_record_path[i]<<std::endl;
+
+		LoadFromFolder(g_record_path[i]);
+		mIsRender.push_back(true);
+	}
+	// for(int i =1;i<=7;i++){
+	// 	LoadFromFolder("../output_"+std::to_string(i)+"/");
+	// 	mIsRender.push_back(true);
+	// }
 
 	mDisplayTimeout = 33;
 }
@@ -53,13 +68,26 @@ Display()
 
     GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
-	DrawWorld(mWorld->GetSoftWorld());
+	for(int k = 0;k<mRecords.size();k++)
+	{
+		if(mIsRender[k])
+		{
 
-    for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
-    {
-    	DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i));
-    }
 
+		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld());
+		if(mRenderFEM)
+			DrawWorld(mWorld->GetSoftWorld());
+
+    	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
+    	{
+    		if(i==1)
+    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.2,0.2));
+    		else
+    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
+	    }
+	    }
+	}
+	
 	glutSwapBuffers();
 }
 void
@@ -68,17 +96,40 @@ Keyboard(unsigned char key,int x,int y)
 {
 	switch(key)
 	{
+
+case '1' : mIsRender[0] = !mIsRender[0];break;
+case '2' : mIsRender[1] = !mIsRender[1];break;
+case '3' : mIsRender[2] = !mIsRender[2];break;
+case '4' : mIsRender[3] = !mIsRender[3];break;
+case '5' : mIsRender[4] = !mIsRender[4];break;
+case '6' : mIsRender[5] = !mIsRender[5];break;
+case '7' : mIsRender[6] = !mIsRender[6];break;
+case '8' : mIsRender[7] = !mIsRender[7];break;
+case '9' : mIsRender[8] = !mIsRender[8];break;
+
+		case '-' : mDisplayRatio*=0.9;break;
+		case '+' : mDisplayRatio*=1.1;break;
+		case 'w' :mRenderDetail =!mRenderDetail;break;
+		case 'q' : mRenderFEM =!mRenderFEM;break;
+		case ' ' : mIsPlay =!mIsPlay;break;
+		case 'r' : mFrame = 0;break;
 		case '[' : mFrame--;break;
 		case ']' : mFrame++;break;
 		case 27: exit(0);break;
 		default : break;
 	}
 	if(mFrame<0)
-		mFrame = mRecords.size()-1;
-	if(mFrame>mRecords.size()-1)
+		mFrame = mRecords[0].size()-1;
+	if(mFrame>mRecords[0].size()-1)
 		mFrame= 0;
 
-	mRecords[mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld());
+	for(int i =0;i<mIsRender.size();i++)
+	{
+		std::cout<<mIsRender[i]<<" ";
+	}
+	std::cout<<std::endl;
+
+	std::cout<<mDisplayRatio<<std::endl;
 	glutPostRedisplay();
 }
 void
@@ -140,7 +191,17 @@ Reshape(int w, int h)
 void
 SimWindow::
 Timer(int value) 
-{	
+{
+	
+
+	if(mIsPlay){
+			mFrame+=(int)33.0*mDisplayRatio;
+			if(mFrame>=mRecords[0].size())
+				mFrame = 0;
+		}
+		
+		
+	
 	glutPostRedisplay();
 	glutTimerFunc(mDisplayTimeout, TimerEvent,1);
 }
@@ -150,13 +211,13 @@ void
 SimWindow::
 LoadFromFolder(const std::string& path)
 {
-	std::string state_path = path +"world_state.xml";
-	mWorld = std::make_shared<IntegratedWorld>(state_path);
 
-	for(int i=0;i<200;i++)
+	std::vector<std::shared_ptr<Record>> records;
+	for(int i=0;i<6000;i++)
 	{
 		std::string real_path = path+std::to_string(i);
-		mRecords.push_back(Record::Create());
-		mRecords.back()->LoadFromFile(real_path);
+		records.push_back(Record::Create());
+		records.back()->LoadFromFile(real_path);
 	}
+	mRecords.push_back(records);
 }

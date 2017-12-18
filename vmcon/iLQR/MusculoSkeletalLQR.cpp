@@ -3,6 +3,7 @@
 #include "../MuscleOptimization.h"
 #include "../IKOptimization.h"
 #include "../Ball.h"
+#include <tinyxml.h>
 
 #include <fstream>
 using namespace Ipopt;
@@ -12,7 +13,7 @@ MusculoSkeletalLQR(
 		const std::shared_ptr<FEM::World>& soft_world,
 		const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
 		const std::vector<std::shared_ptr<Ball>>& balls,int max_iteration)
-		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+6*balls.size(), 			//State
+		:iLQR(	musculo_skeletal_system->GetSkeleton()->getNumDofs()*2+12*balls.size(), 			//State
 				musculo_skeletal_system->GetSkeleton()->getNumDofs(),			//Signal
 				max_iteration),
 		mDofs(musculo_skeletal_system->GetSkeleton()->getNumDofs()),
@@ -69,6 +70,14 @@ Initialze(
 {
 	mSoftWorldX0 = mSoftWorld->GetPositions();
 	mBallIndex = index;
+	for(int i =0;i<mBalls.size();i++)
+	{
+		if(!mBalls[i]->IsReleased())
+			std::cout<<mBalls[i]->GetConstraint()->getBodyNode2()->getName()<<" ";
+		else
+			std::cout<<"0";
+	}
+	std::cout<<std::endl;
 	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
 	mBallTargetPosition = pos_desired;
@@ -84,6 +93,10 @@ Initialze(
 	// u_lower[mDofs] = 0.5;
 	// u_upper[mDofs] = 2.0;
 	// std::cout<<reference_motions.size()<<std::endl;
+	mWritePath = "../output_lqr"+std::to_string((int)vel_desired[1]);
+	system(("mkdir "+mWritePath).c_str());
+	WriteXML(mWritePath+"/state.xml");
+
 	Init(reference_motions.size(),x0,u0,u_lower,u_upper);
 }
 void
@@ -177,8 +190,8 @@ SetState(const Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+6*i+0,0,3,1));
-		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+6*i+3,0,3,1));
+		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+12*i+0,0,6,1));
+		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
 		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,true,false);	
 	}
 	
@@ -204,8 +217,8 @@ GetState(Eigen::VectorXd& x)
 
 	for(int i = 0;i<mBalls.size();i++)
 	{
-		x.block(2*mDofs+6*i+0,0,3,1) = mBalls[i]->GetSkeleton()->getPositions();
-		x.block(2*mDofs+6*i+3,0,3,1) = mBalls[i]->GetSkeleton()->getVelocities();
+		x.block(2*mDofs+12*i+0,0,6,1) = mBalls[i]->GetSkeleton()->getPositions();
+		x.block(2*mDofs+12*i+6,0,6,1) = mBalls[i]->GetSkeleton()->getVelocities();
 	}
 
 	
@@ -268,100 +281,162 @@ Step()
 
 void
 MusculoSkeletalLQR::
-Finalize()
+Finalize(int iteration)
 {
-	// std::cout<<"X : "<<std::endl;
-	// std::cout<<"Before : \n"<<std::endl;
-	// for(int t =0;t<mN;t++)
-	// {
-	// 	std::cout<<mx[t].transpose()<<std::endl;
-	// }
-	is_ioing = true;
-	for(int t = 0;t<mN-1;t++)
-	{
-		Evalf(mx[t],mu[t],t,mx[t+1]);
-		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
-		// SetState(mx[t]);
-		// SetControl(mu[t],t);
-		// std::cout<<mTargetPositions.transpose()<<std::endl;
-		// std::cout<<mTargetVelocities.transpose()<<std::endl;
-		// std::cout<<mBalls[mBallIndex]->GetVelocity().transpose()<<std::endl;
-	}
-	// std::cout<<"After : \n"<<std::endl;
-	// for(int t =0;t<mN;t++)
-	// {
-		// std::cout<<mx[t].transpose()<<std::endl;
-	// }
+	// mWriteCount = 0;
 
+	// is_ioing = true;
+
+	// std::string path = mWritePath+"/iteration"+std::to_string(iteration);
+	// system(("mkdir "+path).c_str());
+	// mRigidWorld->setTime(0.0);
 	// for(int t = 0;t<mN-1;t++)
 	// {
-		// Evalf(mx[t],mu[t],t,mx[t+1]);
-		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
-		// SetState(mx[t]);
-		// SetControl(mu[t],t);
-		// std::cout<<mTargetPositions.transpose()<<std::endl;
-		// std::cout<<mTargetVelocities.transpose()<<std::endl;
-		// std::cout<<mBall->GetVelocity().transpose()<<std::endl;
+	// 	Evalf(mx[t],mu[t],t,mx[t+1]);
+	// 	WriteRecord(path);
 	// }
-	// std::cout<<"After2 : \n"<<std::endl;
-	// for(int t =0;t<mN;t++)
+	// double cf;
+	// EvalCf(mx[mN-1],cf);
+
+	// Eigen::VectorXd x_next = mx[mN-1];
+	// Eigen::VectorXd x_curr = mx[mN-1];
+	// auto abn =mBalls[mBallIndex]->GetConstraint()->getBodyNode2();
+	// mBalls[mBallIndex]->Release(mRigidWorld);
+	// while(true)
 	// {
-	// 	std::cout<<mx[t].transpose()<<std::endl;
+	// 	if(mRigidWorld->getTime()>2.0)
+	// 		break;
+	// 	SetState(x_curr);
+	
+	// 	mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
+	// 	mTargetVelocities.setZero();
+	// 	Step();
+	// 	GetState(x_next);
+	// 	WriteRecord(path);
+	// 	x_curr = x_next;
 	// }
-
-	double cf;
-	EvalCf(mx[mN-1],cf);
-	std::cout<<cf<<std::endl<<std::endl;
-	// std::cout<<std::endl;
-	// std::cout<<"U : "<<std::endl;
-	// for(int t = 0;t<mN-1;t++)
-	// {
-	// 	std::cout<<(mReferenceMotions[t]+mu[t]).transpose()<<std::endl;
-	// }
-
-	// for(int t=0;t<mN-1;t++)
-	// {
-		
-		
-
-		
-		// std::cout<<skel->getPositions().transpose()<<std::endl;
-		// std::cout<<pos_diff.transpose()<<std::endl;
-		// std::cout<<(mTargetVelocities - skel->getVelocities()).transpose()<<std::endl;
-		
-		// std::cout<<mx[t].block(0,0,mDofs,1).transpose()<<std::endl;
-		// std::cout<<mx[t].block(mDofs,0,mDofs,1).transpose()<<std::endl;
-		// Evalf(mx[t],mu[t],t,mx[t+1]);
-		// auto& skel = mMusculoSkeletalSystem->GetSkeleton();
-		// Eigen::VectorXd pos_diff = skel->getPositionDifferences(mTargetPositions,skel->getPositions());
-		// for(int i = 0;i<pos_diff.rows();i++)
-		// 	pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
-		// Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-		// std::cout<<mTargetPositions.transpose()<<std::endl;
-		// std::cout<<mTargetVelocities.transpose()<<std::endl;
-		// std::cout<<qdd_desired.transpose()<<std::endl;
-		// std::cout<<std::endl;
-	// }	
-
-	// std::cout<<std::endl;
+	
+	// is_ioing = false;
+	// std::cout<<"Finalize"<<std::endl;
+	// SetState(mx[0]);
+	// SetControl(mu[0],0);
+	// mSoftWorld->SetPositions(mSoftWorldX0);
+	// mBalls[mBallIndex]->Attach(mRigidWorld,abn);
+	// Step();
 
 }
 
+void
+MusculoSkeletalLQR::
+WriteXML(const std::string& path)
+{
+	TiXmlDocument doc;
+
+    Eigen::VectorXd pos = mSoftWorld->GetPositions();
+    std::vector<TiXmlElement*> node_elems;
+    for(int i=0;i<pos.rows()/3;i++)
+    {
+		node_elems.push_back(new TiXmlElement("node"));
+
+		node_elems.back()->SetDoubleAttribute("x",pos[3*i+0]);
+		node_elems.back()->SetDoubleAttribute("y",pos[3*i+1]);
+		node_elems.back()->SetDoubleAttribute("z",pos[3*i+2]);
+    }
+
+    auto& cons = mSoftWorld->GetConstraints();
+    std::vector<TiXmlElement*> c_elems;
+    for(auto& c : cons)
+    {
+		c_elems.push_back(new TiXmlElement("constraint"));
+    	if(dynamic_cast<FEM::AttachmentCst*>(c.get()) != nullptr)
+		{
+			FEM::AttachmentCst* ac = dynamic_cast<FEM::AttachmentCst*>(c.get());	
+			int i0 = ac->GetI0();
+			c_elems.back()->SetAttribute("type","attachment");
+			c_elems.back()->SetAttribute("i0",i0);
+		}
+		else if(dynamic_cast<FEM::CorotateFEMCst*>(c.get()) != nullptr)
+		{
+			FEM::CorotateFEMCst* cc = dynamic_cast<FEM::CorotateFEMCst*>(c.get());
+			int i0 = cc->GetI0();
+			int i1 = cc->GetI1();
+			int i2 = cc->GetI2();
+			int i3 = cc->GetI3();
+			c_elems.back()->SetAttribute("type","corotate");
+			c_elems.back()->SetAttribute("i0",i0);
+			c_elems.back()->SetAttribute("i1",i1);
+			c_elems.back()->SetAttribute("i2",i2);
+			c_elems.back()->SetAttribute("i3",i3);
+
+		}
+		else if(dynamic_cast<FEM::LinearMuscleCst*>(c.get()) != nullptr)
+		{
+			FEM::LinearMuscleCst* cc = dynamic_cast<FEM::LinearMuscleCst*>(c.get());
+			int i0 = cc->GetI0();
+			int i1 = cc->GetI1();
+			int i2 = cc->GetI2();
+			int i3 = cc->GetI3();
+			Eigen::Vector3d dir = cc->GetFiberDirection();
+			c_elems.back()->SetAttribute("type","muscle");
+			c_elems.back()->SetAttribute("i0",i0);
+			c_elems.back()->SetAttribute("i1",i1);
+			c_elems.back()->SetAttribute("i2",i2);
+			c_elems.back()->SetAttribute("i3",i3);
+			c_elems.back()->SetDoubleAttribute("dx",dir[0]);
+			c_elems.back()->SetDoubleAttribute("dy",dir[1]);
+			c_elems.back()->SetDoubleAttribute("dz",dir[2]);
+		}
+
+    }
+
+    TiXmlElement* soft_elem = new TiXmlElement( "Soft");
+    TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );  
+
+    TiXmlElement* nodes_elem = new TiXmlElement( "Nodes" );
+    for(auto& elem: node_elems)
+    {
+    	nodes_elem->LinkEndChild(elem);
+    }
+    TiXmlElement* cons_elem = new TiXmlElement( "Constraints" );
+    for(auto& elem : c_elems)
+    {
+    	cons_elem->LinkEndChild(elem);
+    }
 
 
+	doc.LinkEndChild( decl ); 
+	soft_elem->LinkEndChild(nodes_elem);
+	soft_elem->LinkEndChild(cons_elem);
+	doc.LinkEndChild( soft_elem );
+    // doc.LinkEndChild(nodes_elem);
+    // doc.LinkEndChild(cons_elem);
+    doc.SaveFile( path.c_str() );
+}
+void
+MusculoSkeletalLQR::
+WriteRecord(const std::string& path)
+{
+	std::string real_path = path +"/"+std::to_string(mWriteCount);
+	std::ofstream ofs(real_path);
+	Eigen::VectorXd soft_pos = mSoftWorld->GetPositions();
+	ofs<<"soft "<<soft_pos.transpose()<<std::endl;
 
+	for(int i =0;i<mRigidWorld->getNumSkeletons();i++)
+	{
+		ofs<<"rpos ";
+		ofs<<mRigidWorld->getSkeleton(i)->getPositions().transpose()<<std::endl;
+	}
 
-
-
-
-
-
-
-
-
-
-
-
+	for(int i =0;i<mRigidWorld->getNumSkeletons();i++)
+	{
+		ofs<<"rvel ";
+		ofs<<mRigidWorld->getSkeleton(i)->getVelocities().transpose()<<std::endl;
+	}
+	ofs<<"time "<<mRigidWorld->getTime();
+	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels()<<std::endl;
+	ofs.close();
+	mWriteCount++;
+}
 
 
 

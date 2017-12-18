@@ -3,7 +3,6 @@
 #include "MusculoSkeletalSystem.h"
 #include "Controller.h"
 #include "Record.h"
-#include "FSM.h"
 #include <fstream>
 #include <sstream>
 #include <tinyxml.h>
@@ -125,7 +124,8 @@ Initialize()
 		{
 			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
+			loc += Eigen::Vector3d(0,0.02,0.03);
+			MakeBall(skel,loc,0.036,0.13);
 
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -136,7 +136,8 @@ Initialize()
 		{
 			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			MakeBall(skel,abn->getCOM(),0.036,0.13);
+			loc += Eigen::Vector3d(0,0.02,0.03);
+			MakeBall(skel,loc,0.036,0.13);
 
 			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
 			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -159,7 +160,7 @@ Initialize()
 
 
 	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
-	ReadRecord("../output/204");
+	// ReadRecord("../output/204");
 
 }
 
@@ -287,7 +288,7 @@ WriteRecord(const std::string& path)
 	ofs<<"release ";
 	for(int i=0;i<mBalls.size();i++)
 	{
-		ofs<<mBalls->isReleased<<" ";
+		ofs<<mBalls[i]->IsReleased()<<" ";
 	}
 	ofs<<std::endl;
 	ofs<<"time "<<mRigidWorld->getTime();
@@ -410,10 +411,10 @@ ReadRecord(const std::string& path)
 	mMusculoSkeletalSystem->SetActivationLevels(new_record->activation_levels);
 
 
-	int juggling_count =1;
-	mController->mFSM->mJugglingFrame = juggling_count;
-	for(int i =0;i<juggling_count;i++){
-		mController->mFSM->Trigger("end");
-		mController->mFSM->Trigger("catch");
-	}
+	// int juggling_count =1;
+	// mController->mFSM->mJugglingFrame = juggling_count;
+	// for(int i =0;i<juggling_count;i++){
+	// 	mController->mFSM->Trigger("end");
+	// 	mController->mFSM->Trigger("catch");
+	// }
 }

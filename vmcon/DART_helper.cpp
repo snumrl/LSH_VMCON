@@ -182,19 +182,17 @@ void MakeBall(
     inertia.setMass(mass);
     inertia.setMoment(shape->computeInertia(mass));
 
-    TranslationalJoint::Properties prop;
+    FreeJoint::Properties prop;
     prop.mT_ParentBodyToJoint.setIdentity();
     prop.mT_ChildBodyToJoint.setIdentity();
+    prop.mT_ChildBodyToJoint.translation() = -init_pos;
 
-    BodyNodePtr bn = skel->createJointAndBodyNodePair<TranslationalJoint>(
+    BodyNodePtr bn = skel->createJointAndBodyNodePair<FreeJoint>(
       nullptr,prop,BodyNode::AspectProperties("ball")).second;
 
     auto sn = bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(shape);
     bn->setCollidable(false);
     bn->setInertia(inertia);
-    auto pos =skel->getPositions();
-    pos.tail(3) = init_pos;
-    skel->setPositions(pos);
     for(int i=0;i<skel->getNumBodyNodes();i++)
 		skel->getBodyNode(i)->setCollidable(false);
 }

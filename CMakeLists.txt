@@ -32,8 +32,8 @@ include_directories(${CMAKE_SOURCE_DIR})
 link_directories(./fem/)
 link_directories(./gui/)
 
-file(GLOB vmcon_srcs "vmcon/*.h" "vmcon/*.cpp" "vmcon/iLQR/*.h" "vmcon/iLQR/*.cpp")
-file(GLOB render_srcs "render/*.h" "render/*.cpp")
+file(GLOB vmcon_srcs "vmcon/*.h" "vmcon/*.cpp" "vmcon/iLQR/*.h" "vmcon/iLQR/*.cpp" "vmcon/FSM/*.h" "vmcon/FSM/*.cpp")
+file(GLOB render_srcs "render/*.h" "render/*.cpp" "vmcon/DART_helper*")
 
 if (ENABLE_VMCON)
 	project(vmcon)

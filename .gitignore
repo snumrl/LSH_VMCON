@@ -1,5 +1,5 @@
 *.a
 *.sublime-*
 build
-output
+output*
 .tags*
