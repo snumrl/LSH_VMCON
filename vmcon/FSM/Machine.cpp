@@ -221,6 +221,8 @@ GenerateSwingMotions()
 		Eigen::Vector3d(1.1,1.0,1.0),
 		Eigen::Vector3d(1.0,1.0,1.0),
 	};
+
+	
 	//Singular case V = 1
 	if(mJugglingInfo->GetV() == 1)
 	{
