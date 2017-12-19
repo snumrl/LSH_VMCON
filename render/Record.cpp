@@ -112,6 +112,7 @@ LoadFromFile(const std::string& path)
 			{
 				eigen_vec[i] = vec[i];
 			}
+			std::cout<<eigen_vec.transpose()<<std::endl;
 			rigid_body_velocities.push_back(eigen_vec);
 
 		}

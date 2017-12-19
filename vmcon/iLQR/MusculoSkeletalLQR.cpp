@@ -431,8 +431,8 @@ WriteRecord(const std::string& path)
 		ofs<<"rvel ";
 		ofs<<mRigidWorld->getSkeleton(i)->getVelocities().transpose()<<std::endl;
 	}
-	ofs<<"time "<<mRigidWorld->getTime();
-	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels()<<std::endl;
+	ofs<<"time "<<mRigidWorld->getTime()<<std::endl;
+	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels().transpose()<<std::endl;
 	ofs.close();
 	mWriteCount++;
 }
