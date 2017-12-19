@@ -8,15 +8,13 @@ using namespace FEM;
 
 using namespace dart::simulation;
 using namespace dart::dynamics;
-extern std::string g_state_path;
 extern std::vector<std::string> g_record_path;
 SimWindow::
 SimWindow()
 	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0),mRenderDetail(false)
 {
 	// std::string state_path = "../output/world_state.xml";
-	mWorld = std::make_shared<IntegratedWorld>(g_state_path);
-	std::cout<<g_state_path<<std::endl;
+	mWorld = std::make_shared<IntegratedWorld>("");
 	for(int i =0;i<g_record_path.size();i++)
 	{
 		std::cout<<g_record_path[i]<<std::endl;
@@ -69,6 +67,17 @@ Display()
 
     GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
+	Eigen::Vector3d clr[5] =
+	{
+		Eigen::Vector3d(0.8,0.2,0.2),
+		Eigen::Vector3d(0.2,0.8,0.2), 
+		Eigen::Vector3d(0.2,0.2,0.8),
+		Eigen::Vector3d(0.8,0.8,0.2),
+		Eigen::Vector3d(0.2,0.8,0.8)
+	};
+	int ball_index = 0;
+
+
 	for(int k = 0;k<mRecords.size();k++)
 	{
 		if(mIsRender[k])
@@ -81,12 +90,15 @@ Display()
 
     	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
     	{
-    		if(i==1)
-    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.2,0.2));
-    		else
+    		if(i==0)
     			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
+    		else
+    		{
+    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),clr[ball_index++]);
+    		}
+	    
 	    }
-	    }
+	}
 	}
 	
 	glutSwapBuffers();
