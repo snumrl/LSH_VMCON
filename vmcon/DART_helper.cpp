@@ -185,7 +185,7 @@ void MakeBall(
     FreeJoint::Properties prop;
     prop.mT_ParentBodyToJoint.setIdentity();
     prop.mT_ChildBodyToJoint.setIdentity();
-    prop.mT_ChildBodyToJoint.translation() = -init_pos;
+    prop.mT_ParentBodyToJoint.translation() = init_pos;
 
     BodyNodePtr bn = skel->createJointAndBodyNodePair<FreeJoint>(
       nullptr,prop,BodyNode::AspectProperties("ball")).second;

@@ -16,7 +16,7 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 		const std::vector<std::shared_ptr<Ball>>& balls,
 	const std::vector<int>& sequences,int ball_size)
 	:mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
-	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.0,0.02,0.03)),mIsCatched(false)
+	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.0,0.02,0.03))
 {
 	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
@@ -38,11 +38,13 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	ik->AddTargetPositions(std::make_pair(mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL"),Eigen::Vector3d::Zero()),l_loc);
 	ik->AddTargetPositions(std::make_pair(mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR"),Eigen::Vector3d::Zero()),r_loc);
 
-
+	mHandX0 = l_loc;
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 	mPhase = 0;
 	InitializeLQR();
 	mCurve = new BezierCurve();
+
+
 }
 
 void
@@ -55,24 +57,6 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	auto bn_to = skel->getBodyNode(mJugglingInfo->To());
 	//Check need to update.
 	bool need_update = false;
-
-	//Singular case : V = 1
-	if(mJugglingInfo->GetV() == 1 && !mIsCatched && !ball->IsReleased())
-	{
-		Eigen::Vector3d body_position = bn_to->getTransform()*mLocalOffset;
-		Eigen::Vector3d ball_position = ball->GetPosition();
-
-		// std::cout<<body_position.transpose()<<std::endl;
-		// std::cout<<ball_position.transpose()<<std::endl;
-		if((body_position-ball_position).norm()<5E-2)
-		{	
-			ball->Release(mRigidWorld);
-			ball->Attach(mRigidWorld,bn_to);
-			mIsCatched = true;
-		}
-
-		need_update = true;
-	}
 
 	//Check Catch Phase Finished.
 	if(mPhase == 0)
@@ -117,8 +101,8 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 			std::cout<<"Released Velocity : "<<mBalls[mJugglingInfo->GetBallIndex()]->releasedVelocity.transpose()<<std::endl;
 			//Look Ahead for targeting next ball. (count+2 -> next target)
 			mJugglingInfo->CountPlusPlus();
-			if(mJugglingInfo->GetV()!=1){
-				
+			if(mJugglingInfo->GetV()!=1)
+			{
 				mJugglingInfo->CountPlusPlus();
 				std::cout<<mJugglingInfo->GetV()<<std::endl;
 				if(mBalls[mJugglingInfo->GetBallIndex()]->IsReleased())
@@ -127,16 +111,14 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 					GenerateCatchMotions();
 				}
 				mJugglingInfo->CountMinusMinus();
-
 			}
 			
 			//to next state.
 			need_update = true;
 			mPhase = 0;
-			mIsCatched = false;
 		}
 	}
-	std::cout<<mTimeElapsed<<std::endl;
+
 	if(need_update)
 	{
 		if(mPhase == 0)
@@ -167,10 +149,11 @@ GenerateCatchMotions()
 
 	//Check if IK target update is needed.
 	Eigen::Vector3d target;
-	ball->ComputeFallingPosition(ball->releasedPoint[1],target);
+	// ball->ComputeFallingPosition(ball->releasedPoint[1],target);
+	ball->ComputeFallingPosition(mHandX0[1],target);
 	if(target.norm()<1E-6)
 		return;
-	std::cout<<"Catch Target : "<<target.transpose()<<std::endl;
+	// std::cout<<"Catch Target : "<<target.transpose()<<std::endl;
 	AnchorPoint ap = std::make_pair(bn_from,mLocalOffset);
 	ik->AddTargetPositions(ap,target);
 	mIKSolver->ReOptimizeTNLP(mIKOptimization);	
@@ -194,100 +177,6 @@ GenerateSwingMotions()
 	double t_hold = mJugglingInfo->GetT_hold();
 	double t_free = mJugglingInfo->GetT_free();
 
-	//Singular case V ==1
-	if(mJugglingInfo->GetV() == 1)
-	{
-		if(mIsCatched)
-		{
-			//After Receive
-			Eigen::Vector3d p0_from = bn_from->getCOM();
-			Eigen::Vector3d p0_to = bn_to->getCOM();
-
-			Eigen::Vector3d p_from_back,p_to_back;
-			if(!bn_from->getName().compare("HandR"))
-			{
-				p_from_back = Eigen::Vector3d(-0.200105,0.142232,0.347044);
-				p_to_back = Eigen::Vector3d(0.200105,0.142232,0.347044);
-			}
-			else
-			{
-				p_from_back = Eigen::Vector3d(0.200105,0.142232,0.347044);
-				p_to_back = Eigen::Vector3d(-0.200105,0.142232,0.347044);
-			}
-
-			AnchorPoint ap_from = std::make_pair(bn_from,mLocalOffset);
-			AnchorPoint ap_to = std::make_pair(bn_to,mLocalOffset);
-
-			std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
-			IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-			double t_remain = mJugglingInfo->GetT() - t_hold - mTimeElapsed;
-			std::cout<<"t remain : "<<t_remain<<std::endl;
-			std::cout<<"t Elapsed : "<<mTimeElapsed<<std::endl;
-			for(int i =0;i<6;i++)
-			{
-				double t = ((double)i)/((double)3)*t_remain;
-
-				Eigen::Vector3d p_from = p0_from + t/t_remain*(p_from_back-p0_from);
-				Eigen::Vector3d p_to = p0_to + t/t_remain*(p_to_back-p0_to);
-
-				ik->AddTargetPositions(ap_from,p_from);
-				ik->AddTargetPositions(ap_to,p_to);
-				mIKSolver->ReOptimizeTNLP(mIKOptimization);
-				Eigen::VectorXd sol = ik->GetSolution();
-				coarse_motions.push_back(std::make_pair(sol,t));
-			}
-
-			mMotions.clear();
-			mMotions = GenerateFineMotions(coarse_motions);
-			for(int i=0;i<mMotions.size();i++)
-				mMotions[i].second += mTimeElapsed;
-			// Eigen::VectorXd last_motion = mMotions.back().first;
-			// for(int i=0;i<1000;i++)
-			// {
-			// 	mMotions.push_back(std::make_pair(last_motion,0));
-			// }
-			// mU.resize(mMotions.size());
-			// for(int i =0;i<mU.size();i++)
-				// mU[i].setZero();
-			mCount = 0;
-			return;
-		}
-		else
-		{
-			mIsCatched = false;
-			//Before Receive
-			Eigen::Vector3d p0_from = ball->GetPosition();
-			Eigen::Vector3d p0_to = bn_to->getTransform()*mLocalOffset;
-			Eigen::Vector3d dir = p0_to - p0_from;
-			dir.normalize();
-			dir *=0.5;
-			Eigen::Vector3d p_hb = ball->GetPosition() - bn_from->getCOM();
-			AnchorPoint ap_from = std::make_pair(bn_from,p_hb);
-			AnchorPoint ap_to = std::make_pair(bn_to,mLocalOffset);
-			std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
-			IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-			double t_remain = mJugglingInfo->GetT() - t_hold - mTimeElapsed;
-			for(int i =0;i<6;i++)
-			{
-				double t = ((double)i)/((double)5)*t_remain;
-
-				Eigen::Vector3d p_from = p0_from + t/t_remain*dir;
-				Eigen::Vector3d p_to = p0_to - t/t_remain*dir;
-
-				ik->AddTargetPositions(ap_from,p_from);
-				ik->AddTargetPositions(ap_to,p_to);
-				mIKSolver->ReOptimizeTNLP(mIKOptimization);
-				Eigen::VectorXd sol = ik->GetSolution();
-				coarse_motions.push_back(std::make_pair(sol,t));
-			}
-
-			mMotions.clear();
-			mMotions = GenerateFineMotions(coarse_motions);
-			mCount = 0;
-			return;
-		}		
-	}
-
 
 	Eigen::Vector3d dir = bn_to->getCOM() - ball->GetPosition();	
 	Eigen::Vector3d p0,p1,p2,v2;
@@ -295,20 +184,92 @@ GenerateSwingMotions()
 	//Make Bezier curve
 	p0 = ball->GetPosition();
 
+	
+	Eigen::Vector3d mult[] = 
+	{
+		Eigen::Vector3d(1.0,1.0,1.0),
+		Eigen::Vector3d(1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1,1.0,1.0),
+		Eigen::Vector3d(1.0,1.0,1.0),
+		Eigen::Vector3d(1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1*1.1,1.0,1.0),
+		Eigen::Vector3d(1.1,1.0,1.0),
+		Eigen::Vector3d(1.0,1.0,1.0),
+	};
+	//Singular case V = 1
+	if(mJugglingInfo->GetV() == 1)
+	{
+		p0[1] = 0.2;
+		p2 = p0 + 0.2*dir;
 
-	p0[1] = 0.2;
-	p2 = p0;
-	p0[0] *=1.1;
-	p2[0] *=0.9;
-	Eigen::Vector3d target_to = bn_to->getCOM();
-	target_to[0]*= 0.8;
-	target_to[2]*= 0.8;
-	v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
+		Eigen::Vector3d diff = bn_to->getTransform()*mLocalOffset - p0;
+		double t_hold = mJugglingInfo->GetT()*0.5;
 
-	p1 = p2 - 0.5*v2*t_hold;
+		v2[1] = 0.5*9.81*t_free;
+		v2[0] = diff[0]/t_free;
+		v2[2] = diff[2]/t_free;
+		
+		p1 = p2 - 0.5*v2*t_hold;
 
-	mCurve->Initialize(p0,p1,p2,t_hold);
+		std::cout<<p0.transpose()<<std::endl;
+		std::cout<<p1.transpose()<<std::endl;
+		std::cout<<p2.transpose()<<std::endl;
+		mCurve->Initialize(p0,p1,p2,t_hold);
+	}
+	else
+	{
+		p0 = mHandX0;
+		p0 = p0.cwiseProduct(mult[mJugglingInfo->GetCount()]);
+		if(ball->GetPosition()[0]<0)
+			p0[0] = -p0[0];
 
+		p2 = p0;
+		p2[0] = p0[0]*0.9;
+		
+		// p0[0] *=1.1;
+		// p2[0] *=0.9;
+		Eigen::Vector3d target_to = bn_to->getTransform()*mLocalOffset;
+		if(bn_from == bn_to)
+			target_to = p0;
+		else
+		{
+			target_to = p0;
+			target_to[0] = -target_to[0];
+		}
+
+		// target_to[0]*= 0.8;
+		// target_to[2]*= 0.8;
+		v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
+
+		p1 = p2 - 0.5*v2*t_hold;
+
+		mCurve->Initialize(p0,p1,p2,t_hold);
+	}
 	//Solve IK to make coarse_motions
 	std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
 
@@ -445,14 +406,7 @@ SynchronizeLQR()
 	}
 
 
-	for(int i =0;i<mBalls.size();i++)
-	{
-		if(!mBalls[i]->IsReleased())
-			std::cout<<mBalls[i]->GetConstraint()->getBodyNode2()->getName()<<" ";
-		else
-			std::cout<<"0";
-	}
-	std::cout<<std::endl;
+
 	for(int i =0;i<mBalls.size();i++)
 	{
 		if(!mBalls[i]->IsReleased())

@@ -746,6 +746,7 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 
 	for(int i =0;i<skel->getNumDofs();i++){
 	// 	skel->getDof(i)->setPositionLimits(-100,100);
+		skel->getDof(i)->setDampingCoefficient(0.1);
 		skel->getDof(i)->getJoint()->setPositionLimitEnforced(true);
 	}
 	for(int i=0;i<skel->getNumBodyNodes();i++)

@@ -43,7 +43,7 @@ private:
 	int 										mCount;
 
 	int 										mPhase; // 0: catch, 1:swing
-	bool 										mIsCatched; //For V ==1 case
+	// bool 										mIsCatched; //For V ==1 case
 	std::vector<std::pair<Eigen::VectorXd,double>> mMotions;
 //For control
 	dart::simulation::WorldPtr					mRigidWorld;
@@ -67,6 +67,7 @@ private:
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
 
 	Eigen::Vector3d								mLocalOffset;
+	Eigen::Vector3d								mHandX0;
 };
 
 #endif

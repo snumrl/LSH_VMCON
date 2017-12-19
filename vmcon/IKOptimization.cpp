@@ -131,7 +131,7 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 	for(auto& target: mTargets)
 	{
 		dart::math::LinearJacobian J = mSkeleton->getLinearJacobian(target.first.first,target.first.second);
-
+		J.block(3,3,0,0) *= 100.0;
 		Eigen::Vector3d x_minus_x_target = target.first.first->getTransform()*target.first.second - target.second;
 		g += 2.0*(J.transpose()*J)* J.transpose()*x_minus_x_target;
 	}
@@ -177,8 +177,12 @@ eval_h( Ipopt::Index n, const Ipopt::Number* x, bool new_x,
 	}
 	else
 	{
-		for(int i=0;i<n;i++)
-			values[nnz++] = 1.0;
+		for(int i=0;i<n;i++){
+			if(i<3)
+				values[nnz++] = 100.0;
+			else
+				values[nnz++] = 1.0;
+		}
 	}
 
 	return true;

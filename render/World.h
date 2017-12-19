@@ -8,6 +8,7 @@
 
 #include "fem/fem.h"
 
+class MusculoSkeletalSystem;
 class IntegratedWorld
 {
 public:
@@ -19,6 +20,7 @@ private:
 	void Initialize(const std::string& path);
 	FEM::WorldPtr mSoftWorld;
 	dart::simulation::WorldPtr mRigidWorld;
+	std::shared_ptr<MusculoSkeletalSystem> mMusculoSkeletalSystem;
 };
 
 void MakeSkeleton(dart::simulation::WorldPtr& world);
