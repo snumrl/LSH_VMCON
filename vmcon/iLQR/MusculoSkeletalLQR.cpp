@@ -3,6 +3,8 @@
 #include "../MuscleOptimization.h"
 #include "../IKOptimization.h"
 #include "../Ball.h"
+#include <boost/filesystem.hpp>
+
 #include <tinyxml.h>
 
 #include <fstream>
@@ -21,7 +23,8 @@ MusculoSkeletalLQR(
 		mTargetPositions(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mTargetVelocities(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),500.0)),
-		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(500.0)))
+		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(500.0))),
+		mInitCount(0)
 {
 	mKp[mDofs-2] = 2.0*mKp[mDofs-2];
 	mKp[mDofs-1] = 2.0*mKp[mDofs-1];
@@ -70,13 +73,7 @@ Initialze(
 {
 	mSoftWorldX0 = mSoftWorld->GetPositions();
 	mBallIndex = index;
-	for(int i =0;i<mBalls.size();i++)
-	{
-		if(!mBalls[i]->IsReleased())
-			std::cout<<mBalls[i]->GetConstraint()->getBodyNode2()->getName()<<" ";
-		else
-			std::cout<<"0";
-	}
+
 	std::cout<<std::endl;
 	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
@@ -93,8 +90,8 @@ Initialze(
 	// u_lower[mDofs] = 0.5;
 	// u_upper[mDofs] = 2.0;
 	// std::cout<<reference_motions.size()<<std::endl;
-	mWritePath = "../output_lqr"+std::to_string((int)vel_desired[1]);
-	system(("mkdir "+mWritePath).c_str());
+	mWritePath = "../output_lqr"+std::to_string((int)mInitCount++);
+	boost::filesystem::create_directories(mWritePath);
 	WriteXML(mWritePath+"/state.xml");
 
 	Init(reference_motions.size(),x0,u0,u_lower,u_upper);
@@ -136,7 +133,7 @@ EvalCf(const Eigen::VectorXd& x,double& cf)
 	{
 		// std::cout<<"POS : "<<0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm()<<std::endl;
 		// std::cout<<"VEL : "<<0.5*w_vel_track*(mBallTargetVelocity - ball_vel).squaredNorm()<<std::endl;
-		// std::cout<<"VEL : "<<(mBallTargetVelocity - ball_vel).transpose()<<std::endl;
+		// std::cout<<"VEL : "<<ball_vel.transpose()<<std::endl;
 	}
 	// std::cout<<ball_vel.transpose()<<std::endl;
 	cf = 0.5*w_pos_track*(mBallTargetPosition - ball_pos).squaredNorm();
@@ -281,49 +278,55 @@ Step()
 
 void
 MusculoSkeletalLQR::
-Finalize(int iteration)
+Finalize(int& iteration)
 {
-	// mWriteCount = 0;
+	mWriteCount = 0;
 
-	// is_ioing = true;
+	is_ioing = true;
 
-	// std::string path = mWritePath+"/iteration"+std::to_string(iteration);
-	// system(("mkdir "+path).c_str());
-	// mRigidWorld->setTime(0.0);
-	// for(int t = 0;t<mN-1;t++)
-	// {
-	// 	Evalf(mx[t],mu[t],t,mx[t+1]);
-	// 	WriteRecord(path);
-	// }
-	// double cf;
-	// EvalCf(mx[mN-1],cf);
+	std::string path = mWritePath+"/iteration"+std::to_string(iteration);
+	boost::filesystem::create_directories(path);
+	mRigidWorld->setTime(0.0);
+	mCost = 0;
+	double c=0;
+	for(int t = 0;t<mN-1;t++)
+	{
 
-	// Eigen::VectorXd x_next = mx[mN-1];
-	// Eigen::VectorXd x_curr = mx[mN-1];
-	// auto abn =mBalls[mBallIndex]->GetConstraint()->getBodyNode2();
-	// mBalls[mBallIndex]->Release(mRigidWorld);
-	// while(true)
-	// {
-	// 	if(mRigidWorld->getTime()>2.0)
-	// 		break;
-	// 	SetState(x_curr);
+		Evalf(mx[t],mu[t],t,mx[t+1]);
+		EvalC(  mx[t],mu[t],t, c);
+		WriteRecord(path);
+	}
+	double cf;
+	EvalCf(mx[mN-1],cf);
+	mCost += c;
+	mCost +=cf;
+	std::cout<<"Cost : "<<mCost<<"(cf : "<<cf<<")"<<std::endl;
+	Eigen::VectorXd x_next = mx[mN-1];
+	Eigen::VectorXd x_curr = mx[mN-1];
+	auto abn =mBalls[mBallIndex]->GetConstraint()->getBodyNode2();
+	mBalls[mBallIndex]->Release(mRigidWorld);
+	while(true)
+	{
+		if(mRigidWorld->getTime()>0.5)
+			break;
+		SetState(x_curr);
 	
-	// 	mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
-	// 	mTargetVelocities.setZero();
-	// 	Step();
-	// 	GetState(x_next);
-	// 	WriteRecord(path);
-	// 	x_curr = x_next;
-	// }
+		mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
+		mTargetVelocities.setZero();
+		Step();
+		GetState(x_next);
+		WriteRecord(path);
+		x_curr = x_next;
+	}
 	
-	// is_ioing = false;
-	// std::cout<<"Finalize"<<std::endl;
-	// SetState(mx[0]);
-	// SetControl(mu[0],0);
-	// mSoftWorld->SetPositions(mSoftWorldX0);
-	// mBalls[mBallIndex]->Attach(mRigidWorld,abn);
-	// Step();
-
+	is_ioing = false;
+	SetState(mx[0]);
+	SetControl(mu[0],0);
+	mSoftWorld->SetPositions(mSoftWorldX0);
+	mBalls[mBallIndex]->Attach(mRigidWorld,abn);
+	Step();
+	if(cf<=6.0)
+		iteration=mMaxIteration;
 }
 
 void
@@ -432,7 +435,8 @@ WriteRecord(const std::string& path)
 		ofs<<"rvel ";
 		ofs<<mRigidWorld->getSkeleton(i)->getVelocities().transpose()<<std::endl;
 	}
-	ofs<<"time "<<mRigidWorld->getTime();
+	
+	ofs<<"time "<<mRigidWorld->getTime()<<std::endl;
 	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels()<<std::endl;
 	ofs.close();
 	mWriteCount++;

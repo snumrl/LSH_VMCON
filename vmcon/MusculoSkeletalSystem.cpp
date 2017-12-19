@@ -2,6 +2,7 @@
 #include "DART_helper.h"
 #include <tinyxml.h>
 #include <algorithm>
+#include "Ball.h"
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -756,4 +757,37 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	// pos[3*6+0] = -1.0;
 	skel->setPositions(pos);
 	skel->computeForwardKinematics(true,false,false);
+}
+
+void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSkeletalSystem>& ms,std::vector<std::shared_ptr<Ball>>& ball,int num)
+{
+	for(int i =0;i<num;i++)
+	{
+		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
+
+		bool is_left_hand = i%2;
+		if(is_left_hand)
+		{
+			auto* abn =ms->GetSkeleton()->getBodyNode("HandL");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			loc += Eigen::Vector3d(0,0.02,0.03-0.018*i);
+			MakeBall(skel,loc,0.036,0.13);
+
+			ball.push_back(std::make_shared<Ball>(nullptr,skel));
+			world->addSkeleton(skel);
+			ball.back()->Attach(world,abn);
+		}
+		else
+		{
+			auto* abn =ms->GetSkeleton()->getBodyNode("HandR");
+			Eigen::Vector3d loc = abn->getTransform().translation();
+			loc += Eigen::Vector3d(0,0.02,0.03-0.018*i);
+			MakeBall(skel,loc,0.036,0.13);
+
+			ball.push_back(std::make_shared<Ball>(nullptr,skel));
+			world->addSkeleton(skel);
+			ball.back()->Attach(world,abn);	
+		}
+	
+	}
 }

@@ -5,18 +5,37 @@ JugglingInfo(const std::vector<int>& V_sequences,int ball_size)
 	:V(V_sequences),left("HandL"),right("HandR"),count(0),T(0.3),D(0.7)
 {
 	//Generate ball index.
-	ball_index.resize(V.size(),0);
+	ball_index.resize(V.size(),-1);
+
+	
 	for(int i = 0;i<ball_size;i++)
 	{
 		int count_i = i;
-		while(V[count_i] != 0)
+		bool is_full = true;
+		for(int j =i;j<V.size();j++)
+		{
+			if(ball_index[j]==-1)
+			{
+				count_i = j;
+				is_full = false;
+				break;
+			}
+		}
+
+		if(is_full)
+			break;
+		
+		while(ball_index[count_i]==-1)
 		{
 			ball_index[count_i] = i;
+			if(V[count_i]==0)
+				break;
 			count_i += V[count_i];
 			if(count_i>=V.size())
 				break;
 		}
 	}
+
 	
 	
 

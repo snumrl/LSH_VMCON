@@ -31,7 +31,7 @@ public:
 	virtual void Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f) = 0;
 	virtual void Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fx) = 0;
 	virtual void Evalfu( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fu) = 0;
-	virtual void Finalize(int iteration) = 0;
+	virtual void Finalize(int& iteration) = 0;
 
 	void ComputeDerivative();
 	bool BackwardPass();

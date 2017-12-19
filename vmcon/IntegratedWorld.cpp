@@ -6,6 +6,9 @@
 #include <fstream>
 #include <sstream>
 #include <tinyxml.h>
+#include <boost/filesystem.hpp>
+ 
+
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -66,6 +69,10 @@ TimeStepping()
 	rec->Set(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mController);
 	
 	std::string output_path("../output/");
+
+
+	boost::filesystem::create_directories(output_path);
+	
 	WriteRecord(output_path);
 
 
@@ -114,38 +121,7 @@ Initialize()
 
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
-
-	for(int i =0;i<3;i++)
-	{
-		SkeletonPtr skel = Skeleton::create("ball_"+std::to_string(i));
-
-		bool is_left_hand = i%2;
-		if(is_left_hand)
-		{
-			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
-			Eigen::Vector3d loc = abn->getTransform().translation();
-			loc += Eigen::Vector3d(0,0.02,0.03);
-			MakeBall(skel,loc,0.036,0.13);
-
-			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
-			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
-			mRigidWorld->addSkeleton(skel);
-			mBalls.back()->Attach(mRigidWorld,abn);
-		}
-		else
-		{
-			auto* abn =mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
-			Eigen::Vector3d loc = abn->getTransform().translation();
-			loc += Eigen::Vector3d(0,0.02,0.03);
-			MakeBall(skel,loc,0.036,0.13);
-
-			// mBalls.push_back(std::make_shared<Ball>(std::make_shared<dart::constraint::WeldJointConstraint>(skel->getBodyNode(0),abn),skel));
-			mBalls.push_back(std::make_shared<Ball>(nullptr,skel));
-			mRigidWorld->addSkeleton(skel);
-			mBalls.back()->Attach(mRigidWorld,abn);	
-		}
-	
-	}
+	MakeBalls(mRigidWorld,mMusculoSkeletalSystem,mBalls,5);
 
 	// for(int i=0;i<1;i++)
 	// {
@@ -285,13 +261,8 @@ WriteRecord(const std::string& path)
 	}
 
 	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels().transpose()<<std::endl;
-	ofs<<"release ";
-	for(int i=0;i<mBalls.size();i++)
-	{
-		ofs<<mBalls[i]->IsReleased()<<" ";
-	}
-	ofs<<std::endl;
-	ofs<<"time "<<mRigidWorld->getTime();
+	ofs<<"time "<<mRigidWorld->getTime()<<std::endl;
+	ofs<<"act "<<mMusculoSkeletalSystem->GetActivationLevels()<<std::endl;
 	ofs.close();
 }
 

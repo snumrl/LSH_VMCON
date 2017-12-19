@@ -1,6 +1,7 @@
 #include "SimWindow.h"
 #include <algorithm>
 #include <fstream>
+#include <boost/filesystem.hpp>
 #include <GL/glut.h>
 using namespace GUI;
 using namespace FEM;
@@ -195,7 +196,7 @@ Timer(int value)
 	
 
 	if(mIsPlay){
-			mFrame+=(int)33.0*mDisplayRatio;
+			mFrame+=(int)33.0*(mDisplayRatio/5.0);
 			if(mFrame>=mRecords[0].size())
 				mFrame = 0;
 		}
@@ -213,11 +214,14 @@ LoadFromFolder(const std::string& path)
 {
 
 	std::vector<std::shared_ptr<Record>> records;
-	for(int i=0;i<6000;i++)
+	for(int i =0;i<100000;i++)
 	{
 		std::string real_path = path+std::to_string(i);
-		records.push_back(Record::Create());
-		records.back()->LoadFromFile(real_path);
+		if(boost::filesystem::exists(real_path))
+		{	
+			records.push_back(Record::Create());
+			records.back()->LoadFromFile(real_path);
+		}
 	}
 	mRecords.push_back(records);
 }

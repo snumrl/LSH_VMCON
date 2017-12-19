@@ -8,7 +8,7 @@
 
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;
 Eigen::Vector3d GetPoint(const AnchorPoint& ap);
-
+class Ball;
 struct Muscle
 {
 	void TransferForce(Eigen::Vector3d& f_origin,Eigen::Vector3d& f_insertion);
@@ -85,4 +85,5 @@ private:
 
 void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>& ms);
 void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms);
+void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSkeletalSystem>& ms,std::vector<std::shared_ptr<Ball>>& ball,int num);
 #endif

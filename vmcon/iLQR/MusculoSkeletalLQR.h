@@ -42,11 +42,12 @@ public:
 	void Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f) override;
 	void Evalfx( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fx) override;
 	void Evalfu( const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::MatrixXd& fu) override;
-	void Finalize(int iteration) override;
-		void WriteXML(const std::string& path);
+	void Finalize(int& iteration) override;
+	void WriteXML(const std::string& path);
 	void WriteRecord(const std::string& path);
 	int mWriteCount;
 	std::string mWritePath;
+	int mInitCount;
 protected:
 	void SetState(const Eigen::VectorXd& x);
 	void SetControl(const Eigen::VectorXd& u,double t);

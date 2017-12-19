@@ -57,7 +57,10 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	auto bn_to = skel->getBodyNode(mJugglingInfo->To());
 	//Check need to update.
 	bool need_update = false;
-
+	if(mJugglingInfo->GetCount()==40){
+		double a;
+		std::cin>>a;
+	}
 	//Check Catch Phase Finished.
 	if(mPhase == 0)
 	{
@@ -97,17 +100,18 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 		// std::cout<<ball->GetVelocity().transpose()<<std::endl;
 		if(mCount == mU.size() || mMotions.back().second<mTimeElapsed)
 		{
+			if(mJugglingInfo->GetV()!=0){
 			ball->Release(mRigidWorld);
 			std::cout<<"Released Velocity : "<<mBalls[mJugglingInfo->GetBallIndex()]->releasedVelocity.transpose()<<std::endl;
+			}
 			//Look Ahead for targeting next ball. (count+2 -> next target)
 			mJugglingInfo->CountPlusPlus();
 			if(mJugglingInfo->GetV()!=1)
 			{
 				mJugglingInfo->CountPlusPlus();
-				std::cout<<mJugglingInfo->GetV()<<std::endl;
 				if(mBalls[mJugglingInfo->GetBallIndex()]->IsReleased())
 				{
-					std::cout<<"Look ahead"<<mJugglingInfo->GetBallIndex()<<std::endl;
+					// std::cout<<"Look ahead"<<mJugglingInfo->GetBallIndex()<<std::endl;
 					GenerateCatchMotions();
 				}
 				mJugglingInfo->CountMinusMinus();
@@ -184,43 +188,13 @@ GenerateSwingMotions()
 	//Make Bezier curve
 	p0 = ball->GetPosition();
 
-	
-	Eigen::Vector3d mult[] = 
+	//Singular case V = 0
+	if(mJugglingInfo->GetV() == 0)
 	{
-		Eigen::Vector3d(1.0,1.0,1.0),
-		Eigen::Vector3d(1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1,1.0,1.0),
-		Eigen::Vector3d(1.0,1.0,1.0),
-		Eigen::Vector3d(1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1*1.1,1.0,1.0),
-		Eigen::Vector3d(1.1,1.0,1.0),
-		Eigen::Vector3d(1.0,1.0,1.0),
-	};
+		mTimeElapsed = 0.0;
+		mCount = 0;
+		return;
+	}
 	//Singular case V = 1
 	if(mJugglingInfo->GetV() == 1)
 	{
@@ -243,22 +217,28 @@ GenerateSwingMotions()
 	}
 	else
 	{
-		p0 = mHandX0;
-		p0 = p0.cwiseProduct(mult[mJugglingInfo->GetCount()]);
-		if(ball->GetPosition()[0]<0)
-			p0[0] = -p0[0];
-
-		p2 = p0;
-		p2[0] = p0[0]*0.9;
+		p0 = ball->GetPosition();
+		p0[0] *= 1.1;
+		p2 = mHandX0;
+		p2[2] *= 0.8;
+		if(ball->GetPosition()[0]<0){
+			p2[0] =-p2[0];
+		}
+		
+		// if(std::abs(p0[0])<std::abs(mHandX0[0]))
+			// p2[0] = p0[0]*1.1;
+		// else	
+			// p2[0] = p0[0]*0.9;
+		
 		
 		// p0[0] *=1.1;
 		// p2[0] *=0.9;
 		Eigen::Vector3d target_to = bn_to->getTransform()*mLocalOffset;
 		if(bn_from == bn_to)
-			target_to = p0;
+			target_to = p2;
 		else
 		{
-			target_to = p0;
+			target_to = p2;
 			target_to[0] = -target_to[0];
 		}
 
@@ -369,7 +349,7 @@ InitializeLQR()
 			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += mLocalOffset;
-			MakeBall(skel,loc,0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
+			MakeBall(skel,mBalls[i]->GetPosition(),0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
 
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
@@ -380,7 +360,7 @@ InitializeLQR()
 			auto* abn =mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += mLocalOffset;
-			MakeBall(skel,loc,0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
+			MakeBall(skel,mBalls[i]->GetPosition(),0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
 
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
@@ -391,7 +371,7 @@ InitializeLQR()
 	mLQR = std::make_shared<MusculoSkeletalLQR>(
 			mLQRRigidWorld,
 			mLQRSoftWorld,
-			mLQRMusculoSkeletalSystem,mLQRBalls,2);
+			mLQRMusculoSkeletalSystem,mLQRBalls,10);
 }
 void
 Machine::
@@ -399,12 +379,17 @@ SynchronizeLQR()
 {
 	mLQRSoftWorld->SetPositions(mSoftWorld->GetPositions());
 
+
 	for(int i =0;i<mLQRRigidWorld->getNumSkeletons();i++){
 		mLQRRigidWorld->getSkeleton(i)->setPositions(mRigidWorld->getSkeleton(i)->getPositions());
 		mLQRRigidWorld->getSkeleton(i)->setVelocities(mRigidWorld->getSkeleton(i)->getVelocities());
 		mLQRRigidWorld->getSkeleton(i)->computeForwardKinematics();
 	}
-
+	// for(int i=0;i<mBalls.size();i++)
+	// {
+	// 	std::cout<<i<<"  : "<<mBalls[i]->GetPosition().transpose()<<std::endl;
+	// 	std::cout<<i<<"  : "<<mLQRBalls[i]->GetPosition().transpose()<<std::endl;
+	// }
 
 
 	for(int i =0;i<mBalls.size();i++)
