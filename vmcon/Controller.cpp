@@ -27,18 +27,18 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
 	mPDForces = Eigen::VectorXd::Constant(dof,0.0);
-	// mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
+	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
-	// mIKSolver = new IpoptApplication();
-	// mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
-	// mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
-	// mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
-	// mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
-	// mIKSolver->Options()->SetIntegerValue("print_level", 2);
-	// mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
-	// mIKSolver->Options()->SetNumericValue("tol", 1e-3);
+	mIKSolver = new IpoptApplication();
+	mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
+	mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
+	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	mIKSolver->Options()->SetIntegerValue("print_level", 2);
+	mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
+	mIKSolver->Options()->SetNumericValue("tol", 1e-3);
 
-	// mIKSolver->Initialize();
+	mIKSolver->Initialize();
 
 	mMuscleOptimization = new MuscleOptimization(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem);
 	mMuscleOptimizationSolver = new IpoptApplication();
@@ -120,7 +120,7 @@ Controller::
 SetRandomTargetPositions()
 {
 	dart::math::seedRand();
-	for(int i =0;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();i++)
+	for(int i =mMusculoSkeletalSystem->GetSkeleton()->getNumDofs()-3;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs()-2;i++)
 	{
 		double lo = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
 		double up = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
@@ -129,6 +129,17 @@ SetRandomTargetPositions()
 	}
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
 	// mTargetPositions.block(0,0,mMusculoSkeletalSystem->GetSkeleton()->getNumDofs()-3,1).setZero();
+
+
+	// mMusculoSkeletalSystem->GetSkeleton()->setPositions(mTargetPositions);
+	// Eigen::Quaterniond target_orientation;
+	// target_orientation = Eigen::AngleAxisd(1.57,Eigen::Vector3d(-1.0,0,0));
+
+	// Eigen::Quaterniond current_orientation(mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL")->getTransform().rotation());
+	// Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
+
+	// std::cout<<Eigen::AngleAxisd(diff).angle()*Eigen::AngleAxisd(diff).axis().transpose()<<std::endl;
+
 	mTargetVelocities.setZero();
 }
 Eigen::VectorXd
@@ -162,23 +173,23 @@ ComputePDForces()
 	return qdd_desired;
 }
 
-// void
-// Controller::
-// AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
-// {
-// 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-// 	ik->AddTargetPositions(ap,target);	
-// }
-// Eigen::VectorXd
-// Controller::
-// SolveIK()
-// {
-// 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+void
+Controller::
+AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target)
+{
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+	ik->AddTargetPositions(ap,target);	
+}
+Eigen::VectorXd
+Controller::
+SolveIK()
+{
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 
-// 	mIKSolver->OptimizeTNLP(mIKOptimization);
+	mIKSolver->OptimizeTNLP(mIKOptimization);
 
-// 	return ik->GetSolution();
-// }
+	return ik->GetSolution();
+}
 
 void
 Controller::
@@ -188,7 +199,7 @@ Step()
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
-	// ComputePDForces();
+	ComputePDForces();
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
@@ -196,5 +207,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	// mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

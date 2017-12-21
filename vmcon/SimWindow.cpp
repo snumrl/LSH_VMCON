@@ -45,7 +45,11 @@ Display()
 	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
 	// glLineWidth(1.0);
 	glColor3f(0,0,0);
+	glPointSize(10.0);
+	GUI::DrawPoint(random_target);
+	glPointSize(1.0);
 	glLineWidth(1.0);
+
 	glBegin(GL_LINES);
 	{
 		double z = 0.0;
@@ -150,8 +154,8 @@ Keyboard(unsigned char key,int x,int y)
 		case '[' : mRecordFrame--; break;
 		case ']' : mRecordFrame++; break;
 		case 'i' : 
-			// mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
-			// mWorld->GetController()->SolveIK();
+			mWorld->GetController()->AddIKTarget(std::make_pair(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)),random_target);
+			mWorld->GetController()->mTargetPositions = mWorld->GetController()->SolveIK();
 		break;
 		case 27: exit(0);break;
 		default : break;

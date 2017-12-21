@@ -137,6 +137,22 @@ EvaluateDVector(const Eigen::VectorXd& x)
 	md = mR;
 	if(mD(2,2)<0)
 		md.block<3,1>(0,2) = -mR.block<3,1>(0,2);
+
+	Eigen::Vector3d S = mD.diagonal();
+	Eigen::Vector3d D;
+	D.setZero();
+	for(int i=0;i<10;i++)
+	{
+		double CD = (S[0]+D[0])*(S[1]+D[1])*(S[2]+D[2])-1;
+		Eigen::Vector3d gradCD( (S[1]+D[1])*(S[2]+D[2]),
+								(S[0]+D[0])*(S[2]+D[2]),
+								(S[0]+D[0])*(S[1]+D[1]));
+
+		D = (gradCD.dot(D) -CD)/(gradCD.squaredNorm())*gradCD;
+
+	}
+
+	md_volume = mU*((S+D).asDiagonal())*mV.transpose();
 }
 void
 CorotateFEMCst::
@@ -145,6 +161,11 @@ GetDVector(int& index,Eigen::VectorXd& d)
 	d.block<3,1>(3*(index+0),0) = md.block<3,1>(0,0);
 	d.block<3,1>(3*(index+1),0) = md.block<3,1>(0,1);
 	d.block<3,1>(3*(index+2),0) = md.block<3,1>(0,2);
+	index+=3;
+
+	d.block<3,1>(3*(index+0),0) = md_volume.block<3,1>(0,0);
+	d.block<3,1>(3*(index+1),0) = md_volume.block<3,1>(0,1);
+	d.block<3,1>(3*(index+2),0) = md_volume.block<3,1>(0,2);
 	index+=3;
 }
 void
@@ -173,9 +194,28 @@ EvaluateJMatrix(int& index, std::vector<Eigen::Triplet<double>>& J_triplets)
 		0,-d13-d23-d33,0,0,d13,0,0,d23,0,0,d33,0,
 		0,0,-d13-d23-d33,0,0,d13,0,0,d23,0,0,d33;
 
-	auto MuAiT = mMu*mVolume*Ai.transpose();
+	Eigen::MatrixXd MuAiT = mMu*mVolume*Ai.transpose();
 	int idx[4] = {mi0,mi1,mi2,mi3};
 	//MuAiT --- 12x9 matrix
+	for(int i =0;i<4;i++)
+	{
+		for(int j=0;j<3;j++)
+		{
+			//MuAiT.block [i,j] -- 3x3 matrix
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*(index+j)+0, MuAiT(3*i+0, 3*j+0)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*(index+j)+1, MuAiT(3*i+0, 3*j+1)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*(index+j)+2, MuAiT(3*i+0, 3*j+2)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*(index+j)+0, MuAiT(3*i+1, 3*j+0)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*(index+j)+1, MuAiT(3*i+1, 3*j+1)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*(index+j)+2, MuAiT(3*i+1, 3*j+2)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*(index+j)+0, MuAiT(3*i+2, 3*j+0)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*(index+j)+1, MuAiT(3*i+2, 3*j+1)));
+			J_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*(index+j)+2, MuAiT(3*i+2, 3*j+2)));
+		}
+	}
+	index+=3;
+
+	MuAiT = (MuAiT*mPoissonRatio).eval();
 	for(int i =0;i<4;i++)
 	{
 		for(int j=0;j<3;j++)
@@ -220,9 +260,27 @@ EvaluateLMatrix(std::vector<Eigen::Triplet<double>>& L_triplets)
 		0,-d13-d23-d33,0,0,d13,0,0,d23,0,0,d33,0,
 		0,0,-d13-d23-d33,0,0,d13,0,0,d23,0,0,d33;
 
-	auto MuAiTAi = mMu*mVolume*((Ai.transpose())*Ai);
+	Eigen::MatrixXd MuAiTAi = mMu*mVolume*((Ai.transpose())*Ai);
 	int idx[4] = {mi0,mi1,mi2,mi3};
 	//MuAiT --- 12x12 matrix
+	for(int i =0;i<4;i++)
+	{
+		for(int j=0;j<4;j++)
+		{
+			//MuAiTAi.block [i,j] -- 3x3 matrix
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*idx[j]+0, MuAiTAi(3*i+0, 3*j+0)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*idx[j]+1, MuAiTAi(3*i+0, 3*j+1)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+0, 3*idx[j]+2, MuAiTAi(3*i+0, 3*j+2)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*idx[j]+0, MuAiTAi(3*i+1, 3*j+0)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*idx[j]+1, MuAiTAi(3*i+1, 3*j+1)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+1, 3*idx[j]+2, MuAiTAi(3*i+1, 3*j+2)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*idx[j]+0, MuAiTAi(3*i+2, 3*j+0)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*idx[j]+1, MuAiTAi(3*i+2, 3*j+1)));
+			L_triplets.push_back(Eigen::Triplet<double>(3*idx[i]+2, 3*idx[j]+2, MuAiTAi(3*i+2, 3*j+2)));
+		}
+	}
+
+	MuAiTAi = (MuAiTAi*mPoissonRatio).eval();
 	for(int i =0;i<4;i++)
 	{
 		for(int j=0;j<4;j++)
@@ -245,7 +303,7 @@ int
 CorotateFEMCst::
 GetNumHessianTriplets()
 {
-	return 144;
+	return 288;
 }
 
 void
