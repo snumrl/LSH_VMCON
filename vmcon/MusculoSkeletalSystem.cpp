@@ -117,7 +117,7 @@ SetActivationLevel(double a)
 
 MusculoSkeletalSystem::
 MusculoSkeletalSystem()
-	:mTendonStiffness(1E5),mMuscleStiffness(1E6),mYoungsModulus(1E6),mPoissonRatio(0.3)
+	:mTendonStiffness(1E6),mMuscleStiffness(5E6),mYoungsModulus(1E6),mPoissonRatio(0.3)
 {
 
 }
@@ -360,7 +360,7 @@ ComputeForceDerivative(const FEM::WorldPtr& world)
 	// std::cout<<J.transpose()<<std::endl;
 #else
 
-													// #define NO_OFF_DIAGONAL
+													#define NO_OFF_DIAGONAL
 													#ifdef NO_OFF_DIAGONAL
 
 	Eigen::VectorXd Ji(mMuscles.size()*6);
@@ -673,29 +673,29 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 					Eigen::AngleAxisd(-3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
 					Eigen::AngleAxisd(-3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 					;
-	T_HandR.translation() = Eigen::Vector3d(-0.77,-0.24,-0.28);
+	T_HandR.translation() = Eigen::Vector3d(-0.79,-0.26,-0.28);
 
 	T_HandL.linear() = 
 					Eigen::AngleAxisd(3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
 					Eigen::AngleAxisd(3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 					;
-	T_HandL.translation() = Eigen::Vector3d(0.77,-0.24,-0.28);
+	T_HandL.translation() = Eigen::Vector3d(0.79,-0.26,-0.28);
 	MakeBody(skel,skel->getBodyNode("ElbowR"),"HandR",
 		path_export+"HandR.obj",
 		T_HandR,
 		Eigen::Vector3d(0.07,0.07,0.07),
-		Eigen::Vector3d(-0.17,0,0),
+		Eigen::Vector3d(-0.13,0.02,0.0),
 		Eigen::Vector3d(0,0,0),
-		JOINT_TYPE::REVOLUTE,
+		JOINT_TYPE::BALL_AND_SOCKET,
 		3);
 
 	MakeBody(skel,skel->getBodyNode("ElbowL"),"HandL",
 		path_export+"HandL.obj",
 		T_HandL,
 		Eigen::Vector3d(0.07,0.07,0.07),
-		Eigen::Vector3d(0.17,0.0,0),
+		Eigen::Vector3d(0.13,0.02,0.0),
 		Eigen::Vector3d(0,0,0),
-		JOINT_TYPE::REVOLUTE,
+		JOINT_TYPE::BALL_AND_SOCKET,
 		3);
 
 	Eigen::VectorXd pos = skel->getPositions();
@@ -721,29 +721,39 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	pos[3*5+1-4] = 1.7;
 
 	//Root joint
-
-	skel->getDof(3*0+0)->setPositionLimits(-0.0,0.0);
-	skel->getDof(3*0+1)->setPositionLimits(-0.1,0.1);
-	skel->getDof(3*0+2)->setPositionLimits(-0.1,0.1);
+	skel->getDof(0)->setPositionLimits(-0.0,0.0);
+	skel->getDof(1)->setPositionLimits(-0.02,0.02);
+	skel->getDof(2)->setPositionLimits(-0.02,0.02);
 
 	// //Revolute Joint
-	skel->getDof(3*1+0)->setPositionLimits(-0.3,0.2);
-	skel->getDof(3*1+1)->setPositionLimits(-0.2,0.3);
+	skel->getDof(3)->setPositionLimits(-0.3,0.2);
+	skel->getDof(4)->setPositionLimits(-0.2,0.3);
 
 	// skel->getDof(3*1+0)->setPositionLimits(0.0,0.0);
 	// skel->getDof(3*1+1)->setPositionLimits(0.0,0.0);
 
 	// //Shoulder JOint : Euler
-	skel->getDof(3*3+0-4)->setPositionLimits(0.0,1.57); //X
-	skel->getDof(3*3+1-4)->setPositionLimits(-2.0,0.2); //Y
-	skel->getDof(3*3+2-4)->setPositionLimits(-1.8,0.75); //Z
+	skel->getDof(5)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(6)->setPositionLimits(-1.0,0.2); //Y
+	skel->getDof(7)->setPositionLimits(-1.0,0.75); //Z
 
-	skel->getDof(3*4+0-4)->setPositionLimits(0.0,1.57); //X
-	skel->getDof(3*4+1-4)->setPositionLimits(-0.2,2.0); //Y
-	skel->getDof(3*4+2-4)->setPositionLimits(-0.75,1.8); //Z
+	skel->getDof(8)->setPositionLimits(0.0,1.57); //X
+	skel->getDof(9)->setPositionLimits(-0.2,1.0); //Y
+	skel->getDof(10)->setPositionLimits(-0.75,1.0); //Z
 
-	skel->getDof(3*5+0-4)->setPositionLimits(-2.2,0.1); 
-	skel->getDof(3*5+1-4)->setPositionLimits(0.1,2.2);
+	//Elbow
+	skel->getDof(11)->setPositionLimits(-2.2,0.1); 
+	skel->getDof(12)->setPositionLimits(0.1,2.2);
+
+	//Hand
+	skel->getDof(13)->setPositionLimits(-1.0,1.0); //X
+	skel->getDof(14)->setPositionLimits(-1.0,1.0); //Y
+	skel->getDof(15)->setPositionLimits(-0.8,0.8); //Z
+
+	skel->getDof(16)->setPositionLimits(-1.0,1.0); //X
+	skel->getDof(17)->setPositionLimits(-1.0,1.0); //Y
+	skel->getDof(18)->setPositionLimits(-0.8,0.8); //Z
+
 
 	for(int i =0;i<skel->getNumDofs();i++){
 	// 	skel->getDof(i)->setPositionLimits(-100,100);

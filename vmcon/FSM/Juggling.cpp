@@ -45,11 +45,11 @@ JugglingInfo(const std::vector<int>& V_sequences,int ball_size)
 	std::cout<<std::endl;
 
 
-	for(int i = 0;i<V.size();i++)
-	{
-		count = i;
-		std::cout<<From()<<"->"<<To()<<" : "<<GetV()<<std::endl;
-	}
+	// for(int i = 0;i<V.size();i++)
+	// {
+	// 	count = i;
+	// 	std::cout<<From()<<"->"<<To()<<" : "<<GetV()<<std::endl;
+	// }
 	count = 0;
 }
 void

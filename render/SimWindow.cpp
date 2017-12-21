@@ -1,4 +1,5 @@
 #include "SimWindow.h"
+#include "../vmcon/MusculoSkeletalSystem.h"
 #include <algorithm>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -11,7 +12,7 @@ using namespace dart::dynamics;
 extern std::vector<std::string> g_record_path;
 SimWindow::
 SimWindow()
-	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderFEM(false),mDisplayRatio(1.0),mRenderDetail(false)
+	:GLUTWindow(),mIsRotate(true),mIsDrag(false),mIsPlay(false),mFrame(0),mRenderTarget(false),mDisplayRatio(1.0),mRenderDetail(false)
 {
 	// std::string state_path = "../output/world_state.xml";
 	mWorld = std::make_shared<IntegratedWorld>("");
@@ -83,10 +84,8 @@ Display()
 		if(mIsRender[k])
 		{
 
-
-		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld());
-		if(mRenderFEM)
-			DrawWorld(mWorld->GetSoftWorld());
+		Eigen::VectorXd target;
+		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld(),mWorld->mMusculoSkeletalSystem,target);
 
     	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
     	{
@@ -98,8 +97,28 @@ Display()
     		}
 	    
 	    }
+	    if(mRenderTarget)
+		{
+			auto& skel = mWorld->mMusculoSkeletalSystem->GetSkeleton();
+			auto save_pos = skel->getPositions();
+			skel->setPositions(target);
+			skel->computeForwardKinematics(true,false,false);
+			DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
+			skel->setPositions(save_pos);
+			skel->computeForwardKinematics(true,false,false);
+		}
 	}
 	}
+	if(mRenderDetail)
+	{
+		DrawWorld(mWorld->mSoftWorld);
+		
+		for(auto& mus: mWorld->mMusculoSkeletalSystem->GetMuscles()){
+			DrawMuscleWayPoints(mus->origin_way_points);
+			DrawMuscleWayPoints(mus->insertion_way_points);
+		}
+	}
+
 	
 	glutSwapBuffers();
 }
@@ -123,7 +142,7 @@ case '9' : mIsRender[8] = !mIsRender[8];break;
 		case '-' : mDisplayRatio*=0.9;break;
 		case '+' : mDisplayRatio*=1.1;break;
 		case 'w' :mRenderDetail =!mRenderDetail;break;
-		case 'q' : mRenderFEM =!mRenderFEM;break;
+		case 'q' : mRenderTarget =!mRenderTarget;break;
 		case ' ' : mIsPlay =!mIsPlay;break;
 		case 'r' : mFrame = 0;break;
 		case '[' : mFrame--;break;

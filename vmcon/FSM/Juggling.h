@@ -23,6 +23,7 @@ public:
 	double 			GetT(){return T;};
 	double 			GetD(){return D;};
 	int 			GetCount(){return count;}
+	void			SetCount(int c){ count =c;}
 private:
 	std::string left,right;
 	double T;

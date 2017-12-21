@@ -29,7 +29,7 @@ public:
 
 	void GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v);
 	
-private:
+public:
 	void GenerateCatchMotions();
 	void GenerateSwingMotions();
 	std::vector<std::pair<Eigen::VectorXd,double>> GenerateFineMotions(const std::vector<std::pair<Eigen::VectorXd,double>>& coarse_motions);

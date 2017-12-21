@@ -379,12 +379,13 @@ SynchronizeLQR()
 {
 	mLQRSoftWorld->SetPositions(mSoftWorld->GetPositions());
 
-
 	for(int i =0;i<mLQRRigidWorld->getNumSkeletons();i++){
 		mLQRRigidWorld->getSkeleton(i)->setPositions(mRigidWorld->getSkeleton(i)->getPositions());
 		mLQRRigidWorld->getSkeleton(i)->setVelocities(mRigidWorld->getSkeleton(i)->getVelocities());
 		mLQRRigidWorld->getSkeleton(i)->computeForwardKinematics();
 	}
+	mLQRMusculoSkeletalSystem->TransformAttachmentPoints();
+	mLQRMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels());
 	// for(int i=0;i<mBalls.size();i++)
 	// {
 	// 	std::cout<<i<<"  : "<<mBalls[i]->GetPosition().transpose()<<std::endl;
@@ -420,7 +421,7 @@ Machine::
 OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	Eigen::VectorXd x0(dofs*2+12*mBalls.size());
+	Eigen::VectorXd x0(dofs*2+12*mBalls.size()+mSoftWorld->GetPositions().rows());
 	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
 	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
@@ -428,6 +429,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[i]->GetSkeleton()->getPositions();
 		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
 	}
+	x0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
 	std::vector<Eigen::VectorXd> ref,u0;
 	ref.resize(mMotions.size());
 	u0.resize(mMotions.size()-1);

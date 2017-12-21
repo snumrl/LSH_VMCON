@@ -49,13 +49,14 @@ public:
 	std::string mWritePath;
 	int mInitCount;
 protected:
-	void SetState(const Eigen::VectorXd& x);
+	void SetState(const Eigen::VectorXd& x,bool update_fem = true);
 	void SetControl(const Eigen::VectorXd& u,double t);
 	void GetState(Eigen::VectorXd& x);
 	void Step();
 	void ClipU(int i,double& lu,double& uu);
 	void ClipX(int i,double& lx,double& ux);
 	int 										mDofs;
+	int 										mSoftWorldDofs;
 	dart::simulation::WorldPtr 					mRigidWorld;
 	std::shared_ptr<FEM::World>					mSoftWorld;
 	std::shared_ptr<MusculoSkeletalSystem>		mMusculoSkeletalSystem;
@@ -68,7 +69,6 @@ protected:
 	// Ipopt::SmartPtr<Ipopt::TNLP> 			 	mIKOptimization;
 	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
 
-	Eigen::VectorXd								mSoftWorldX0;
 	std::vector<Eigen::VectorXd>				mReferenceMotions;
 
 	double 										w_regularization,w_smooth,w_compliance,w_pos_track,w_vel_track;

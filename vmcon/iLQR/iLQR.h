@@ -9,10 +9,10 @@
 class iLQR
 {
 public:
-	iLQR(int sx,int su,int max_iteration);
+	iLQR(int max_iteration);
 
 	virtual void Init(
-		int n,
+		int n,int sx_tilda,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,
 		const Eigen::VectorXd& u_lower,
 		const Eigen::VectorXd& u_upper);
@@ -43,7 +43,7 @@ protected:
 	int mMaxIteration;
 
 	int mN;
-	int mSx,mSu;
+	int mSx,mSx_tilda,mSu;
 
 	//Output
 	std::vector<Eigen::VectorXd> mx;		// dim : n		size : w

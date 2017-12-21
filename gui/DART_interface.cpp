@@ -23,6 +23,33 @@ DrawSkeleton(
 		// }
 	}
 	// is_box = !is_box;
+
+	// for(int i =0;i<skel->getNumJoints();i++)
+	// {
+	// 	auto parent = skel->getJoint(i)->getParentBodyNode();
+	// 	Eigen::Isometry3d T;
+	// 	T.setIdentity();
+	// 	if(parent!=nullptr)
+	// 		T = parent->getTransform();
+	// 	T = T*skel->getJoint(i)->getTransformFromParentBodyNode();
+	// 	glPushMatrix();
+	// 	glMultMatrixd(T.data());
+	// 	glBegin(GL_LINES);
+	// 	glColor3f(1,0,0);
+	// 	glVertex3f(0,0,0);
+	// 	glVertex3f(0.1,0,0);
+
+	// 	glColor3f(0,1,0);
+	// 	glVertex3f(0,0,0);
+	// 	glVertex3f(0,0.1,0);
+
+	// 	glColor3f(0,0,1);
+	// 	glVertex3f(0,0,0);
+	// 	glVertex3f(0,0,0.1);
+
+	// 	glEnd();
+	// 	glPopMatrix();
+	// }
 }
 
 

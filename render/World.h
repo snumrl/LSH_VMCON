@@ -17,7 +17,8 @@ public:
 
 	const FEM::WorldPtr& GetSoftWorld(){return mSoftWorld;};	
 	const dart::simulation::WorldPtr& GetRigidWorld() {return mRigidWorld;};
-private:
+	const std::shared_ptr<MusculoSkeletalSystem>& GetMusculoSkeletalSystem() {return mMusculoSkeletalSystem;};
+public:
 	void Initialize(const std::string& path);
 	FEM::WorldPtr mSoftWorld;
 	dart::simulation::WorldPtr mRigidWorld;

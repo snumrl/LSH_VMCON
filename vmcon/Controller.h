@@ -39,10 +39,12 @@ public:
 	// Eigen::VectorXd SolveIK();
 
 	void Step();
+	void SetRandomTargetPositions();
 	const Eigen::VectorXd& GetTargetPositions() {return mTargetPositions;}
 	void SetTargetPositions(const Eigen::VectorXd& x) { mTargetPositions=x;}
 
 	Eigen::VectorXd mPDForces;
+	std::shared_ptr<Machine> GetMachine(){return mFSM;}
 public:
 	Controller(
 		const FEM::WorldPtr& soft_world,

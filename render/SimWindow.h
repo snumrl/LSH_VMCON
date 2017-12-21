@@ -16,8 +16,8 @@ public:
 	bool 						mIsPlay;
 	bool 						mIsRotate;
 	bool 						mIsDrag;
-	bool 						mRenderFEM;
 	bool 						mRenderDetail;
+	bool 						mRenderTarget;
 
 	double						mDisplayRatio;
 	std::vector<bool> mIsRender;

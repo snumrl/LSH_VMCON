@@ -17,10 +17,13 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
-	mKp[dof-2] = 2.0*mKp[dof-2];
-	mKp[dof-1] = 2.0*mKp[dof-1];
-	mKv[dof-2] = sqrt(2.0)*mKv[dof-1];
-	mKv[dof-1] = sqrt(2.0)*mKv[dof-1];
+	for(int i =0;i<6;i++)
+	{
+		mKp[dof-1-i] = 2.0*mKp[dof-1-i];	
+		mKv[dof-1-i] = sqrt(2.0)*mKv[dof-1-i];
+	}
+	
+	
 	mTargetPositions = Eigen::VectorXd::Constant(dof,0.0);
 	mTargetVelocities = Eigen::VectorXd::Constant(dof,0.0);
 	mPDForces = Eigen::VectorXd::Constant(dof,0.0);
@@ -62,9 +65,11 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
 	// std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1};
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
-
+	mMuscleOptimizationSolver->Initialize();
+		mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
 	mFSM = std::make_shared<Machine>(mRigidWorld,mSoftWorld,mMusculoSkeletalSystem,mBalls,
 		V_list,mBalls.size());
+
     // MakeMachine("../vmcon/export/juggling.xml",mFSM);
     // mFSM->Trigger("start");
 }
@@ -98,13 +103,7 @@ ComputeActivationLevels()
 
 	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
 
-	if(mSoftWorld->GetTime()==0.0)
-	{
-		mMuscleOptimizationSolver->Initialize();
-		mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
-	}
-	else
-		mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);	
+	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);	
 
 	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 	Eigen::VectorXd qdd = solution.head(skel->getNumDofs());
@@ -116,6 +115,22 @@ ComputeActivationLevels()
 	return activation;
 }
 
+void
+Controller::
+SetRandomTargetPositions()
+{
+	dart::math::seedRand();
+	for(int i =0;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();i++)
+	{
+		double lo = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
+		double up = mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
+
+		mTargetPositions[i] = dart::math::random(lo,up);
+	}
+	// std::cout<<mTargetPositions.transpose()<<std::endl;
+	// mTargetPositions.block(0,0,mMusculoSkeletalSystem->GetSkeleton()->getNumDofs()-3,1).setZero();
+	mTargetVelocities.setZero();
+}
 Eigen::VectorXd
 Controller::
 ComputePDForces()
@@ -173,7 +188,7 @@ Step()
 	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
 	
-	ComputePDForces();
+	// ComputePDForces();
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
 	// std::cout<<mTargetPositions.transpose()<<std::endl;
@@ -181,5 +196,5 @@ Step()
 	// std::cout<<mPDForces.transpose()<<std::endl;
 	// std::cout<<std::endl;
 	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
-	//mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
+	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 }

@@ -63,7 +63,7 @@ DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)
 		const Eigen::Vector3d& p2 = x.block<3,1>(i2*3,0);
 		const Eigen::Vector3d& p3 = x.block<3,1>(i3*3,0);
 
-		GUI::DrawTetrahedron(p0,p1,p2,p3,Eigen::Vector3d(0.8,0.8-0.3*a,0.8-0.3*a));
+		GUI::DrawTetrahedron(p0,p1,p2,p3,Eigen::Vector3d(1.0,1.0-a,1.0-a));
 		glLineWidth(2.0);
 		GUI::DrawLine(p0,p1,Eigen::Vector3d(0,0,0));
 		GUI::DrawLine(p0,p2,Eigen::Vector3d(0,0,0));

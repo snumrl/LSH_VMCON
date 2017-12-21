@@ -113,6 +113,16 @@ eval_f(	Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number& obj_v
 	for(auto& target : mTargets)
 	{
 		obj_value += (target.first.first->getTransform()*target.first.second - target.second).squaredNorm();
+
+		Eigen::Quaterniod target_orientation;
+		if(!target.first.first->getName().compare("HandL")) 
+			target_orientation = Eigen::AngleAxisd(-1.57*0.5,0,0);
+		else
+			target_orientation = Eigen::AngleAxisd(1.57*0.5,0,0);
+		Eigen::Quaterniod current_orientation(target.first.first->getTransform().rotation());
+		Eigen::Quaterniod diff = target_orientation*current_orientation.inverse();
+
+		obj_value += Eigen::AngleAxisd(diff).angle();
 	}
 	return true;
 }
@@ -130,10 +140,25 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 	mSkeleton->computeForwardKinematics(true,false,false);
 	for(auto& target: mTargets)
 	{
-		dart::math::LinearJacobian J = mSkeleton->getLinearJacobian(target.first.first,target.first.second);
-		J.block(3,3,0,0) *= 100.0;
+		// dart::math::LinearJacobian J = mSkeleton->getLinearJacobian(target.first.first,target.first.second);
+		dart::math::LinearJacobian J = mSkeleton->getJacobian(target.first.first,target.first.second);
+		J.block(6,3,0,0) *= 100.0;
 		Eigen::Vector3d x_minus_x_target = target.first.first->getTransform()*target.first.second - target.second;
-		g += 2.0*(J.transpose()*J)* J.transpose()*x_minus_x_target;
+		
+		Eigen::Quaterniod target_orientation;
+		if(!target.first.first->getName().compare("HandL")) 
+			target_orientation = Eigen::AngleAxisd(-1.57*0.5,0,0);
+		else
+			target_orientation = Eigen::AngleAxisd(1.57*0.5,0,0);
+		Eigen::Quaterniod current_orientation(target.first.first->getTransform().rotation());
+		Eigen::Quaterniod diff = target_orientation*current_orientation.inverse();
+
+		Eigen::Vector3d o_minus_o_target = Eigen::AngleAxisd(diff).angle()*Eigen::AngleAxisd(diff).axis();
+
+		Eigen::Vector6d temp;
+		temp.head(3) = x_minus_x_target;
+		temp.tail(3) = o_minus_o_target;
+		g += 2.0*(J.transpose()*J)* J.transpose()*temp;
 	}
 
 	for(int i =0;i<n;i++)

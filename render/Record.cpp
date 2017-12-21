@@ -1,10 +1,7 @@
-#include "fem/fem.h"
 #include <fstream>
-#include "dart/dart.hpp"
-#include "dart/gui/gui.hpp"
-#include "dart/math/math.hpp"
-#include "dart/simulation/simulation.hpp"
+
 #include "Record.h"
+#include "../vmcon/MusculoSkeletalSystem.h"
 #include <iostream>
 
 using namespace dart::dynamics;
@@ -33,7 +30,9 @@ Create()
 void
 Record::
 Get(const dart::simulation::WorldPtr& rigid_world,
-	const std::shared_ptr<FEM::World>& soft_world)
+	const std::shared_ptr<FEM::World>& soft_world,
+	const std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system,
+	Eigen::VectorXd& target)
 {
 	rigid_world->setTime(t);
 	for(int i =0;i<rigid_world->getNumSkeletons();i++)
@@ -43,6 +42,15 @@ Get(const dart::simulation::WorldPtr& rigid_world,
 	}
 	soft_world->SetTime(t);
 	soft_world->SetPositions(soft_body_positions);
+	int count = 0;
+    for(auto& muscle : musculo_skeletal_system->GetMuscles())
+    {
+        muscle->SetActivationLevel(activation_levels[count]);
+        muscle->origin->SetP(GetPoint(muscle->origin_way_points[0]));
+        muscle->insertion->SetP(GetPoint(muscle->insertion_way_points[0]));
+        count++;
+    }
+    target = target_positions;
 }
 
 void
@@ -119,6 +127,34 @@ LoadFromFile(const std::string& path)
 		{
 			ss>>val;
 			t = val;
+		}
+		else if(!index.compare("act"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			activation_levels =eigen_vec;
+		}
+		else if(!index.compare("target"))
+		{
+			while(!ss.eof())
+			{
+				ss>>val;
+				vec.push_back(val);
+			}
+			eigen_vec.resize(vec.size());
+			for(int i=0;i<vec.size();i++)
+			{
+				eigen_vec[i] = vec[i];
+			}
+			target_positions = eigen_vec;
 		}
 		
 	}

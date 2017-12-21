@@ -6,8 +6,8 @@
 #include <ctime>
 using namespace Ipopt;
 iLQR::
-iLQR(int sx,int su,int max_iteration)
-	:mSx(sx),mSu(su),mN(0),mMaxIteration(max_iteration),
+iLQR(int max_iteration)
+	:mSx(0),mSu(0),mN(0),mMaxIteration(max_iteration),
 	mMu(1.0),mMu_min(1E-6),mMu_max(1E10),mLambda(1.0),mLambda_0(2.0),mAlpha(1.0)
 {
 	mQPSolver = new IpoptApplication();
@@ -24,11 +24,15 @@ iLQR(int sx,int su,int max_iteration)
 }
 void
 iLQR::
-Init(int n,const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,const Eigen::VectorXd& u_lower,const Eigen::VectorXd& u_upper)
+Init(int n,int sx_tilda,const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,const Eigen::VectorXd& u_lower,const Eigen::VectorXd& u_upper)
 {
-	// std::cout<<"Window size : "<<n<<std::endl;
-	// std::cout<<"State size : "<<mSx<<std::endl;
-	// std::cout<<"control size : "<<mSu<<std::endl;
+	mSx = x0.rows();
+	mSx_tilda = sx_tilda;
+	mSu = u0[0].rows();
+
+	std::cout<<"Window size : "<<n<<std::endl;
+	std::cout<<"State size : "<<mSx<<std::endl;
+	std::cout<<"control size : "<<mSu<<std::endl;
 	std::cout<<std::endl;
 	mMu = 1.0;
 	mLambda = 1.0;
@@ -39,36 +43,39 @@ Init(int n,const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0,cons
 	mu_lower = Eigen::VectorXd::Zero(mSu);
 	mu_upper = Eigen::VectorXd::Zero(mSu);
 	
-	mCx.resize(mN-1,Eigen::VectorXd::Zero(mSx));	
+	mCx.resize(mN-1,Eigen::VectorXd::Zero(mSx_tilda));	
 	mCu.resize(mN-1,Eigen::VectorXd::Zero(mSu));	
-	mCxx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
-	mCxu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
+	mCxx.resize(mN-1,Eigen::MatrixXd::Zero(mSx_tilda,mSx_tilda));
+	mCxu.resize(mN-1,Eigen::MatrixXd::Zero(mSx_tilda,mSu));
 	mCuu.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSu));
 
-	mfx.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSx));
-	mfu.resize(mN-1,Eigen::MatrixXd::Zero(mSx,mSu));
+	mfx.resize(mN-1,Eigen::MatrixXd::Zero(mSx_tilda,mSx_tilda));
+	mfu.resize(mN-1,Eigen::MatrixXd::Zero(mSx_tilda,mSu));
  
-	mK.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSx));
+	mK.resize(mN-1,Eigen::MatrixXd::Zero(mSu,mSx_tilda));
 	mk.resize(mN-1,Eigen::VectorXd::Zero(mSu));
 
-	mVx.resize(mN,Eigen::VectorXd::Zero(mSx));
-	mVxx.resize(mN,Eigen::MatrixXd::Zero(mSx,mSx));
+	mVx.resize(mN,Eigen::VectorXd::Zero(mSx_tilda));
+	mVxx.resize(mN,Eigen::MatrixXd::Zero(mSx_tilda,mSx_tilda));
+
 
 	mx[0] = x0;
 	mu = u0;
 	mu_lower = u_lower;
 	mu_upper = u_upper;
 
-	mCost = 0;
-	double c,cf;
-	for(int t = 0;t <mN-1;t++){
-		Evalf(mx[t],mu[t],t,mx[t+1]);
-		EvalC(  mx[t],mu[t],t, c);
-		mCost += c;
-	}
-	EvalCf(mx[mN-1],cf);
-	mCost +=cf;
-	std::cout<<"Cost : "<<mCost<<"(cf : "<<cf<<")"<<std::endl;
+	// mCost = 0;
+	// double c,cf;
+	// for(int t = 0;t <mN-1;t++){
+	// 	Evalf(mx[t],mu[t],t,mx[t+1]);
+	// 	EvalC(  mx[t],mu[t],t, c);
+	// 	mCost += c;
+	// }
+	// EvalCf(mx[mN-1],cf);
+	// mCost +=cf;
+	// std::cout<<"Cost : "<<mCost<<"(cf : "<<cf<<")"<<std::endl;
+	int i=mMaxIteration;
+	Finalize(i);
 }
 void
 iLQR::
@@ -80,22 +87,57 @@ ComputeDerivative()
     
     
 	
-
 	for(int t =0;t<mN-1;t++)
 	{
-
+		// auto start = std::chrono::system_clock::now();
+		// start = std::chrono::system_clock::now();
+		// auto end = std::chrono::system_clock::now();
+		// std::chrono::duration<double> elapsed_seconds = end-start;
+		// start = std::chrono::system_clock::now();
 		Evalf(mx[t],mu[t],t,mx[t+1]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"Evalf :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		Evalfx(mx[t],mu[t],t,mfx[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"Evalfx :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		Evalfu(mx[t],mu[t],t,mfu[t]);
-
-		// EvalC(  mx[t],mu[t],t, c);
-		// mCost += c;
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"Evalfu :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		EvalCx( mx[t],mu[t],t, mCx[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"EvalCx :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		EvalCu( mx[t],mu[t],t, mCu[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"EvalCu :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		EvalCxx(mx[t],mu[t],t, mCxx[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"EvalCxx :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		EvalCxu(mx[t],mu[t],t, mCxu[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"EvalCxu :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// start = std::chrono::system_clock::now();
 		EvalCuu(mx[t],mu[t],t, mCuu[t]);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"EvalCuu :"<<elapsed_seconds.count() << "s"<<std::endl;
+
 	}
+
+	
+		
 
 
 	// EvalCf(mx[mN-1],cf);
@@ -108,17 +150,20 @@ bool
 iLQR::
 BackwardPass()
 {
-	Eigen::VectorXd Qx(mSx),Qu(mSu);
-	Eigen::MatrixXd Qxx(mSx,mSx),Qxu(mSx,mSu),Qxu_reg(mSx,mSu),Qux(mSu,mSx),Qux_reg(mSu,mSx);
+	Eigen::VectorXd Qx(mSx_tilda),Qu(mSu);
+	Eigen::MatrixXd Qxx(mSx_tilda,mSx_tilda),Qxu(mSx_tilda,mSu),Qxu_reg(mSx_tilda,mSu),Qux(mSu,mSx_tilda),Qux_reg(mSu,mSx_tilda);
 	
 	Eigen::MatrixXd Quu(mSu,mSu),Quu_reg(mSu,mSu),Quu_inv(mSu,mSu);
-	Eigen::MatrixXd muI = mMu*Eigen::MatrixXd::Identity(mSx,mSx);
+	Eigen::MatrixXd muI = mMu*Eigen::MatrixXd::Identity(mSx_tilda,mSx_tilda);
 	mdV[0] = mdV[1] = 0.0;
 
 	for(int t = mN-2;t>=0;t--)
 	{
+		// auto start = std::chrono::system_clock::now();
+		// auto end = std::chrono::system_clock::now();
+		// std::chrono::duration<double> elapsed_seconds = end-start;
+		// start = std::chrono::system_clock::now();
 		
-
 		Qx = mCx[t] + mfx[t].transpose()*mVx[t+1];
 		Qu = mCu[t] + mfu[t].transpose()*mVx[t+1];
 		
@@ -130,50 +175,27 @@ BackwardPass()
 		Qxu_reg = mCxu[t] + mfx[t].transpose()*(mVxx[t+1]+muI)*mfu[t];
 		Qux_reg = Qxu_reg.transpose();
 		Quu_reg = mCuu[t] + mfu[t].transpose()*(mVxx[t+1]+muI)*mfu[t];
-		// std::cout<<t<<std::endl;
-		// std::cout<<mMu<<std::endl;
-		// std::cout<<"mfu : \n"<<mfu[t]<<std::endl;
-		// std::cout<<"mfx : \n"<<mfx[t]<<std::endl;
-		// std::cout<<"mVxx : \n"<<mVxx[t+1]<<std::endl;
-		// std::cout<<"Qx : \n"<<Qx<<std::endl<<std::endl;
-		// std::cout<<"Qu : \n"<<Qu<<std::endl<<std::endl;
-		// std::cout<<"mCu : \n"<<mCu[t]<<std::endl<<std::endl;
-
-		// std::cout<<"Qxx : \n"<<Qxx<<std::endl<<std::endl;
-		// std::cout<<"Qxu : \n"<<Qxu<<std::endl<<std::endl;
-		// std::cout<<"Quu : \n"<<Quu<<std::endl<<std::endl;
-
-		// std::cout<<"Qxu_reg : \n"<<Qxu_reg<<std::endl<<std::endl;
-		// std::cout<<"Quu_reg : \n"<<Quu_reg<<std::endl<<std::endl;
-
-		if(!CheckPSD(Quu_reg)){
-			// std::cout<< (mCuu[t]).eigenvalues()<<std::endl<<std::endl;
-			// std::cout<< (mfu[t].transpose()*(mVxx[t+1])*mfu[t]).eigenvalues()<<std::endl<<std::endl;
-			// std::cout<< (mfu[t].transpose()*(muI)*mfu[t]).eigenvalues()<<std::endl;
-			// std::cout<< (mfu[t].transpose()*(mVxx[t+1]+muI)*mfu[t]).eigenvalues()<<std::endl;
-			// std::cout<< (Quu_reg).eigenvalues()<<std::endl;
-			// std::cout<< (mCuu[t])<<std::endl<<std::endl<<std::endl;
-			// std::cout<< (mfu[t].transpose()*(mVxx[t+1])*mfu[t])<<std::endl<<std::endl<<std::endl;
-			// std::cout<< mfu[t]<<std::endl<<std::endl;
-			// std::cout<< (muI)<<std::endl<<std::endl;
-			// std::cout<< (mVxx[t+1])<<std::endl<<std::endl;
-			// std::cout<< (mVxx[t+1]+muI)<<std::endl<<std::endl;
-			// std::cout<< (Quu_reg)<<std::endl<<std::endl;
-			// exit(0);
-			std::cout << "no PSD at "<< t<< std::endl;
-			return false;
-		}
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"Quu_reg :"<<elapsed_seconds.count() << "s"<<std::endl;
+		// if(!CheckPSD(Quu_reg)){
+			// std::cout << "no PSD at "<< t<< std::endl;
+			// return false;
+		// }
 
 		//For large dim
-		// Eigen::LLT<Eigen::MatrixXd> llt(Quu_reg);
+		// start = std::chrono::system_clock::now();
+		Eigen::LLT<Eigen::MatrixXd> llt(Quu_reg);
 		
-		// for(int i = 0;i<mK[t].cols();i++)
-		// 	mK[t].col(i) = -llt.solve(Qux.col(i));
+		for(int i = 0;i<mK[t].cols();i++)
+			mK[t].col(i) = -llt.solve(Qux.col(i));
 
-		// mK[t] = -llt.solve(Qu);
-
+		mk[t] = -llt.solve(Qu);
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"llt :"<<elapsed_seconds.count() << "s"<<std::endl;
 		//For small dim
-		Quu_inv = Quu_reg.inverse();
+		// Quu_inv = Quu_reg.inverse();
 
 
 		// Ipopt::SmartPtr<Ipopt::TNLP> QP;
@@ -185,27 +207,26 @@ BackwardPass()
 		// QP = new BoxQP(Quu_reg,Qu,lower,upper);
 		// mQPSolver->OptimizeTNLP(QP);
 
-		mk[t] = -Quu_inv*Qu;
+		// mk[t] = -Quu_inv*Qu;
 		// std::cout<<Quu_inv<<std::endl;
 		// std::cout<<Qu<<std::endl;
 		// mk[t] = static_cast<BoxQP*>(GetRawPtr(QP))->GetSolution();
-		mK[t] = -Quu_inv*Qux;
+		// mK[t] = -Quu_inv*Qux;
 		
 		// std::cout<<mCu[t].transpose()<<std::endl;
 		
+		// start = std::chrono::system_clock::now();
 		mdV[0] += mk[t].transpose()*Qu;
 		mdV[1] += 0.5*mk[t].transpose()*Quu*mk[t];
 		mVx[t] = Qx + mK[t].transpose()*Quu*mk[t] + mK[t].transpose()*Qu + Qxu*mk[t];
 		mVxx[t] = Qxx + mK[t].transpose()*Quu*mK[t] + mK[t].transpose()*Qux + Qxu*mK[t];
-		// std::cout<<"mk : \n"<<mk[t].transpose()<<std::endl<<std::endl;
-		// std::cout<<"mK : \n"<<mK[t]<<std::endl<<std::endl;
-		// std::cout<<"mVx : \n"<<mVx[t]<<std::endl<<std::endl;
-		// std::cout<<"mVxx : \n"<<mVxx[t]<<std::endl<<std::endl;
+		// end = std::chrono::system_clock::now();
+		// elapsed_seconds = end-start;
+		// std::cout<<"llt :"<<elapsed_seconds.count() << "s"<<std::endl;
 	}
 
 	return true;
 }
-extern bool is_ioing;
 
 double
 iLQR::
@@ -224,7 +245,6 @@ ForwardPass()
 
 	}
 
-	is_ioing = true;
 	double cost_new = 0;
 	double c = 0;
 	double cf = 0;
@@ -234,42 +254,6 @@ ForwardPass()
 	}
 	EvalCf(mx[mN-1],cf);
 	cost_new += cf;
-	is_ioing = false;
-	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
-
-
-	// std::vector<Eigen::VectorXd> x_new;
-	// std::vector<Eigen::VectorXd> u_new;
-
-	// x_new.resize(mN,Eigen::VectorXd::Zero(mSx));
-	// u_new.resize(mN-1,Eigen::VectorXd::Zero(mSu));
-	// x_new[0] = mx[0];
-
-	// for(int t = 0;t<mN-1;t++)
-	// {
-	// 	u_new[t] = mu[t] + mAlpha*mk[t] + mK[t]*(x_new[t]-mx[t]);
-	// 	// std::cout<<u_new[t].transpose()<<std::endl;
-	// 	u_new[t] = u_new[t].cwiseMax(mu_lower);
-	// 	u_new[t] = u_new[t].cwiseMin(mu_upper);
-
-	// 	Evalf(x_new[t],u_new[t],t,x_new[t+1]);
-
-	// }
-
-	// mx = x_new;
-	// mu = u_new;
-	// is_ioing = true;
-	// double cost_new = 0;
-	// double c = 0;
-	// double cf = 0;
-	// for(int t =0;t<mN-1;t++){
-	// 	EvalC(mx[t],mu[t],t,c);
-	// 	cost_new +=c;
-	// }
-	// EvalCf(mx[mN-1],cf);
-	// cost_new += cf;
-	// is_ioing = false;
-	// std::cout<<"alpha : "<<mAlpha<<" "<<cost_new<<"(cf : "<<cf<<")"<<std::endl;
 	return cost_new;
 }
 const std::vector<Eigen::VectorXd>&
@@ -277,13 +261,21 @@ iLQR::
 Solve()
 {
 	int fail_count = 0;
+	std::time_t start_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::cout << "Start " << std::ctime(&start_time)<<std::endl;
 
+ 
+    
 	for(int i = 0;i<mMaxIteration;i++)
 	{
 		auto start = std::chrono::system_clock::now();
 		ComputeDerivative();
+		auto end = std::chrono::system_clock::now();
+		std::chrono::duration<double> elapsed_seconds = end-start;
 
+	    std::cout<<"ComputeDerivative : " << elapsed_seconds.count() << "s"<<std::endl;
 		mBackwardPassDone = false;
+		start = std::chrono::system_clock::now();
 		while(true)
 		{
 			bool success = BackwardPass();
@@ -299,11 +291,17 @@ Solve()
 				break;
 			}
 		}
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end-start;
+
+	    std::cout<<"BackwardPass : " << elapsed_seconds.count() << "s"<<std::endl;
+
 		mForwardPassDone = false;	
 		std::vector<Eigen::VectorXd> xtemp = mx;
 		std::vector<Eigen::VectorXd> utemp = mu;
 		mAlpha = 1.0;
 		double dcost;
+		start = std::chrono::system_clock::now();
 		if(mBackwardPassDone)
 		{
 			for(int k =0;k<10;k++)
@@ -330,6 +328,10 @@ Solve()
 				mu = utemp;
 			}
 		}
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end-start;
+
+	    std::cout<<"ForwardPass : " << elapsed_seconds.count() << "s"<<std::endl;
 		if(mForwardPassDone)
 		{
 			mLambda = std::min(mLambda/mLambda_0,1.0/mLambda_0);
@@ -362,17 +364,20 @@ Solve()
 				break;
 			}
 		}
-		auto end = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = end-start;
-
-	    std::cout<< i<<" : " << elapsed_seconds.count() << "s"<<std::endl;
+		start = std::chrono::system_clock::now();
 		Finalize(i);
-		
+		end = std::chrono::system_clock::now();
+		elapsed_seconds = end-start;
+
+	    std::cout<<"Finalize : " << elapsed_seconds.count() << "s"<<std::endl;
+	    if(mCost<10.0)
+	    	break;
 	}
 	// for(int t =0;t<10;t++)
 		// std::cout<<mu[t].transpose()<<std::endl;
 	// std::cout<<mu[0].transpose()<<std::endl;
-
+	std::time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::cout << "end " << std::ctime(&end_time)<<std::endl;
 	return mu;
 }
 

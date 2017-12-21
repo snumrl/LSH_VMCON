@@ -124,6 +124,7 @@ Keyboard(unsigned char key,int x,int y)
 		case '`' : mIsRotate = !mIsRotate;break;
 		case 'w' : mRenderDetail = !mRenderDetail; break;
 		case 'e' : mRenderIK = !mRenderIK; break;
+		case 'k' : mWorld->GetController()->SetRandomTargetPositions();break;
 		case '1' : act[0] += 0.1;break;
 		case '2' : act[1] += 0.1;break;
 		case '3' : act[2] += 0.1;break;
