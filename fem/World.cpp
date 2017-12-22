@@ -548,7 +548,7 @@ Precompute()
 	mConstraintDofs = 0;
 
 	//For computing constraint's dofs
-	Eigen::VectorXd d_temp(3*mConstraints.size()*3);
+	Eigen::VectorXd d_temp(3*mConstraints.size()*6);
 	int index = 0;
 	for(auto& c : mConstraints)
 	{

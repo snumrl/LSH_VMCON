@@ -214,8 +214,8 @@ Step()
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
 
-	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
 #ifndef USE_JOINT_TORQUE
 	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();

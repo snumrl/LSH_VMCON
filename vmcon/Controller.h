@@ -35,8 +35,8 @@ public:
 	Eigen::VectorXd ComputePDForces();
 	Eigen::VectorXd ComputeActivationLevels();
 
-	// void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
-	// Eigen::VectorXd SolveIK();
+	void AddIKTarget(AnchorPoint ap,const Eigen::Vector3d& target);
+	Eigen::VectorXd SolveIK();
 
 	void Step();
 	void SetRandomTargetPositions();
@@ -61,8 +61,8 @@ public:
 	std::shared_ptr<MusculoSkeletalSystem> 				mMusculoSkeletalSystem;
 	std::vector<std::shared_ptr<Ball>>					mBalls;
 
-	// Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
-	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
+	Ipopt::SmartPtr<Ipopt::TNLP>			 			mIKOptimization;
+	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mIKSolver;
 
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 			mMuscleOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 			mMuscleOptimizationSolver;

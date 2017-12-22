@@ -2,6 +2,7 @@
 #define __IK_OPTIMIZATION_H__
 #include "dart/dart.hpp"
 #include "dart/simulation/simulation.hpp"
+#include <Eigen/Geometry>
 #include <vector>
 #include <utility>
 #include <memory>
@@ -59,6 +60,7 @@ public:
 									IKOptimization(const IKOptimization&);
 									IKOptimization& operator=(const IKOptimization&);
 
+	Eigen::Quaterniond 										mTargetOrientation[2];
 	dart::dynamics::SkeletonPtr								mSkeleton;
 	Eigen::VectorXd											mSavePositions;
 	std::vector<std::pair<AnchorPoint,Eigen::Vector3d>> 	mTargets;

@@ -12,6 +12,7 @@ DrawWorld(const std::shared_ptr<World>& world)
 		DrawConstraint(c, X);
 
 }
+
 void
 GUI::
 DrawConstraint(const std::shared_ptr<Cst>& c,const Eigen::VectorXd& x)

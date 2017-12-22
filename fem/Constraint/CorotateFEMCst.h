@@ -54,6 +54,7 @@ protected:
 	Eigen::Vector12d mg;
 	Eigen::Matrix12d mH;
 	Eigen::Matrix3d md;
+	Eigen::Matrix3d md_volume;
 
 	//For Cache
 	Eigen::Vector12d mX;
