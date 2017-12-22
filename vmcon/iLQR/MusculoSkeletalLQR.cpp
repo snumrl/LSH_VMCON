@@ -9,6 +9,7 @@
 
 #include <fstream>
 using namespace Ipopt;
+using namespace dart::dynamics;
 MusculoSkeletalLQR::
 MusculoSkeletalLQR(
 		const dart::simulation::WorldPtr& rigid_world,
@@ -21,8 +22,8 @@ MusculoSkeletalLQR(
 		mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
 		mTargetPositions(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
 		mTargetVelocities(Eigen::VectorXd::Zero(musculo_skeletal_system->GetSkeleton()->getNumDofs())),
-		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),500.0)),
-		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(500.0))),
+		mKp(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),800.0)),
+		mKv(Eigen::VectorXd::Constant(musculo_skeletal_system->GetSkeleton()->getNumDofs(),2*sqrt(800.0))),
 		mInitCount(0)
 {
 	for(int i =0;i<6;i++)
@@ -44,21 +45,20 @@ MusculoSkeletalLQR(
 	mMuscleOptimizationSolver->Initialize();
 	mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
 
-	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
+	// mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
-	mIKSolver = new IpoptApplication();
-	mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
-	mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
-	mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
-	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
-	mIKSolver->Options()->SetIntegerValue("print_level", 2);
-	mIKSolver->Options()->SetIntegerValue("max_iter", 10);
-	mIKSolver->Options()->SetNumericValue("tol", 1e-4);
+	// mIKSolver = new IpoptApplication();
+	// mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	// mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
+	// mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
+	// mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	// mIKSolver->Options()->SetIntegerValue("print_level", 2);
+	// mIKSolver->Options()->SetIntegerValue("max_iter", 10);
+	// mIKSolver->Options()->SetNumericValue("tol", 1e-4);
 
-	mIKSolver->Initialize();
-	mIKSolver->OptimizeTNLP(mIKOptimization);
+	// mIKSolver->Initialize();
+	// mIKSolver->OptimizeTNLP(mIKOptimization);
 
-	mEndEffector = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 	std::ifstream param("../vmcon/export/param.txt");
 	param>>w_regularization>>w_smooth>>w_pos_track>>w_vel_track;
 	param.close();
@@ -68,24 +68,25 @@ MusculoSkeletalLQR::
 Initialze(
 	const Eigen::Vector3d& pos_desired,
 	const Eigen::Vector3d& vel_desired,
-	int index,int next_index,dart::dynamics::BodyNode* next_body,
+	int index,int next_index, BodyNode* next_body,bool next_ball_initially_attached,
 	const std::vector<Eigen::VectorXd>& reference_motions,
 	const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0)
 {
 	mBallIndex = index;
 	mNextBallIndex = next_index;
 	mNextBody = next_body;
+	mNextBallInitiallyAttached = next_ball_initially_attached;
 	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
 	mBallTargetPosition = pos_desired;
 	mBallTargetVelocity = vel_desired;
-	mReferenceMotion = reference_motion;
-	Eigen::VectorXd u_lower(9);
-	Eigen::VectorXd u_upper(9);
-	for(int i =0;i<9;i++)
+	mReferenceMotions = reference_motions;
+	Eigen::VectorXd u_lower(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
+	Eigen::VectorXd u_upper(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
+	for(int i =0;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();i++)
 	{
-		u_lower[i] = -0.3;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
-		u_upper[i] = 0.3;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
+		u_lower[i] = -0.5;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
+		u_upper[i] = 0.5;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
 	}
 	// u_lower[mDofs] = 0.5;
 	// u_upper[mDofs] = 2.0;
@@ -147,9 +148,13 @@ void
 MusculoSkeletalLQR::
 Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f)
 {
-	if(t==0)
-		mBalls[mNextBallIndex]->Release(mRigidWorld);
 	SetState(x);
+	if(t==0){
+		if(mNextBallInitiallyAttached)
+			mBalls[mNextBallIndex]->Attach(mRigidWorld,mNextBody);	
+		else
+			mBalls[mNextBallIndex]->Release(mRigidWorld);
+	}
 	SetControl(u,t);
 	Step();
 	GetState(f);
@@ -163,57 +168,34 @@ SetState(const Eigen::VectorXd& x,bool update_fem)
 	mMusculoSkeletalSystem->GetSkeleton()->setVelocities(x.block(mDofs,0,mDofs,1));
 
 	mMusculoSkeletalSystem->GetSkeleton()->computeForwardKinematics(true,false,false);
-	// mMusculoSkeletalSystem->TransformAttachmentPoints();
+
 	for(int i = 0;i<mBalls.size();i++)
 	{
 		mBalls[i]->GetSkeleton()->setPositions(x.block(2*mDofs+12*i+0,0,6,1));
 		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
 		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,false,false);	
 	}
-	
+
+#ifndef USE_JOINT_TORQUE	
 	mSoftWorld->SetPositions(x.tail(mSoftWorldDofs));
-	// if(update_fem)
-	// {
-	// 	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	// 	mSoftWorld->TimeStepping(false);
-	// }
+	if(update_fem)
+	{
+		mMusculoSkeletalSystem->TransformAttachmentPoints();
+		mSoftWorld->TimeStepping(false);
+	}
+#endif
 }
 void
 MusculoSkeletalLQR::
 SetControl(const Eigen::VectorXd& u,double t)
 {
-	BezierCurve bc; 
-	Eigen::Vector3d p0,p1,p2;
-	p0 = mReferenceMotion.mp0 + u.block<3,1>(0,0);
-	p1 = mReferenceMotion.mp1 + u.block<3,1>(3,0);
-	p2 = mReferenceMotion.mp2 + u.block<3,1>(6,0);
-	bc.Initialize(p0,p1,p2,(double)mu.size());
-
-	Eigen::Vector3d p = bc.GetPosition(t);
-	Eigen::Vector3d p_1 = bc.GetPosition(t+1);
-	Eigen::Vector3d p_hb = mBalls[mBallIndex]->GetPosition() - mEndEffector->getCOM();
-	AnchorPoint ap = std::make_pair(mEndEffector,p_hb);
-	
-	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-	Eigen::VectorXd save_positions = ik->GetSolution();
-
-	auto save_target = ik->GetTargets();
-		
-	ik->AddTargetPositions(ap,p);
-	mIKSolver->ReOptimizeTNLP(mIKOptimization);
-	Eigen::VectorXd sol = ik->GetSolution();
-	ik->AddTargetPositions(ap,p_1);
-	mIKSolver->ReOptimizeTNLP(mIKOptimization);
-	Eigen::VectorXd sol1 = ik->GetSolution();
-
-	for(auto& target : save_target){
-		ik->AddTargetPositions(target.first,target.second);
+	mTargetPositions = u+mReferenceMotions[t];
+	if(t == 0){
+		mTargetVelocities = (mReferenceMotions[t+1] - mReferenceMotions[t])/mSoftWorld->GetTimeStep();
 	}
-
-	ik->SetSolution(save_positions);
-
-	mTargetPositions = sol;
-	mTargetVelocities = (sol1 - sol)/mSoftWorld->GetTimeStep();
+	else{
+		mTargetVelocities = (mTargetPositions-(mReferenceMotions[t-1]+mu[t-1]))/mSoftWorld->GetTimeStep();
+	}
 }
 void
 MusculoSkeletalLQR::
@@ -239,18 +221,7 @@ Step()
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv);
-
-	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
-	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
-
-#ifndef USE_JOINT_TORQUE
-	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
-
-	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	mMusculoSkeletalSystem->TransformAttachmentPoints();
-	mSoftWorld->TimeStepping(false);
-#endif
-	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
+	
 	if(mBalls[mNextBallIndex]->IsReleased()) // check if already attached.
 	{
 		Eigen::Vector3d body_position = mNextBody->getTransform()*Eigen::Vector3d(0.0,0.02,0.03);
@@ -259,19 +230,34 @@ Step()
 			mBalls[mNextBallIndex]->Attach(mRigidWorld,mNextBody);
 		}
 	}
+#ifndef USE_JOINT_TORQUE
+	static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
+	mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
+
+	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+
+	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	mSoftWorld->TimeStepping(false);
+	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
+	for(int i =0; i<nn;i++)
+	{
+		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+		mRigidWorld->step();
+	}
+
+#else
+	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
 
 	for(int i =0; i<nn;i++)
 	{
-#ifndef USE_JOINT_TORQUE	
-		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
-#else
 		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
 									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
-#endif
 		mRigidWorld->step();
 	}
-}
+#endif
+	}
 
 
 void
@@ -280,7 +266,7 @@ Finalize(int& iteration)
 {
 	mWriteCount = 0;
 
-	std::cout<<"Finalize"<<std::endl;
+
 	std::string path = mWritePath+"/iteration"+std::to_string(iteration);
 	boost::filesystem::create_directories(path);
 	mRigidWorld->setTime(0.0);
@@ -304,24 +290,21 @@ Finalize(int& iteration)
 	mBalls[mBallIndex]->Release(mRigidWorld);
 	while(true)
 	{
-
-
-		if(mRigidWorld->getTime()>0.3)
+		if(mRigidWorld->getTime()>1.0)
 			break;
 		SetState(x_curr);
-		
-		mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
-		mTargetVelocities.setZero();
 		if(mBalls[mNextBallIndex]->IsReleased()) // check if already attached.
 		{
 			Eigen::Vector3d body_position = mNextBody->getTransform()*Eigen::Vector3d(0.0,0.02,0.03);
 			Eigen::Vector3d ball_position = mBalls[mNextBallIndex]->GetPosition();
-			if((body_position-ball_position).norm()<5E-2){
+			if((body_position-ball_position).norm()<5E-2)
+			{
 				mBalls[mNextBallIndex]->Attach(mRigidWorld,mNextBody);
 			}
 		}
+		mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
+		mTargetVelocities.setZero();
 		Step();
-
 		GetState(x_next);
 		WriteRecord(path);
 		x_curr = x_next;

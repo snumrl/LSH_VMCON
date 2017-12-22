@@ -23,7 +23,7 @@ public:
 	void Initialze(
 		const Eigen::Vector3d& pos_desired,
 		const Eigen::Vector3d& vel_desired,
-		int index,int next_index,dart::dynamics::BodyNode* next_body,
+		int index,int next_index, dart::dynamics::BodyNode* next_body,bool next_ball_initially_attached,
 		const std::vector<Eigen::VectorXd>& reference_motions,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0);
 
@@ -77,6 +77,7 @@ protected:
 	int 										mBallIndex;
 	int 										mNextBallIndex;
 	dart::dynamics::BodyNode* 					mNextBody;
+	bool 										mNextBallInitiallyAttached;
 	Eigen::Vector3d								mBallTargetPosition;
 	Eigen::Vector3d								mBallTargetVelocity;
 };

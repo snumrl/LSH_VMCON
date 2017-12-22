@@ -13,7 +13,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls)
 {
 	int dof = mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	double k = 500;
+	double k = 800;
 
 	mKp = Eigen::VectorXd::Constant(dof,k);
 	mKv = Eigen::VectorXd::Constant(dof,2*sqrt(k));
@@ -53,16 +53,17 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	// std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 		// std::vector<int> V_list{
 		// 3,3,3,0,0,0,3,3,3,0,0,0};
-	std::vector<int> V_list{
-		3,3,3,3,3,
-		3,3,3,4,4,
-		4,4,4,4,4,
-		4,4,4,5,5,
-		5,5,5,5,5,
-		5,5,5,5,5,
-		5,3,3,3,3,
-		3,3,0,0,0,0,0,0,0};
-	// std::vector<int> V_list{4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4};
+	// std::vector<int> V_list{
+	// 	3,3,3,3,3,
+	// 	3,3,3,4,4,
+	// 	4,4,4,4,4,
+	// 	4,4,4,5,5,
+	// 	5,5,5,5,5,
+	// 	5,5,5,5,5,
+	// 	5,3,3,3,3,
+	// 	3,3,0,0,0,0,0,0,0};
+
+	std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
 	// std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1};
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
 	mMuscleOptimizationSolver->Initialize();

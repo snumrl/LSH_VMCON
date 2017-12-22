@@ -36,7 +36,7 @@ public:
 	
 	void InitializeLQR();
 	void SynchronizeLQR();
-	void OptimizeLQR(BezierCurve* initial_curve, const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des);
+	void OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des);
 //For Juggling
 	std::shared_ptr<JugglingInfo> 				mJugglingInfo;
 	double										mTimeElapsed;

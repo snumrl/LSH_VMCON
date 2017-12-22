@@ -100,7 +100,20 @@ get_starting_point(	Ipopt::Index n, bool init_x, Ipopt::Number* x,
 	mSavePositions = mSkeleton->getPositions();
 	return true;
 }
+Eigen::AngleAxisd GetDiff(const Eigen::Quaterniond& diff)
+{
+	Eigen::AngleAxisd diff1,diff2;
+	diff1 = Eigen::AngleAxisd(diff);
 
+	if(diff1.angle()>3.141592)
+	{
+		diff2.axis() = -diff1.axis();
+		diff2.angle() = 3.141592*2 - diff1.angle();	
+	}
+	else
+		diff2 = diff1;
+	return diff2;
+}
 bool					
 IKOptimization::
 eval_f(	Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number& obj_value) 
@@ -118,15 +131,14 @@ eval_f(	Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number& obj_v
 		// std::cout<<obj_value<<std::endl;
 		Eigen::Quaterniond target_orientation;
 		if(!target.first.first->getName().compare("HandL"))
-		{
 			target_orientation = mTargetOrientation[0];
-		}
 		else
 			target_orientation = mTargetOrientation[1];
 		Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
 		Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
+
 		// std::cout<<Eigen::AngleAxisd(diff).angle()<<std::endl;
-		obj_value += 0.5*Eigen::AngleAxisd(diff).angle();
+		obj_value += 0.5*GetDiff(diff).angle();
 	}
 	return true;
 }
@@ -150,9 +162,11 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 		J.block(6,3,0,0) *= 100.0;
 		Eigen::JacobiSVD<Eigen::MatrixXd> svd(J, Eigen::ComputeThinU | Eigen::ComputeThinV);
 		Eigen::Matrix6d inv_singular_value;
+		// Eigen::Matrix6d inv_singular_value;
 		
 		inv_singular_value.setZero();
 		for(int k=0;k<6;k++)
+		// for(int k=0;k<3;k++)
 		{
 			if(std::fabs(svd.singularValues()[k])<1e-6)
 				inv_singular_value(k,k) = 0.0;
@@ -176,16 +190,14 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 		Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
 		Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
 
-		Eigen::Vector3d o_minus_o_target = Eigen::AngleAxisd(diff).angle()*Eigen::AngleAxisd(diff).axis();
+		Eigen::Vector3d o_minus_o_target = GetDiff(diff).angle()*GetDiff(diff).axis();
+		// std::cout<<GetDiff(diff).angle()<<std::endl;
 		Eigen::Vector6d dir;
 		dir.head(3) = -o_minus_o_target;
 		dir.tail(3) = x_minus_x_target;
 		// temp.setZero();
 		// temp.head(3) = 0.1*o_minus_o_target;
 		// temp.tail(3) = -x_minus_x_target;
-		// std::cout<<(J.transpose()*J)* J.transpose()<<std::endl<<std::endl;
-		// g += 2.0*(J.transpose()*J)* J.transpose()*x_minus_x_target;
-		// g += 2.0*(J.transpose()*J).inverse()* J.transpose()*temp.tail(3);
 		// g += J_inv*x_minus_x_target;
 		g += J_inv*dir;
 

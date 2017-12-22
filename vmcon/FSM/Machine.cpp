@@ -188,109 +188,100 @@ GenerateSwingMotions()
 
 	//Make Bezier curve
 	p0 = ball->GetPosition();
-	p1 = ball->GetPosition();
-	p2 = ball->GetPosition();
+	
+	// Singular case V = 0
+	if(mJugglingInfo->GetV() == 0)
+	{
+		mTimeElapsed = 0.0;
+		mCount = 0;
+		return;
+	}
+	//Singular case V = 1
+	if(mJugglingInfo->GetV() == 1)
+	{
+		p0[1] = 0.2;
+		p2 = p0 + 0.2*dir;
 
-	v2 = Eigen::Vector3d(0,5,0);
-	p1[1] = p0[1] - 0.2;
-	mCurve->Initialize(p0,p1,p2,t_hold);
+		Eigen::Vector3d diff = bn_to->getTransform()*mLocalOffset - p0;
+		double t_hold = mJugglingInfo->GetT()*0.5;
 
+		v2[1] = 0.5*9.81*t_free;
+		v2[0] = diff[0]/t_free;
+		v2[2] = diff[2]/t_free;
+		
+		p1 = p2 - 0.5*v2*t_hold;
+
+		std::cout<<p0.transpose()<<std::endl;
+		std::cout<<p1.transpose()<<std::endl;
+		std::cout<<p2.transpose()<<std::endl;
+		mCurve->Initialize(p0,p1,p2,t_hold);
+	}
+	else
+	{
+		p0 = ball->GetPosition();
+		// p0[0] *= 1.1;
+		p2 = mHandX0;
+		p2[1] += 0.1;
+		p2[2] *= 0.8;
+		if(ball->GetPosition()[0]<0){
+			p2[0] =-p2[0];
+		}
+		
+		// if(std::abs(p0[0])<std::abs(mHandX0[0]))
+			// p2[0] = p0[0]*1.1;
+		// else	
+			// p2[0] = p0[0]*0.9;
+		
+		
+		// p0[0] *=1.1;
+		// p2[0] *=0.9;
+		Eigen::Vector3d target_to = bn_to->getTransform()*mLocalOffset;
+		if(bn_from == bn_to)
+			target_to = p2;
+		else
+		{
+			target_to = p2;
+			target_to[0] = -target_to[0];
+		}
+		target_to[1] -=0.1;
+		v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
+
+		p1 = p2 - 0.5*v2*t_hold;
+
+		mCurve->Initialize(p0,p1,p2,t_hold);
+	}
+	//Solve IK to make coarse_motions
+	std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
+
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+	Eigen::VectorXd save_positions = ik->GetSolution();
+
+	auto save_target = ik->GetTargets();
+	Eigen::Vector3d p_hb = ball->GetPosition() - bn_from->getCOM();
+	AnchorPoint ap = std::make_pair(bn_from,p_hb);
+	for(int i =0;i<11;i++)
+	{
+		double tt = ((double)i)/((double)10)*t_hold;
+		
+		Eigen::Vector3d p_ee = mCurve->GetPosition(tt);
+		// std::cout<<"p_ee("<<i<<")"<<p_ee.transpose()<<std::endl;
+		ik->AddTargetPositions(ap,p_ee);
+		mIKSolver->ReOptimizeTNLP(mIKOptimization);
+		Eigen::VectorXd sol = ik->GetSolution();
+		coarse_motions.push_back(std::make_pair(sol,tt));
+	}
+
+	for(auto& target : save_target){
+		ik->AddTargetPositions(target.first,target.second);
+	}
+
+	ik->SetSolution(save_positions);
+
+	mMotions = GenerateFineMotions(coarse_motions);
+
+	//Solve LQR
 	SynchronizeLQR();
-	OptimizeLQR(mCurve,p2,v2);
-	//Singular case V = 0
-	// if(mJugglingInfo->GetV() == 0)
-	// {
-	// 	mTimeElapsed = 0.0;
-	// 	mCount = 0;
-	// 	return;
-	// }
-	// //Singular case V = 1
-	// if(mJugglingInfo->GetV() == 1)
-	// {
-	// 	p0[1] = 0.2;
-	// 	p2 = p0 + 0.2*dir;
-
-	// 	Eigen::Vector3d diff = bn_to->getTransform()*mLocalOffset - p0;
-	// 	double t_hold = mJugglingInfo->GetT()*0.5;
-
-	// 	v2[1] = 0.5*9.81*t_free;
-	// 	v2[0] = diff[0]/t_free;
-	// 	v2[2] = diff[2]/t_free;
-		
-	// 	p1 = p2 - 0.5*v2*t_hold;
-
-	// 	std::cout<<p0.transpose()<<std::endl;
-	// 	std::cout<<p1.transpose()<<std::endl;
-	// 	std::cout<<p2.transpose()<<std::endl;
-	// 	mCurve->Initialize(p0,p1,p2,t_hold);
-	// }
-	// else
-	// {
-	// 	p0 = ball->GetPosition();
-	// 	p0[0] *= 1.1;
-	// 	p2 = mHandX0;
-	// 	p2[2] *= 0.8;
-	// 	if(ball->GetPosition()[0]<0){
-	// 		p2[0] =-p2[0];
-	// 	}
-		
-	// 	// if(std::abs(p0[0])<std::abs(mHandX0[0]))
-	// 		// p2[0] = p0[0]*1.1;
-	// 	// else	
-	// 		// p2[0] = p0[0]*0.9;
-		
-		
-	// 	// p0[0] *=1.1;
-	// 	// p2[0] *=0.9;
-	// 	Eigen::Vector3d target_to = bn_to->getTransform()*mLocalOffset;
-	// 	if(bn_from == bn_to)
-	// 		target_to = p2;
-	// 	else
-	// 	{
-	// 		target_to = p2;
-	// 		target_to[0] = -target_to[0];
-	// 	}
-
-	// 	// target_to[0]*= 0.8;
-	// 	// target_to[2]*= 0.8;
-	// 	v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
-
-	// 	p1 = p2 - 0.5*v2*t_hold;
-
-	// 	mCurve->Initialize(p0,p1,p2,t_hold);
-	// }
-	// //Solve IK to make coarse_motions
-	// std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
-
-	// IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-	// Eigen::VectorXd save_positions = ik->GetSolution();
-
-	// auto save_target = ik->GetTargets();
-	// Eigen::Vector3d p_hb = ball->GetPosition() - bn_from->getCOM();
-	// AnchorPoint ap = std::make_pair(bn_from,p_hb);
-	// for(int i =0;i<11;i++)
-	// {
-	// 	double tt = ((double)i)/((double)10)*t_hold;
-		
-	// 	Eigen::Vector3d p_ee = mCurve->GetPosition(tt);
-	// 	// std::cout<<"p_ee("<<i<<")"<<p_ee.transpose()<<std::endl;
-	// 	ik->AddTargetPositions(ap,p_ee);
-	// 	mIKSolver->ReOptimizeTNLP(mIKOptimization);
-	// 	Eigen::VectorXd sol = ik->GetSolution();
-	// 	coarse_motions.push_back(std::make_pair(sol,tt));
-	// }
-
-	// for(auto& target : save_target){
-	// 	ik->AddTargetPositions(target.first,target.second);
-	// }
-
-	// ik->SetSolution(save_positions);
-
-	// mMotions = GenerateFineMotions(coarse_motions);
-
-	// //Solve LQR
-	// SynchronizeLQR();
-	// OptimizeLQR(p2,v2);
+	OptimizeLQR(p2,v2);
 	
 	mTimeElapsed = 0.0;
 	mCount = 0;
@@ -427,7 +418,7 @@ SynchronizeLQR()
 }
 void
 Machine::
-OptimizeLQR(BezierCurve* initial_curve,const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
+OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
 	Eigen::VectorXd x0(dofs*2+12*mBalls.size()+mSoftWorld->GetPositions().rows());
@@ -439,43 +430,31 @@ OptimizeLQR(BezierCurve* initial_curve,const Eigen::Vector3d& p_des,const Eigen:
 		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
 	}
 	x0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
+	std::vector<Eigen::VectorXd> ref,u0;
+	ref.resize(mMotions.size());
+	u0.resize(mMotions.size()-1);
 
-	BezierCurve ref;
-	std::vector<Eigen::VectorXd> u0;
-
-	u0.resize(41);
-
-	ref.Initialize(initial_curve->mp0,initial_curve->mp1,initial_curve->mp2,1.0/initial_curve->mInvT);
-	for(int i =0;i<u0.size();i++)
-	{
-		u0[i] =Eigen::VectorXd::Zero(9);
+	for(int i=0;i<u0.size();i++){
+		ref[i] = mMotions[i].first;
+		u0[i] = ref[i];
+		u0[i].setZero();
 	}
 	ref.back() = mMotions.back().first;
 	mJugglingInfo->CountPlusPlus();
 	int next_index = mJugglingInfo->GetBallIndex();
 	BodyNode* next_body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	bool next_ball_initially_attached = !mBalls[mJugglingInfo->GetBallIndex()]->IsReleased();
 	mJugglingInfo->CountMinusMinus();
-	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,ref,x0,u0);
+	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,next_ball_initially_attached,ref,x0,u0);
 	mU = mLQR->Solve();
-	// std::vector<Eigen::VectorXd> ref,u0;
-	// ref.resize(mMotions.size());
-	// u0.resize(mMotions.size()-1);
+	// mU = u0;
 
-	// for(int i=0;i<u0.size();i++){
-	// 	ref[i] = mMotions[i].first;
-	// 	u0[i] = ref[i];
-	// 	u0[i].setZero();
-	// }
-	// ref.back() = mMotions.back().first;
-	// mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),ref,x0,u0);
-	// mU = mLQR->Solve();
-	// // mU = u0;
+	for(int i=0;i<mU.size();i++)
+	{
+		mMotions[i].first +=mU[i];
+		// std::cout<<mU[i].transpose()<<std::endl;
+	}
 
-	// for(int i=0;i<mU.size();i++)
-	// {
-	// 	mMotions[i].first +=mU[i];
-	// 	// std::cout<<mU[i].transpose()<<std::endl;
-	// }
+	mMotions.back().first +=mU.back();
 
-	// mMotions.back().first +=mU.back();
 }
