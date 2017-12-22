@@ -473,6 +473,7 @@ ComputeForce(const FEM::WorldPtr& world)
 }
 void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>& ms)
 {
+#ifndef USE_JOINT_TORQUE
 	auto& skel = ms->GetSkeleton();
 	TiXmlDocument doc;
     if(!doc.LoadFile(path))
@@ -551,6 +552,7 @@ void MakeMuscles(const std::string& path,std::shared_ptr<MusculoSkeletalSystem>&
         
         
     }
+#endif
 }
 void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 {

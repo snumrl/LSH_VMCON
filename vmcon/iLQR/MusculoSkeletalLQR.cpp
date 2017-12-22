@@ -68,12 +68,13 @@ MusculoSkeletalLQR::
 Initialze(
 	const Eigen::Vector3d& pos_desired,
 	const Eigen::Vector3d& vel_desired,
-	int index,
-	BezierCurve reference_motion,
+	int index,int next_index,dart::dynamics::BodyNode* next_body,
+	const std::vector<Eigen::VectorXd>& reference_motions,
 	const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0)
 {
 	mBallIndex = index;
-
+	mNextBallIndex = next_index;
+	mNextBody = next_body;
 	std::cout<<"p_t : "<<pos_desired.transpose()<<std::endl;
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
 	mBallTargetPosition = pos_desired;
@@ -146,7 +147,8 @@ void
 MusculoSkeletalLQR::
 Evalf(  const Eigen::VectorXd& x,const Eigen::VectorXd& u,int t,Eigen::VectorXd& f)
 {
-	
+	if(t==0)
+		mBalls[mNextBallIndex]->Release(mRigidWorld);
 	SetState(x);
 	SetControl(u,t);
 	Step();
@@ -161,7 +163,6 @@ SetState(const Eigen::VectorXd& x,bool update_fem)
 	mMusculoSkeletalSystem->GetSkeleton()->setVelocities(x.block(mDofs,0,mDofs,1));
 
 	mMusculoSkeletalSystem->GetSkeleton()->computeForwardKinematics(true,false,false);
-
 	// mMusculoSkeletalSystem->TransformAttachmentPoints();
 	for(int i = 0;i<mBalls.size();i++)
 	{
@@ -242,20 +243,32 @@ Step()
 	// static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->Update(qdd_desired);
 	// mMuscleOptimizationSolver->ReOptimizeTNLP(mMuscleOptimization);
 
-	// Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
+#ifndef USE_JOINT_TORQUE
+	Eigen::VectorXd solution =  static_cast<MuscleOptimization*>(GetRawPtr(mMuscleOptimization))->GetSolution();
 
-	// mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
-	// mMusculoSkeletalSystem->TransformAttachmentPoints();
-	// mSoftWorld->TimeStepping(false);
-
+	mMusculoSkeletalSystem->SetActivationLevels(solution.tail(mMusculoSkeletalSystem->GetNumMuscles()));
+	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	mSoftWorld->TimeStepping(false);
+#endif
 	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
+	if(mBalls[mNextBallIndex]->IsReleased()) // check if already attached.
+	{
+		Eigen::Vector3d body_position = mNextBody->getTransform()*Eigen::Vector3d(0.0,0.02,0.03);
+		Eigen::Vector3d ball_position = mBalls[mNextBallIndex]->GetPosition();
+		if((body_position-ball_position).norm()<5E-2){
+			mBalls[mNextBallIndex]->Attach(mRigidWorld,mNextBody);
+		}
+	}
+
 	for(int i =0; i<nn;i++)
 	{
-		// mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+#ifndef USE_JOINT_TORQUE	
+		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+#else
 		Eigen::VectorXd torque = 	mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*qdd_desired+
 									mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
 		mMusculoSkeletalSystem->GetSkeleton()->setForces(torque);
-
+#endif
 		mRigidWorld->step();
 	}
 }
@@ -267,7 +280,7 @@ Finalize(int& iteration)
 {
 	mWriteCount = 0;
 
-
+	std::cout<<"Finalize"<<std::endl;
 	std::string path = mWritePath+"/iteration"+std::to_string(iteration);
 	boost::filesystem::create_directories(path);
 	mRigidWorld->setTime(0.0);
@@ -291,13 +304,24 @@ Finalize(int& iteration)
 	mBalls[mBallIndex]->Release(mRigidWorld);
 	while(true)
 	{
-		if(mRigidWorld->getTime()>1.0)
+
+
+		if(mRigidWorld->getTime()>0.3)
 			break;
 		SetState(x_curr);
-	
-		// mTargetPositions = (mReferenceMotion[mN-2]+mu[mN-2]);
+		
+		mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
 		mTargetVelocities.setZero();
+		if(mBalls[mNextBallIndex]->IsReleased()) // check if already attached.
+		{
+			Eigen::Vector3d body_position = mNextBody->getTransform()*Eigen::Vector3d(0.0,0.02,0.03);
+			Eigen::Vector3d ball_position = mBalls[mNextBallIndex]->GetPosition();
+			if((body_position-ball_position).norm()<5E-2){
+				mBalls[mNextBallIndex]->Attach(mRigidWorld,mNextBody);
+			}
+		}
 		Step();
+
 		GetState(x_next);
 		WriteRecord(path);
 		x_curr = x_next;
@@ -306,6 +330,7 @@ Finalize(int& iteration)
 	SetState(mx[0]);
 	SetControl(mu[0],0);
 	mBalls[mBallIndex]->Attach(mRigidWorld,abn);
+	mBalls[mNextBallIndex]->Release(mRigidWorld);
 	Step();
 }
 

@@ -85,6 +85,7 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	if(ball->IsReleased()) // check if already attached.
 	{
 		Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
+
 		Eigen::Vector3d ball_position = ball->GetPosition();
 		if((body_position-ball_position).norm()<5E-2){
 			ball->Attach(mRigidWorld,bn_from);
@@ -449,8 +450,12 @@ OptimizeLQR(BezierCurve* initial_curve,const Eigen::Vector3d& p_des,const Eigen:
 	{
 		u0[i] =Eigen::VectorXd::Zero(9);
 	}
-	
-	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),ref,x0,u0);
+	ref.back() = mMotions.back().first;
+	mJugglingInfo->CountPlusPlus();
+	int next_index = mJugglingInfo->GetBallIndex();
+	BodyNode* next_body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	mJugglingInfo->CountMinusMinus();
+	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,ref,x0,u0);
 	mU = mLQR->Solve();
 	// std::vector<Eigen::VectorXd> ref,u0;
 	// ref.resize(mMotions.size());

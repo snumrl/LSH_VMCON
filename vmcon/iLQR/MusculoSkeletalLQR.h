@@ -23,8 +23,8 @@ public:
 	void Initialze(
 		const Eigen::Vector3d& pos_desired,
 		const Eigen::Vector3d& vel_desired,
-		int index,
-		BezierCurve reference_motion,
+		int index,int next_index,dart::dynamics::BodyNode* next_body,
+		const std::vector<Eigen::VectorXd>& reference_motions,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0);
 
 public:
@@ -61,21 +61,22 @@ protected:
 	dart::simulation::WorldPtr 					mRigidWorld;
 	std::shared_ptr<FEM::World>					mSoftWorld;
 	std::shared_ptr<MusculoSkeletalSystem>		mMusculoSkeletalSystem;
-	dart::dynamics::BodyNode*					mEndEffector;
-
+	
 	Eigen::VectorXd								mTargetPositions,mTargetVelocities;
 	Eigen::VectorXd 							mKp,mKv;
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 	mMuscleOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mMuscleOptimizationSolver;
-	Ipopt::SmartPtr<Ipopt::TNLP> 			 	mIKOptimization;
-	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
+	// Ipopt::SmartPtr<Ipopt::TNLP> 			 	mIKOptimization;
+	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
 
-	BezierCurve									mReferenceMotion;
+	std::vector<Eigen::VectorXd>				mReferenceMotions;
 
 	double 										w_regularization,w_smooth,w_compliance,w_pos_track,w_vel_track;
 
 	std::vector<std::shared_ptr<Ball>>		 	mBalls;
 	int 										mBallIndex;
+	int 										mNextBallIndex;
+	dart::dynamics::BodyNode* 					mNextBody;
 	Eigen::Vector3d								mBallTargetPosition;
 	Eigen::Vector3d								mBallTargetVelocity;
 };

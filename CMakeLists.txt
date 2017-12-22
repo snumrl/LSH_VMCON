@@ -43,6 +43,7 @@ if (ENABLE_VMCON)
 	project(vmcon)
 	find_package(DART REQUIRED COMPONENTS utils-urdf gui optimizer-ipopt CONFIG)
 	add_compile_options(-DHAVE_CSTDDEF)
+	add_compile_options(-DUSE_JOINT_TORQUE)
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${DART_INCLUDE_DIRS})
 
