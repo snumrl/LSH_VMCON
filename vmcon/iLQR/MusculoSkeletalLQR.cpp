@@ -44,20 +44,21 @@ MusculoSkeletalLQR(
 	mMuscleOptimizationSolver->Initialize();
 	mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
 
-	// mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
+	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
-	// mIKSolver = new IpoptApplication();
-	// mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
-	// mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
-	// mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
-	// mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
-	// mIKSolver->Options()->SetIntegerValue("print_level", 2);
-	// mIKSolver->Options()->SetIntegerValue("max_iter", 10);
-	// mIKSolver->Options()->SetNumericValue("tol", 1e-4);
+	mIKSolver = new IpoptApplication();
+	mIKSolver->Options()->SetStringValue("mu_strategy", "adaptive");
+	mIKSolver->Options()->SetStringValue("jac_c_constant", "yes");
+	mIKSolver->Options()->SetStringValue("hessian_constant", "yes");
+	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
+	mIKSolver->Options()->SetIntegerValue("print_level", 2);
+	mIKSolver->Options()->SetIntegerValue("max_iter", 10);
+	mIKSolver->Options()->SetNumericValue("tol", 1e-4);
 
-	// mIKSolver->Initialize();
+	mIKSolver->Initialize();
+	mIKSolver->OptimizeTNLP(mIKOptimization);
 
-	// mEndEffector = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+	mEndEffector = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
 	std::ifstream param("../vmcon/export/param.txt");
 	param>>w_regularization>>w_smooth>>w_pos_track>>w_vel_track;
 	param.close();
@@ -68,7 +69,7 @@ Initialze(
 	const Eigen::Vector3d& pos_desired,
 	const Eigen::Vector3d& vel_desired,
 	int index,
-	const std::vector<Eigen::VectorXd>& reference_motions,
+	BezierCurve reference_motion,
 	const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0)
 {
 	mBallIndex = index;
@@ -77,13 +78,13 @@ Initialze(
 	std::cout<<"v_t : "<<vel_desired.transpose()<<std::endl;
 	mBallTargetPosition = pos_desired;
 	mBallTargetVelocity = vel_desired;
-	mReferenceMotions = reference_motions;
-	Eigen::VectorXd u_lower(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
-	Eigen::VectorXd u_upper(mMusculoSkeletalSystem->GetSkeleton()->getNumDofs());
-	for(int i =0;i<mMusculoSkeletalSystem->GetSkeleton()->getNumDofs();i++)
+	mReferenceMotion = reference_motion;
+	Eigen::VectorXd u_lower(9);
+	Eigen::VectorXd u_upper(9);
+	for(int i =0;i<9;i++)
 	{
-		u_lower[i] = -1;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
-		u_upper[i] = 1;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
+		u_lower[i] = -0.3;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionLowerLimit();
+		u_upper[i] = 0.3;//mMusculoSkeletalSystem->GetSkeleton()->getDof(i)->getPositionUpperLimit();
 	}
 	// u_lower[mDofs] = 0.5;
 	// u_upper[mDofs] = 2.0;
@@ -92,7 +93,7 @@ Initialze(
 	boost::filesystem::create_directories(mWritePath);
 	WriteXML(mWritePath+"/state.xml");
 
-	Init(reference_motions.size(),x0.rows()-mSoftWorldDofs,x0,u0,u_lower,u_upper);
+	Init(u0.size()+1,x0.rows()-mSoftWorldDofs,x0,u0,u_lower,u_upper);
 }
 void
 MusculoSkeletalLQR::
@@ -170,23 +171,48 @@ SetState(const Eigen::VectorXd& x,bool update_fem)
 	}
 	
 	mSoftWorld->SetPositions(x.tail(mSoftWorldDofs));
-	if(update_fem)
-	{
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping(false);
-	}
+	// if(update_fem)
+	// {
+	// 	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	// 	mSoftWorld->TimeStepping(false);
+	// }
 }
 void
 MusculoSkeletalLQR::
 SetControl(const Eigen::VectorXd& u,double t)
 {
-	mTargetPositions = u+mReferenceMotions[t];
-	if(t == 0){
-		mTargetVelocities = (mReferenceMotions[t+1] - mReferenceMotions[t])/mSoftWorld->GetTimeStep();
+	BezierCurve bc; 
+	Eigen::Vector3d p0,p1,p2;
+	p0 = mReferenceMotion.mp0 + u.block<3,1>(0,0);
+	p1 = mReferenceMotion.mp1 + u.block<3,1>(3,0);
+	p2 = mReferenceMotion.mp2 + u.block<3,1>(6,0);
+	bc.Initialize(p0,p1,p2,(double)mu.size());
+
+	Eigen::Vector3d p = bc.GetPosition(t);
+	Eigen::Vector3d p_1 = bc.GetPosition(t+1);
+	Eigen::Vector3d p_hb = mBalls[mBallIndex]->GetPosition() - mEndEffector->getCOM();
+	AnchorPoint ap = std::make_pair(mEndEffector,p_hb);
+	
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+	Eigen::VectorXd save_positions = ik->GetSolution();
+
+	auto save_target = ik->GetTargets();
+		
+	ik->AddTargetPositions(ap,p);
+	mIKSolver->ReOptimizeTNLP(mIKOptimization);
+	Eigen::VectorXd sol = ik->GetSolution();
+	ik->AddTargetPositions(ap,p_1);
+	mIKSolver->ReOptimizeTNLP(mIKOptimization);
+	Eigen::VectorXd sol1 = ik->GetSolution();
+
+	for(auto& target : save_target){
+		ik->AddTargetPositions(target.first,target.second);
 	}
-	else{
-		mTargetVelocities = (mTargetPositions-(mReferenceMotions[t-1]+mu[t-1]))/mSoftWorld->GetTimeStep();
-	}
+
+	ik->SetSolution(save_positions);
+
+	mTargetPositions = sol;
+	mTargetVelocities = (sol1 - sol)/mSoftWorld->GetTimeStep();
 }
 void
 MusculoSkeletalLQR::
@@ -265,11 +291,11 @@ Finalize(int& iteration)
 	mBalls[mBallIndex]->Release(mRigidWorld);
 	while(true)
 	{
-		if(mRigidWorld->getTime()>0.3)
+		if(mRigidWorld->getTime()>1.0)
 			break;
 		SetState(x_curr);
 	
-		mTargetPositions = (mReferenceMotions[mN-2]+mu[mN-2]);
+		// mTargetPositions = (mReferenceMotion[mN-2]+mu[mN-2]);
 		mTargetVelocities.setZero();
 		Step();
 		GetState(x_next);

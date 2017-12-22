@@ -3,6 +3,7 @@
 #include "iLQR.h"
 #include <IpTNLP.hpp>
 #include <IpIpoptApplication.hpp>
+#include "../FSM/BezierCurve.h"
 #include "fem/fem.h"
 #include "dart/dart.hpp"
 #include "dart/simulation/simulation.hpp"
@@ -23,7 +24,7 @@ public:
 		const Eigen::Vector3d& pos_desired,
 		const Eigen::Vector3d& vel_desired,
 		int index,
-		const std::vector<Eigen::VectorXd>& reference_motions,
+		BezierCurve reference_motion,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0);
 
 public:
@@ -60,16 +61,16 @@ protected:
 	dart::simulation::WorldPtr 					mRigidWorld;
 	std::shared_ptr<FEM::World>					mSoftWorld;
 	std::shared_ptr<MusculoSkeletalSystem>		mMusculoSkeletalSystem;
-	
+	dart::dynamics::BodyNode*					mEndEffector;
 
 	Eigen::VectorXd								mTargetPositions,mTargetVelocities;
 	Eigen::VectorXd 							mKp,mKv;
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 	mMuscleOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mMuscleOptimizationSolver;
-	// Ipopt::SmartPtr<Ipopt::TNLP> 			 	mIKOptimization;
-	// Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
+	Ipopt::SmartPtr<Ipopt::TNLP> 			 	mIKOptimization;
+	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;
 
-	std::vector<Eigen::VectorXd>				mReferenceMotions;
+	BezierCurve									mReferenceMotion;
 
 	double 										w_regularization,w_smooth,w_compliance,w_pos_track,w_vel_track;
 
