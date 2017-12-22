@@ -73,8 +73,8 @@ GetTargetVelocity(const Eigen::Vector3d& from,const Eigen::Vector3d& to)
 {	
 	Eigen::Vector3d diff = to-from;
 	double t_free = GetT_free();
-
-	double v_0y = 0.5*9.81*t_free;
+	double dh = from[1] - to[1];
+	double v_0y = 0.5*9.81*t_free - dh/t_free;
 
 	double v_0x = diff[0]/t_free;
 	double v_0z = diff[2]/t_free;

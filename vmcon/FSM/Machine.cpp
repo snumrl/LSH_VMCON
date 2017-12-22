@@ -85,6 +85,7 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	if(ball->IsReleased()) // check if already attached.
 	{
 		Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
+
 		Eigen::Vector3d ball_position = ball->GetPosition();
 		if((body_position-ball_position).norm()<5E-2){
 			ball->Attach(mRigidWorld,bn_from);
@@ -220,6 +221,7 @@ GenerateSwingMotions()
 		p0 = ball->GetPosition();
 		p0[0] *= 1.1;
 		p2 = mHandX0;
+		p2[1] += 0.2;
 		p2[2] *= 0.8;
 		if(ball->GetPosition()[0]<0){
 			p2[0] =-p2[0];
@@ -241,7 +243,7 @@ GenerateSwingMotions()
 			target_to = p2;
 			target_to[0] = -target_to[0];
 		}
-
+		target_to[1] -=0.2;
 		// target_to[0]*= 0.8;
 		// target_to[2]*= 0.8;
 		v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
@@ -440,7 +442,11 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 		u0[i].setZero();
 	}
 	ref.back() = mMotions.back().first;
-	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),ref,x0,u0);
+	mJugglingInfo->CountPlusPlus();
+	int next_index = mJugglingInfo->GetBallIndex();
+	BodyNode* next_body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	mJugglingInfo->CountMinusMinus();
+	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,ref,x0,u0);
 	mU = mLQR->Solve();
 	// mU = u0;
 

@@ -9,6 +9,7 @@ SET(CMAKE_BUILD_TYPE Release CACHE STRING
 	)
 SET( ENABLE_VMCON ON CACHE BOOL "Enable vmcon3d" )
 SET( ENABLE_RENDER ON CACHE BOOL "Enable vmcon3d render" )
+SET( USE_JOINT_TORQUE ON CACHE BOOL "Enable joint torque.")
 
 add_subdirectory( fem )
 add_subdirectory( gui )
@@ -40,6 +41,7 @@ if (ENABLE_VMCON)
 	project(vmcon)
 	find_package(DART REQUIRED COMPONENTS utils-urdf gui optimizer-ipopt CONFIG)
 	add_compile_options(-DHAVE_CSTDDEF)
+	add_compile_options(-DUSE_JOINT_TORQUE)
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${DART_INCLUDE_DIRS})
 

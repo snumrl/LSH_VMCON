@@ -22,7 +22,7 @@ public:
 	void Initialze(
 		const Eigen::Vector3d& pos_desired,
 		const Eigen::Vector3d& vel_desired,
-		int index,
+		int index,int next_index,dart::dynamics::BodyNode* next_body,
 		const std::vector<Eigen::VectorXd>& reference_motions,
 		const Eigen::VectorXd& x0,const std::vector<Eigen::VectorXd>& u0);
 
@@ -61,7 +61,6 @@ protected:
 	std::shared_ptr<FEM::World>					mSoftWorld;
 	std::shared_ptr<MusculoSkeletalSystem>		mMusculoSkeletalSystem;
 	
-
 	Eigen::VectorXd								mTargetPositions,mTargetVelocities;
 	Eigen::VectorXd 							mKp,mKv;
 	Ipopt::SmartPtr<Ipopt::TNLP> 			 	mMuscleOptimization;
@@ -75,6 +74,8 @@ protected:
 
 	std::vector<std::shared_ptr<Ball>>		 	mBalls;
 	int 										mBallIndex;
+	int 										mNextBallIndex;
+	dart::dynamics::BodyNode* 					mNextBody;
 	Eigen::Vector3d								mBallTargetPosition;
 	Eigen::Vector3d								mBallTargetVelocity;
 };

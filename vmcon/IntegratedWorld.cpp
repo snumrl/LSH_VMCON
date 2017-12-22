@@ -31,8 +31,11 @@ TimeStepping()
 	{
 		need_fem_update = true;
 		// std::cout<<"mController step"<<std::endl;
+		
+#ifndef USE_JOINT_TORQUE
 		mMusculoSkeletalSystem->TransformAttachmentPoints();
 		mSoftWorld->TimeStepping(false);
+#endif
 		mController->Step();
 	}
 
@@ -51,19 +54,25 @@ TimeStepping()
 			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
 	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
 	// std::cout<<pd_forces.transpose()<<std::endl;
-	// Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+	
 
 
 
+#ifndef USE_JOINT_TORQUE
 	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
 	if(need_fem_update)
 	{
 		mMusculoSkeletalSystem->TransformAttachmentPoints();
 		mSoftWorld->TimeStepping();
-		// mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
 	}
-
+#else
+	Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+	mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+	if(need_fem_update)
+	{
+		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
+	}
+#endif
 	mRigidWorld->step();
 
 	mRecords.push_back(Record::Create());
@@ -118,6 +127,7 @@ Initialize()
 	// mRigidWorld->setGravity(Eigen::Vector3d(0,0,0));
 	mMusculoSkeletalSystem = MusculoSkeletalSystem::Create();
 	MakeSkeleton(mMusculoSkeletalSystem);
+
 	MakeMuscles("../vmcon/export/muscle_params.xml",mMusculoSkeletalSystem);
 
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
@@ -137,27 +147,27 @@ Initialize()
 
 
 	mController = Controller::Create(mSoftWorld,mRigidWorld,mMusculoSkeletalSystem,mBalls);
-	ReadRecord("../3000");
+	// ReadRecord("../1210");
 	
-	auto left_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
-	auto right_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
-	for(int i=0;i<5;i++)
-		mBalls[i]->Release(mRigidWorld);
+	// auto left_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL");
+	// auto right_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR");
+	// for(int i=0;i<5;i++)
+	// 	mBalls[i]->Release(mRigidWorld);
 
-	// mBalls[0]->Attach(mRigidWorld,left_hand);
-	mBalls[4]->Attach(mRigidWorld,right_hand);
-	mController->GetMachine()->mJugglingInfo->SetCount(13);
-	std::cout<<mController->GetMachine()->mJugglingInfo->GetBallIndex()<<std::endl;
-	mController->GetMachine()->mPhase = 0;
-	mController->GetMachine()->mTimeElapsed = 100000;
+	// mBalls[1]->Attach(mRigidWorld,right_hand);
+	// mBalls[4]->Attach(mRigidWorld,right_hand);
+	// mController->GetMachine()->mJugglingInfo->SetCount(18);
+	// std::cout<<mController->GetMachine()->mJugglingInfo->GetBallIndex()<<std::endl;
+	// mController->GetMachine()->mPhase = 0;
+	// mController->GetMachine()->mTimeElapsed = 100000;
 
-	mController->GetMachine()->mJugglingInfo->CountPlusPlus();
-	if(mBalls[mController->GetMachine()->mJugglingInfo->GetBallIndex()]->IsReleased())
-	{
-		// std::cout<<"Look ahead"<<mJugglingInfo->GetBallIndex()<<std::endl;
-		mController->GetMachine()->GenerateCatchMotions();
-	}
-	mController->GetMachine()->mJugglingInfo->CountMinusMinus();
+	// mController->GetMachine()->mJugglingInfo->CountPlusPlus();
+	// if(mBalls[mController->GetMachine()->mJugglingInfo->GetBallIndex()]->IsReleased())
+	// {
+	// 	// std::cout<<"Look ahead"<<mJugglingInfo->GetBallIndex()<<std::endl;
+	// 	mController->GetMachine()->GenerateCatchMotions();
+	// }
+	// mController->GetMachine()->mJugglingInfo->CountMinusMinus();
 
 }
 
