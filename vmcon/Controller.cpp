@@ -3,6 +3,8 @@
 #include "IKOptimization.h"
 #include "MuscleOptimization.h"
 #include "FSM/Machine.h"
+#include <fstream>
+
 using namespace FEM;
 using namespace dart::dynamics;
 using namespace dart::simulation;
@@ -110,9 +112,13 @@ ComputeActivationLevels()
 	Eigen::VectorXd qdd = solution.head(skel->getNumDofs());
 	Eigen::VectorXd activation = solution.tail(mMusculoSkeletalSystem->GetNumMuscles());
 
-//	std::cout<<"desired qdd :"<<qdd_desired.transpose()<<std::endl;
-//	std::cout<<"result  qdd :"<<qdd.transpose()<<std::endl<<std::endl;
-	// std::cout<<"activation  :"<<activation.transpose()<<std::endl;
+	std::ofstream ofs1,ofs2,ofs3;
+	ofs1.open("Desired_QDD.txt", std::ofstream::out | std::ofstream::app);
+	ofs1<<qdd_desired.transpose()<<std::endl;
+	ofs2.open("Result_QDD.txt",std::ofstream::out|std::ofstream::app);
+	ofs2<<qdd.transpose()<<std::endl<<std::endl;
+	ofs3.open("Activation.txt",std::ofstream::out|std::ofstream::app);
+	ofs3<<activation.transpose()<<std::endl;
 	return activation;
 }
 
@@ -196,20 +202,9 @@ void
 Controller::
 Step()
 {
-	
-	// pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*pd_forces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-	// mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
-	
 #ifndef USE_JOINT_TORQUE
 	mMusculoSkeletalSystem->SetActivationLevels(ComputeActivationLevels());
 #else
 	ComputePDForces();
 #endif
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getVelocities().transpose()<<std::endl;
-	// std::cout<<mTargetPositions.transpose()<<std::endl;
-	// std::cout<<mTargetVelocities.transpose()<<std::endl;
-	// std::cout<<mPDForces.transpose()<<std::endl;
-	// std::cout<<std::endl;
-	// mMusculoSkeletalSystem->SetActivationLevels(mMusculoSkeletalSystem->GetActivationLevels().setZero());
 }

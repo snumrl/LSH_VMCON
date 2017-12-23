@@ -117,7 +117,7 @@ SetActivationLevel(double a)
 
 MusculoSkeletalSystem::
 MusculoSkeletalSystem()
-	:mTendonStiffness(1E6),mMuscleStiffness(5E6),mYoungsModulus(1E6),mPoissonRatio(0.3)
+	:mTendonStiffness(1E6),mMuscleStiffness(1E7),mYoungsModulus(5E6),mPoissonRatio(0.3)
 {
 
 }

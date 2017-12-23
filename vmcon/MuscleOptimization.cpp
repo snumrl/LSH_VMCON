@@ -4,7 +4,7 @@
 using namespace Ipopt;
 MuscleOptimization::
 MuscleOptimization(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr&	rigid_world, const std::shared_ptr<MusculoSkeletalSystem>& ms)
-	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(ms),mWeightTracking(1.0),mWeightEffort(1.0),mSparseUpdateCount(0)
+	:mSoftWorld(soft_world),mRigidWorld(rigid_world),mMusculoSkeletalSystem(ms),mWeightTracking(1.0),mWeightEffort(0.1),mSparseUpdateCount(0)
 {
 	//std::cout<<"MuscleOptimization"<<std::endl;
 	int num_muscles =  mMusculoSkeletalSystem->GetNumMuscles();

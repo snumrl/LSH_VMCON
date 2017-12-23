@@ -57,9 +57,8 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	auto bn_to = skel->getBodyNode(mJugglingInfo->To());
 	//Check need to update.
 	bool need_update = false;
-	if(mJugglingInfo->GetCount()==40){
-		double a;
-		std::cin>>a;
+	if(mJugglingInfo->GetCount()==1){
+		exit(0);
 	}
 	//Check Catch Phase Finished.
 	if(mPhase == 0)
@@ -218,11 +217,11 @@ GenerateSwingMotions()
 	}
 	else
 	{
-		p0 = ball->GetPosition();
-		// p0[0] *= 1.1;
+		p0 = bn_from->getTransform().translation();
+		p0[0] *= 1.2;
 		p2 = mHandX0;
+		p2[0] *= 0.8;
 		p2[1] += 0.1;
-		p2[2] *= 0.8;
 		if(ball->GetPosition()[0]<0){
 			p2[0] =-p2[0];
 		}
@@ -245,9 +244,11 @@ GenerateSwingMotions()
 		}
 		target_to[1] -=0.1;
 		v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
-
+		std::cout<<v2.transpose()<<std::endl;
 		p1 = p2 - 0.5*v2*t_hold;
-
+		std::cout<<p0.transpose()<<std::endl;
+		std::cout<<p1.transpose()<<std::endl;
+		std::cout<<p2.transpose()<<std::endl;
 		mCurve->Initialize(p0,p1,p2,t_hold);
 	}
 	//Solve IK to make coarse_motions
