@@ -22,58 +22,26 @@ bool
 IntegratedWorld::
 TimeStepping()
 {
-	bool need_fem_update = false;
-
-	// std::cout<<"timestepping"<<std::endl;
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
-
-	if(mSoftWorld->GetTime()<=mRigidWorld->getTime())
-	{
-		need_fem_update = true;
-		// std::cout<<"mController step"<<std::endl;
-		
 #ifndef USE_JOINT_TORQUE
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping(false);
-#endif
-		mController->Step();
-	}
-
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions().transpose()<<std::endl;
-	// std::cout<<std::endl;
-	// auto pd_forces = mController->ComputePDForces();
-	// mMusculoSkeletalSystem->GetSkeleton()->clearConstraintImpulses();
-	// mMusculoSkeletalSystem->GetSkeleton()->clearInternalForces();
-
-
-	// std::cout<<mBalls[0]->GetPosition().transpose()<<std::endl;
-	// auto interesting = mRigidWorld->getConstraintSolver()->mManualConstraints[0];
-	// std::cout<<((dart::constraint::WeldJointConstraint*)interesting.get())->mJacobian2<<std::endl;
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getPositions()[0]<<" ";
-	// std::cout<<mBalls[0]->GetVelocity().transpose()<<std::endl;
-			// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getExternalForces().transpose()<<std::endl;
-	// std::cout<<mMusculoSkeletalSystem->GetSkeleton()->getConstraintForces().transpose()<<std::endl;
-	// std::cout<<pd_forces.transpose()<<std::endl;
-	
-
-
-
-#ifndef USE_JOINT_TORQUE
-	mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
-	if(need_fem_update)
-	{
-		mMusculoSkeletalSystem->TransformAttachmentPoints();
-		mSoftWorld->TimeStepping();
-	}
+	mMusculoSkeletalSystem->TransformAttachmentPoints();
+	mSoftWorld->TimeStepping(false);
+	mController->Step();
+	mSoftWorld->TimeStepping();
 #else
-	Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
-	mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
-	if(need_fem_update)
-	{
-		mSoftWorld->SetTime(mSoftWorld->GetTime()+mSoftWorld->GetTimeStep());
-	}
+	mController->Step();
 #endif
-	mRigidWorld->step();
+	
+	double nn = mSoftWorld->GetTimeStep() / mRigidWorld->getTimeStep();
+	for(int i =0; i<nn;i++)
+	{
+#ifndef USE_JOINT_TORQUE
+		mMusculoSkeletalSystem->ApplyForcesToSkeletons(mSoftWorld);
+#else
+		Eigen::VectorXd pd_forces = mMusculoSkeletalSystem->GetSkeleton()->getMassMatrix()*mController->mPDForces + mMusculoSkeletalSystem->GetSkeleton()->getCoriolisAndGravityForces();
+		mMusculoSkeletalSystem->GetSkeleton()->setForces(pd_forces);
+#endif
+		mRigidWorld->step();
+	}
 
 	mRecords.push_back(Record::Create());
 	auto rec = mRecords.back();
@@ -86,7 +54,7 @@ TimeStepping()
 	WriteRecord(output_path);
 
 
-	return need_fem_update;
+	return true;
 }
 std::shared_ptr<IntegratedWorld>
 IntegratedWorld::

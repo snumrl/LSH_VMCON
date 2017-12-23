@@ -131,6 +131,7 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 			GenerateSwingMotions();
 	}
 
+
 	p = mMotions[mCount].first;
 	if(mCount == 0)
 		v = (mMotions[mCount+1].first - mMotions[mCount].first)/mSoftWorld->GetTimeStep();
@@ -281,8 +282,8 @@ GenerateSwingMotions()
 	mMotions = GenerateFineMotions(coarse_motions);
 
 	//Solve LQR
-	SynchronizeLQR();
-	OptimizeLQR(p2,v2);
+	// SynchronizeLQR();
+	// OptimizeLQR(p2,v2);
 	
 	mTimeElapsed = 0.0;
 	mCount = 0;
@@ -422,7 +423,7 @@ Machine::
 OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	Eigen::VectorXd x0(dofs*2+12*mBalls.size()+mSoftWorld->GetPositions().rows());
+	Eigen::VectorXd x0(dofs*2+12*mBalls.size()+mMusculoSkeletalSystem->GetNumMuscles()+ mSoftWorld->GetPositions().rows());
 	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
 	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
@@ -430,6 +431,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[i]->GetSkeleton()->getPositions();
 		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
 	}
+	x0.block(dofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1) = mLQRMusculoSkeletalSystem->GetActivationLevels();
 	x0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
 	std::vector<Eigen::VectorXd> ref,u0;
 	ref.resize(mMotions.size());
@@ -448,6 +450,7 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	mJugglingInfo->CountMinusMinus();
 	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,next_ball_initially_attached,ref,x0,u0);
 	mU = mLQR->Solve();
+	mState = mLQR->OptimalState();
 	// mU = u0;
 
 	for(int i=0;i<mU.size();i++)

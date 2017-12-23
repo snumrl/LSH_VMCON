@@ -12,6 +12,7 @@ class Ball;
 class MusculoSkeletalSystem;
 class Controller;
 class Record;
+
 class IntegratedWorld
 {
 public:

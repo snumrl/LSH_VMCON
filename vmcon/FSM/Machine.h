@@ -28,7 +28,7 @@ public:
 		const std::vector<int>& sequences,int ball_size);
 
 	void GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v);
-	
+	void GetStateFromLQR(dart::simulation::WorldPtr& rigid_world,FEM::WorldPtr& soft_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
 public:
 	void GenerateCatchMotions();
 	void GenerateSwingMotions();
@@ -61,6 +61,7 @@ public:
 	
 	std::shared_ptr<MusculoSkeletalLQR>			mLQR;
 	std::vector<Eigen::VectorXd> 				mU;
+	std::vector<Eigen::VectorXd>				mState;
 
 //For Catch Phase
 	Ipopt::SmartPtr<Ipopt::TNLP>			 	mIKOptimization;

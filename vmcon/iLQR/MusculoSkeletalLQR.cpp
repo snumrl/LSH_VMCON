@@ -95,7 +95,7 @@ Initialze(
 	boost::filesystem::create_directories(mWritePath);
 	WriteXML(mWritePath+"/state.xml");
 
-	Init(u0.size()+1,x0.rows()-mSoftWorldDofs,x0,u0,u_lower,u_upper);
+	Init(u0.size()+1,x0.rows()-mSoftWorldDofs-mMusculoSkeletalSystem->getNumDofs(),x0,u0,u_lower,u_upper);
 }
 void
 MusculoSkeletalLQR::
@@ -175,6 +175,7 @@ SetState(const Eigen::VectorXd& x,bool update_fem)
 		mBalls[i]->GetSkeleton()->setVelocities(x.block(2*mDofs+12*i+6,0,6,1));
 		mBalls[i]->GetSkeleton()->computeForwardKinematics(true,false,false);	
 	}
+	mMusculoSkeletalSystem->SetActivationLevels(x.block(mDofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1));
 
 #ifndef USE_JOINT_TORQUE	
 	mSoftWorld->SetPositions(x.tail(mSoftWorldDofs));
@@ -210,6 +211,7 @@ GetState(Eigen::VectorXd& x)
 		x.block(2*mDofs+12*i+6,0,6,1) = mBalls[i]->GetSkeleton()->getVelocities();
 	}
 
+	x.block(mDofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1) = mMusculoSkeletalSystem->GetActivationLevels();
 	x.tail(mSoftWorldDofs) = mSoftWorld->GetPositions();
 }
 void
@@ -257,7 +259,7 @@ Step()
 		mRigidWorld->step();
 	}
 #endif
-	}
+}
 
 
 void
