@@ -19,7 +19,7 @@ public:
 	IKOptimization(const dart::dynamics::SkeletonPtr& skeleton);
 	void ClearTarget();
 	const Eigen::VectorXd& GetSolution();
-	void SetSolution(Eigen::VectorXd& sol);
+	void SetSolution(const Eigen::VectorXd& sol);
 	~IKOptimization();
 
 	bool					get_nlp_info(	Ipopt::Index& n, Ipopt::Index& m, Ipopt::Index& nnz_jac_g,

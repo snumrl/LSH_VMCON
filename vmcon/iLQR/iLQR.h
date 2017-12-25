@@ -38,7 +38,6 @@ public:
 	double ForwardPass();
 
 	const std::vector<Eigen::VectorXd>& Solve();
-	const std::vector<Eigen::VectorXd>& OptimalState() {return mx;};
 protected:
 	bool CheckPSD(const Eigen::MatrixXd& A);
 	int mMaxIteration;

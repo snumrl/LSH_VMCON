@@ -78,36 +78,34 @@ Display()
 	};
 	int ball_index = 0;
 
-
 	for(int k = 0;k<mRecords.size();k++)
 	{
 		if(mIsRender[k])
 		{
+			Eigen::VectorXd target;
+			mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld(),mWorld->mMusculoSkeletalSystem,target);
 
-		Eigen::VectorXd target;
-		mRecords[k][mFrame]->Get(mWorld->GetRigidWorld(),mWorld->GetSoftWorld(),mWorld->mMusculoSkeletalSystem,target);
-
-    	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
-    	{
-    		if(i==0)
-    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
-    		else
-    		{
-    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),clr[ball_index++]);
-    		}
-	    
-	    }
-	    if(mRenderTarget)
-		{
-			auto& skel = mWorld->mMusculoSkeletalSystem->GetSkeleton();
-			auto save_pos = skel->getPositions();
-			skel->setPositions(target);
-			skel->computeForwardKinematics(true,false,false);
-			DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
-			skel->setPositions(save_pos);
-			skel->computeForwardKinematics(true,false,false);
+	    	for(int i =0;i<mWorld->GetRigidWorld()->getNumSkeletons();i++)
+	    	{
+	    		if(i==0)
+	    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
+	    		else
+	    		{
+	    			DrawSkeleton(mWorld->GetRigidWorld()->getSkeleton(i),clr[ball_index++]);
+	    		}
+		    
+		    }
+		    if(mRenderTarget)
+			{
+				auto& skel = mWorld->mMusculoSkeletalSystem->GetSkeleton();
+				auto save_pos = skel->getPositions();
+				skel->setPositions(target);
+				skel->computeForwardKinematics(true,false,false);
+				DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.2,0.2),!mRenderDetail);
+				skel->setPositions(save_pos);
+				skel->computeForwardKinematics(true,false,false);
+			}
 		}
-	}
 	}
 	if(mRenderDetail)
 	{

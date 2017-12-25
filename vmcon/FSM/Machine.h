@@ -12,6 +12,7 @@
 
 class MusculoSkeletalLQR;
 class Ball;
+class Sampler;
 class MusculoSkeletalSystem;
 class BezierCurve;
 typedef std::pair<dart::dynamics::BodyNode*,Eigen::Vector3d> AnchorPoint;
@@ -28,7 +29,6 @@ public:
 		const std::vector<int>& sequences,int ball_size);
 
 	void GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v);
-	void GetStateFromLQR(dart::simulation::WorldPtr& rigid_world,FEM::WorldPtr& soft_world,std::shared_ptr<MusculoSkeletalSystem>& musculo_skeletal_system);
 public:
 	void GenerateCatchMotions();
 	void GenerateSwingMotions();
@@ -37,6 +37,7 @@ public:
 	void InitializeLQR();
 	void SynchronizeLQR();
 	void OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des);
+	Eigen::VectorXd OptimizeInitialGuess(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des,const Eigen::VectorXd& x0);
 //For Juggling
 	std::shared_ptr<JugglingInfo> 				mJugglingInfo;
 	double										mTimeElapsed;
@@ -63,6 +64,7 @@ public:
 	std::vector<Eigen::VectorXd> 				mU;
 	std::vector<Eigen::VectorXd>				mState;
 
+	std::shared_ptr<Sampler>					mSampler;
 //For Catch Phase
 	Ipopt::SmartPtr<Ipopt::TNLP>			 	mIKOptimization;
 	Ipopt::SmartPtr<Ipopt::IpoptApplication> 	mIKSolver;

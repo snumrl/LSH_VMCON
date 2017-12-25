@@ -95,7 +95,7 @@ Initialze(
 	boost::filesystem::create_directories(mWritePath);
 	WriteXML(mWritePath+"/state.xml");
 
-	Init(u0.size()+1,x0.rows()-mSoftWorldDofs-mMusculoSkeletalSystem->getNumDofs(),x0,u0,u_lower,u_upper);
+	Init(u0.size()+1,x0.rows()-mSoftWorldDofs-mMusculoSkeletalSystem->GetNumMuscles(),x0,u0,u_lower,u_upper);
 }
 void
 MusculoSkeletalLQR::

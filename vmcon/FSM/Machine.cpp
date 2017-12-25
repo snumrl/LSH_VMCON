@@ -6,6 +6,7 @@
 #include "../iLQR/MusculoSkeletalLQR.h"
 #include "../DART_helper.h"
 #include "BezierCurve.h"
+#include "Sampler.h"
 using namespace dart::dynamics;
 using namespace dart::simulation;
 using namespace Ipopt;
@@ -44,7 +45,6 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	InitializeLQR();
 	mCurve = new BezierCurve();
 
-
 }
 
 void
@@ -58,7 +58,7 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	//Check need to update.
 	bool need_update = false;
 	if(mJugglingInfo->GetCount()==1){
-		exit(0);
+		// exit(0);
 	}
 	//Check Catch Phase Finished.
 	if(mPhase == 0)
@@ -97,8 +97,8 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	//Check Swing Phase Finished.
 	if(mPhase ==1 &&!need_update)
 	{
-		// std::cout<<ball->GetVelocity().transpose()<<std::endl;
-		if(mCount == mU.size() || mMotions.back().second<mTimeElapsed)
+		// if(mCount == mU.size() || mMotions.back().second<mTimeElapsed)
+		if(mCount == mMotions.size())// || mMotions.back().second<mTimeElapsed)
 		{
 			if(mJugglingInfo->GetV()!=0){
 			ball->Release(mRigidWorld);
@@ -125,13 +125,20 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 
 	if(need_update)
 	{
-		if(mPhase == 0)
+		if(mPhase == 0){
+			// std::cout<<"GenerateCatchMotions()"<<std::endl;
 			GenerateCatchMotions();
-		else
+		}
+		else{
+			// std::cout<<"GenerateSwingMotions()"<<std::endl;
 			GenerateSwingMotions();
+		}
 	}
-
-
+	// std::cout<<std::endl;
+	// std::cout<<mCount<<std::endl;
+	// std::cout<<mMotions.size()<<std::endl;
+	// std::cout<<need_update<<std::endl;
+	// std::cout<<mPhase<<std::endl;
 	p = mMotions[mCount].first;
 	if(mCount == 0)
 		v = (mMotions[mCount+1].first - mMotions[mCount].first)/mSoftWorld->GetTimeStep();
@@ -156,8 +163,10 @@ GenerateCatchMotions()
 	Eigen::Vector3d target;
 	// ball->ComputeFallingPosition(ball->releasedPoint[1],target);
 	ball->ComputeFallingPosition(mHandX0[1],target);
-	if(target.norm()<1E-6)
+	if(target.norm()<1E-6){
+		mMotions.push_back(mMotions.back());
 		return;
+	}
 	// std::cout<<"Catch Target : "<<target.transpose()<<std::endl;
 	AnchorPoint ap = std::make_pair(bn_from,mLocalOffset);
 	ik->AddTargetPositions(ap,target);
@@ -219,7 +228,7 @@ GenerateSwingMotions()
 	else
 	{
 		p0 = bn_from->getTransform().translation();
-		p0[0] *= 1.2;
+		// p0[0] *= 1.2;
 		p2 = mHandX0;
 		p2[0] *= 0.8;
 		p2[1] += 0.1;
@@ -227,14 +236,6 @@ GenerateSwingMotions()
 			p2[0] =-p2[0];
 		}
 		
-		// if(std::abs(p0[0])<std::abs(mHandX0[0]))
-			// p2[0] = p0[0]*1.1;
-		// else	
-			// p2[0] = p0[0]*0.9;
-		
-		
-		// p0[0] *=1.1;
-		// p2[0] *=0.9;
 		Eigen::Vector3d target_to = bn_to->getTransform()*mLocalOffset;
 		if(bn_from == bn_to)
 			target_to = p2;
@@ -250,23 +251,31 @@ GenerateSwingMotions()
 		std::cout<<p0.transpose()<<std::endl;
 		std::cout<<p1.transpose()<<std::endl;
 		std::cout<<p2.transpose()<<std::endl;
-		mCurve->Initialize(p0,p1,p2,t_hold);
+		Eigen::VectorXd x0(9);
+		x0.block<3,1>(0,0) = p0;
+		x0.block<3,1>(3,0) = p0;
+		x0.block<3,1>(6,0) = p0;
+		// v2 = Eigen::Vector3d(0,3,0);
+		SynchronizeLQR();
+		Eigen::VectorXd initial_guess =OptimizeInitialGuess(p0,v2,x0);
+
+		mCurve->Initialize(initial_guess.block<3,1>(0,0),initial_guess.block<3,1>(3,0),initial_guess.block<3,1>(6,0),t_hold);
 	}
 	//Solve IK to make coarse_motions
 	std::vector<std::pair<Eigen::VectorXd,double>> coarse_motions;
 
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-	Eigen::VectorXd save_positions = ik->GetSolution();
+	ik->SetSolution(mMusculoSkeletalSystem->GetSkeleton()->getPositions());
 
 	auto save_target = ik->GetTargets();
 	Eigen::Vector3d p_hb = ball->GetPosition() - bn_from->getCOM();
+
 	AnchorPoint ap = std::make_pair(bn_from,p_hb);
 	for(int i =0;i<11;i++)
 	{
 		double tt = ((double)i)/((double)10)*t_hold;
 		
 		Eigen::Vector3d p_ee = mCurve->GetPosition(tt);
-		// std::cout<<"p_ee("<<i<<")"<<p_ee.transpose()<<std::endl;
 		ik->AddTargetPositions(ap,p_ee);
 		mIKSolver->ReOptimizeTNLP(mIKOptimization);
 		Eigen::VectorXd sol = ik->GetSolution();
@@ -277,11 +286,12 @@ GenerateSwingMotions()
 		ik->AddTargetPositions(target.first,target.second);
 	}
 
-	ik->SetSolution(save_positions);
 
 	mMotions = GenerateFineMotions(coarse_motions);
 
+
 	//Solve LQR
+	
 	// SynchronizeLQR();
 	// OptimizeLQR(p2,v2);
 	
@@ -374,6 +384,11 @@ InitializeLQR()
 			mLQRRigidWorld,
 			mLQRSoftWorld,
 			mLQRMusculoSkeletalSystem,mLQRBalls,10);
+
+	mSampler = std::make_shared<Sampler>(
+			mLQRRigidWorld,
+			mLQRSoftWorld,
+			mLQRMusculoSkeletalSystem,mLQRBalls);
 }
 void
 Machine::
@@ -423,16 +438,16 @@ Machine::
 OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 {
 	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
-	Eigen::VectorXd x0(dofs*2+12*mBalls.size()+mMusculoSkeletalSystem->GetNumMuscles()+ mSoftWorld->GetPositions().rows());
-	x0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
-	x0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
+	Eigen::VectorXd s0(dofs*2+12*mBalls.size()+mMusculoSkeletalSystem->GetNumMuscles()+ mSoftWorld->GetPositions().rows());
+	s0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
+	s0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
 	for(int i =0;i<mBalls.size();i++)
 	{
-		x0.block(2*dofs+12*i,0,6,1) = mLQRBalls[i]->GetSkeleton()->getPositions();
-		x0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
+		s0.block(2*dofs+12*i,0,6,1) = mLQRBalls[i]->GetSkeleton()->getPositions();
+		s0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
 	}
-	x0.block(dofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1) = mLQRMusculoSkeletalSystem->GetActivationLevels();
-	x0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
+	s0.block(dofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1) = mLQRMusculoSkeletalSystem->GetActivationLevels();
+	s0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
 	std::vector<Eigen::VectorXd> ref,u0;
 	ref.resize(mMotions.size());
 	u0.resize(mMotions.size()-1);
@@ -446,11 +461,12 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 	mJugglingInfo->CountPlusPlus();
 	int next_index = mJugglingInfo->GetBallIndex();
 	BodyNode* next_body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	
 	bool next_ball_initially_attached = !mBalls[mJugglingInfo->GetBallIndex()]->IsReleased();
 	mJugglingInfo->CountMinusMinus();
-	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,next_ball_initially_attached,ref,x0,u0);
+	BodyNode* body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	mLQR->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),next_index,next_body,next_ball_initially_attached,ref,s0,u0);
 	mU = mLQR->Solve();
-	mState = mLQR->OptimalState();
 	// mU = u0;
 
 	for(int i=0;i<mU.size();i++)
@@ -459,6 +475,41 @@ OptimizeLQR(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des)
 		// std::cout<<mU[i].transpose()<<std::endl;
 	}
 
-	mMotions.back().first +=mU.back();
+	// mMotions.back().first +=mU.back();
+
+
+
+
+}
+
+Eigen::VectorXd
+Machine::
+OptimizeInitialGuess(const Eigen::Vector3d& p_des,const Eigen::Vector3d& v_des,const Eigen::VectorXd& x0)
+{
+	int dofs =mLQRMusculoSkeletalSystem->GetSkeleton()->getNumDofs();
+	Eigen::VectorXd s0(dofs*2+12*mBalls.size()+mMusculoSkeletalSystem->GetNumMuscles()+ mSoftWorld->GetPositions().rows());
+	s0.head(dofs) = mLQRMusculoSkeletalSystem->GetSkeleton()->getPositions();
+	s0.block(dofs,0,dofs,1) = mLQRMusculoSkeletalSystem->GetSkeleton()->getVelocities();
+	for(int i =0;i<mBalls.size();i++)
+	{
+		s0.block(2*dofs+12*i,0,6,1) = mLQRBalls[i]->GetSkeleton()->getPositions();
+		s0.block(2*dofs+12*i+6,0,6,1) = mLQRBalls[i]->GetSkeleton()->getVelocities();
+	}
+
+	s0.block(dofs*2+12*mBalls.size(),0,mMusculoSkeletalSystem->GetNumMuscles(),1) = mLQRMusculoSkeletalSystem->GetActivationLevels();
+	s0.tail(mSoftWorld->GetPositions().rows()) = mSoftWorld->GetPositions();
+
+	mJugglingInfo->CountPlusPlus();
+	int next_index = mJugglingInfo->GetBallIndex();
+	BodyNode* next_body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());	
+	bool next_ball_initially_attached = !mBalls[mJugglingInfo->GetBallIndex()]->IsReleased();
+	mJugglingInfo->CountMinusMinus();
+
+	BodyNode* body =  mLQRMusculoSkeletalSystem->GetSkeleton()->getBodyNode(mJugglingInfo->From());
+	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
+
+	mSampler->Initialze(p_des,v_des,mJugglingInfo->GetBallIndex(),body,ik->GetTargets(),next_index,next_body,next_ball_initially_attached,s0,mJugglingInfo->GetT_hold());
+	Eigen::VectorXd initial_guess = mSampler->Solve(x0);
+	return initial_guess;
 
 }

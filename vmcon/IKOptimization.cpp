@@ -52,7 +52,7 @@ GetSolution()
 }
 void
 IKOptimization::
-SetSolution(Eigen::VectorXd& sol)
+SetSolution(const Eigen::VectorXd& sol)
 {
 	mSolution = sol;
 }
@@ -95,8 +95,9 @@ get_starting_point(	Ipopt::Index n, bool init_x, Ipopt::Number* x,
 													Ipopt::Index m, bool init_lambda,
 													Ipopt::Number* lambda) 
 {
-	for(int i =0;i<n;i++)
+	for(int i =0;i<n;i++){
 		x[i] = mSkeleton->getDof(i)->getPosition();
+	}
 	mSavePositions = mSkeleton->getPositions();
 	return true;
 }
@@ -128,18 +129,22 @@ eval_f(	Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number& obj_v
 	for(auto& target : mTargets)
 	{
 		obj_value += 0.5*(target.first.first->getTransform()*target.first.second - target.second).squaredNorm();
-		// std::cout<<obj_value<<std::endl;
-		Eigen::Quaterniond target_orientation;
-		if(!target.first.first->getName().compare("HandL"))
-			target_orientation = mTargetOrientation[0];
-		else
-			target_orientation = mTargetOrientation[1];
-		Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
-		Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
+
+		// std::cout<<"Tp : "<<q.transpose()<<std::endl;
+		// std::cout<<"x_d : "<<target.second.transpose()<<std::endl;
+		// std::cout<<std::endl;
+		// Eigen::Quaterniond target_orientation;
+		// if(!target.first.first->getName().compare("HandL"))
+		// 	target_orientation = mTargetOrientation[0];
+		// else
+		// 	target_orientation = mTargetOrientation[1];
+		// Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
+		// Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
 
 		// std::cout<<Eigen::AngleAxisd(diff).angle()<<std::endl;
-		obj_value += 0.5*GetDiff(diff).angle();
+		// obj_value += 0.5*GetDiff(diff).angle();
 	}
+	// std::cout<<obj_value<<std::endl;
 	return true;
 }
 
@@ -156,16 +161,16 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 	mSkeleton->computeForwardKinematics(true,false,false);
 	for(auto& target: mTargets)
 	{
-		// dart::math::LinearJacobian J = mSkeleton->getLinearJacobian(target.first.first,target.first.second);
-		dart::math::Jacobian J = mSkeleton->getWorldJacobian(target.first.first,target.first.second);
-		// J.block(3,3,0,0) *= 100.0;
-		J.block(6,3,0,0) *= 100.0;
+		dart::math::LinearJacobian J = mSkeleton->getLinearJacobian(target.first.first,target.first.second);
+		// dart::math::Jacobian J = mSkeleton->getWorldJacobian(target.first.first,target.first.second);
+		J.block(3,3,0,0) *= 100.0;
+		// J.block(6,3,0,0) *= 100.0;
 		Eigen::JacobiSVD<Eigen::MatrixXd> svd(J, Eigen::ComputeThinU | Eigen::ComputeThinV);
-		Eigen::Matrix6d inv_singular_value;
+		Eigen::Matrix3d inv_singular_value;
 		// Eigen::Matrix6d inv_singular_value;
 		
 		inv_singular_value.setZero();
-		for(int k=0;k<6;k++)
+		for(int k=0;k<3;k++)
 		// for(int k=0;k<3;k++)
 		{
 			if(std::fabs(svd.singularValues()[k])<1e-6)
@@ -179,30 +184,32 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 		Eigen::Vector3d x_minus_x_target = target.first.first->getTransform()*target.first.second - target.second;
 		
 
+		// std::cout<<target.first.second.transpose()<<std::endl;
+		// std::cout<<x_minus_x_target.transpose()<<std::endl;
+		// Eigen::Quaterniond target_orientation;
+		// if(!target.first.first->getName().compare("HandL"))
+		// {
+		// 	target_orientation = mTargetOrientation[0];
+		// }
+		// else
+		// 	target_orientation = mTargetOrientation[1];
+		// Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
+		// Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
 
-		Eigen::Quaterniond target_orientation;
-		if(!target.first.first->getName().compare("HandL"))
-		{
-			target_orientation = mTargetOrientation[0];
-		}
-		else
-			target_orientation = mTargetOrientation[1];
-		Eigen::Quaterniond current_orientation(target.first.first->getTransform().rotation());
-		Eigen::Quaterniond diff = target_orientation*current_orientation.inverse();
-
-		Eigen::Vector3d o_minus_o_target = GetDiff(diff).angle()*GetDiff(diff).axis();
+		// Eigen::Vector3d o_minus_o_target = GetDiff(diff).angle()*GetDiff(diff).axis();
 		// std::cout<<GetDiff(diff).angle()<<std::endl;
-		Eigen::Vector6d dir;
-		dir.head(3) = -o_minus_o_target;
-		dir.tail(3) = x_minus_x_target;
+		// Eigen::Vector6d dir;
+		// dir.head(3) = -o_minus_o_target;
+		// dir.tail(3) = x_minus_x_target;
 		// temp.setZero();
 		// temp.head(3) = 0.1*o_minus_o_target;
 		// temp.tail(3) = -x_minus_x_target;
-		// g += J_inv*x_minus_x_target;
-		g += J_inv*dir;
+		g += J_inv*x_minus_x_target;
+		// g += J_inv*dir;
 
 	}
-
+	// std::cout<<q.transpose()<<std::endl;
+	// std::cout<<g.transpose()<<std::endl;
 	for(int i =0;i<n;i++)
 		grad_f[i] = g[i];
 
