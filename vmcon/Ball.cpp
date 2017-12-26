@@ -3,7 +3,7 @@ using namespace dart::dynamics;
 using namespace dart::simulation;
 Ball::
 Ball(const dart::constraint::WeldJointConstraintPtr& cons,const dart::dynamics::SkeletonPtr& skel)
-	:isReleased(true),constraint(cons),skeleton(skel),releasedPoint(Eigen::Vector3d::Zero()),releasedVelocity(Eigen::Vector3d::Zero())
+	:isReleased(true),constraint(cons),skeleton(skel),releasedPoint(Eigen::Vector3d::Zero()),releasedVelocity(Eigen::Vector3d::Zero()),release_count(0)
 {
 	
 }
@@ -59,6 +59,7 @@ Release(const dart::simulation::WorldPtr& world)
 		isReleased = true;
 		releasedPoint = skeleton->getBodyNode(0)->getCOM();
 		releasedVelocity = skeleton->getBodyNode(0)->getCOMLinearVelocity();
+		release_count = 0;
 	}
 
 	
@@ -76,4 +77,38 @@ Attach(const dart::simulation::WorldPtr& world,dart::dynamics::BodyNode* bn)
 		isReleased = false;
 		world->getConstraintSolver()->addConstraint(constraint);
 	}
+}
+bool
+Ball::
+IsClose(const Eigen::Vector3d& p)
+{
+	Eigen::Vector3d cur_p = GetPosition();
+	Eigen::Vector3d cur_v = GetVelocity();
+	Eigen::Vector3d next_p = cur_p + cur_v*0.005;
+
+	double cur_dy = cur_p[1] - p[1];
+	double next_dy = next_p[1] - p[1];
+
+	if(cur_dy<0.05)
+		return true;
+	else
+		return false;
+
+	// std::vector<Eigen::Vector3d> prev_p;
+	// for(int i =0;i<5;i++)
+	// 	prev_p.push_back(cur_p-i*cur_v);
+	
+	// std::vector<double> norm_p;
+	// for(int i=0;i<5;i++)
+	// 	norm_p.push_back((prev_p[i]-p).norm());
+
+	// bool isMonotonic = true;
+	// for(int i=0;i<3;i++)
+	// {
+	// 	double p01 = norm_p[i+1]-norm_p[i];
+	// 	double p12 = norm_p[i+2]-norm_p[i+1];
+	// 	if(p01*p12<0)
+	// 		isMonotonic = false;
+	// }
+	// return !isMonotonic;
 }

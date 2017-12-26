@@ -65,8 +65,9 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	// 	5,3,3,3,3,
 	// 	3,3,0,0,0,0,0,0,0};
 
-	std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
-	// std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1};
+	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
+	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
+	std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
 	mMuscleOptimizationSolver->Initialize();
 		mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);

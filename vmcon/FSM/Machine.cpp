@@ -17,8 +17,15 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 		const std::vector<std::shared_ptr<Ball>>& balls,
 	const std::vector<int>& sequences,int ball_size)
 	:mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
-	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.0,0.02,0.03))
+	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.05,0.05,0.08))
 {
+	Eigen::Isometry3d T_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR")->getTransform();
+	Eigen::Isometry3d T_ball = mBalls[0]->GetSkeleton()->getBodyNode(0)->getTransform();
+	Eigen::Vector3d p_hand = T_hand.translation();
+	Eigen::Vector3d p_ball = T_ball.translation();
+
+
+	mLocalOffset = T_hand.linear().inverse()*(p_ball-p_hand);
 	mIKOptimization = new IKOptimization(mMusculoSkeletalSystem->GetSkeleton());
 
 	mIKSolver = new IpoptApplication();
@@ -44,9 +51,10 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	mPhase = 0;
 	InitializeLQR();
 	mCurve = new BezierCurve();
-
+	for(int i =0;i<1000;i++)
+		mMotions.push_back(std::make_pair(ik->GetSolution(),100.0));
 }
-
+// extern int simulation_count;
 void
 Machine::
 GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
@@ -65,11 +73,13 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	{
 		Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
 		Eigen::Vector3d ball_position = ball->GetPosition();
+		Eigen::Vector3d ball_velocity = ball->GetVelocity();
 		
 		if(ball->IsReleased())
 			GenerateCatchMotions();
+		// if( ball->IsClose(body_position)  || !ball->IsReleased())
 
-		if((body_position-ball_position).norm()<5E-2 || !ball->IsReleased())
+		if(   ((body_position-ball_position).norm()<5E-2 &&ball_velocity[1]<0.0)|| !ball->IsReleased())
 		{
 			ball->Attach(mRigidWorld,bn_from);
 			need_update = true;
@@ -77,21 +87,21 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 		}
 	}
 	//Look opposite Hand
-	mJugglingInfo->CountPlusPlus();
-	ball = mBalls[mJugglingInfo->GetBallIndex()];
-	bn_from = skel->getBodyNode(mJugglingInfo->From());
+	// mJugglingInfo->CountPlusPlus();
+	// ball = mBalls[mJugglingInfo->GetBallIndex()];
+	// bn_from = skel->getBodyNode(mJugglingInfo->From());
 
-	if(ball->IsReleased()) // check if already attached.
-	{
-		Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
+	// if(ball->IsReleased()) // check if already attached.
+	// {
+	// 	Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
 
-		Eigen::Vector3d ball_position = ball->GetPosition();
-		if((body_position-ball_position).norm()<5E-2){
-			ball->Attach(mRigidWorld,bn_from);
-		}
-	}
-	//Go back
-	mJugglingInfo->CountMinusMinus();
+	// 	Eigen::Vector3d ball_position = ball->GetPosition();
+	// 	if((body_position-ball_position).norm()<5E-2){
+	// 		ball->Attach(mRigidWorld,bn_from);
+	// 	}
+	// }
+	// //Go back
+	// mJugglingInfo->CountMinusMinus();
 	ball = mBalls[mJugglingInfo->GetBallIndex()];
 	bn_from = skel->getBodyNode(mJugglingInfo->From());
 	//Check Swing Phase Finished.
@@ -206,32 +216,34 @@ GenerateSwingMotions()
 		return;
 	}
 	//Singular case V = 1
-	if(mJugglingInfo->GetV() == 1)
-	{
-		p0[1] = 0.2;
-		p2 = p0 + 0.2*dir;
+	// if(mJugglingInfo->GetV() == 1)
+	// {
+	// 	p0[1] = 0.2;
+	// 	p2 = p0 + 0.2*dir;
 
-		Eigen::Vector3d diff = bn_to->getTransform()*mLocalOffset - p0;
-		double t_hold = mJugglingInfo->GetT()*0.5;
+	// 	Eigen::Vector3d diff = bn_to->getTransform()*mLocalOffset - p0;
+	// 	double t_hold = mJugglingInfo->GetT()*0.5;
 
-		v2[1] = 0.5*9.81*t_free;
-		v2[0] = diff[0]/t_free;
-		v2[2] = diff[2]/t_free;
+	// 	v2[1] = 0.5*9.81*t_free;
+	// 	v2[0] = diff[0]/t_free;
+	// 	v2[2] = diff[2]/t_free;
 		
-		p1 = p2 - 0.5*v2*t_hold;
+	// 	p1 = p2 - 0.5*v2*t_hold;
 
-		std::cout<<p0.transpose()<<std::endl;
-		std::cout<<p1.transpose()<<std::endl;
-		std::cout<<p2.transpose()<<std::endl;
-		mCurve->Initialize(p0,p1,p2,t_hold);
-	}
-	else
+	// 	std::cout<<p0.transpose()<<std::endl;
+	// 	std::cout<<p1.transpose()<<std::endl;
+	// 	std::cout<<p2.transpose()<<std::endl;
+	// 	mCurve->Initialize(p0,p1,p2,t_hold);
+	// }
+	// else
 	{
-		p0 = bn_from->getTransform().translation();
+		p0 = ball->GetPosition();
+		// p0 = mHandX0;
+		// p0[0] = -p0[0];
 		// p0[0] *= 1.2;
 		p2 = mHandX0;
-		p2[0] *= 0.8;
-		p2[1] += 0.1;
+		// p2[0] *= 0.8;
+		// p2[1] += 0.1;
 		if(ball->GetPosition()[0]<0){
 			p2[0] =-p2[0];
 		}
@@ -244,21 +256,34 @@ GenerateSwingMotions()
 			target_to = p2;
 			target_to[0] = -target_to[0];
 		}
-		target_to[1] -=0.1;
-		v2 = mJugglingInfo->GetTargetVelocity(p2,target_to);
-		std::cout<<v2.transpose()<<std::endl;
+
+		// target_to[1] -=0.1;
+		v2 = Eigen::Vector3d(0,3,0);
+		v2 = mJugglingInfo->GetTargetVelocity(p0,target_to);
+		// std::cout<<v2.transpose()<<std::endl;
 		p1 = p2 - 0.5*v2*t_hold;
-		std::cout<<p0.transpose()<<std::endl;
-		std::cout<<p1.transpose()<<std::endl;
-		std::cout<<p2.transpose()<<std::endl;
+		// std::cout<<p0.transpose()<<std::endl;
+		// std::cout<<p1.transpose()<<std::endl;
+		// std::cout<<p2.transpose()<<std::endl;
 		Eigen::VectorXd x0(9);
 		x0.block<3,1>(0,0) = p0;
 		x0.block<3,1>(3,0) = p0;
 		x0.block<3,1>(6,0) = p0;
 		// v2 = Eigen::Vector3d(0,3,0);
+		Eigen::Vector3d v_des[7] = {
+			Eigen::Vector3d(0,3,0),
+			Eigen::Vector3d(0,3,0),
+			Eigen::Vector3d(0,4,0),
+			Eigen::Vector3d(0,5,0),
+			Eigen::Vector3d(0,6,0),
+			Eigen::Vector3d(0,7,0),
+			Eigen::Vector3d(0,8,0)
+		};
 		SynchronizeLQR();
+		// Eigen::VectorXd initial_guess =OptimizeInitialGuess(p0,v_des[simulation_count],x0);
 		Eigen::VectorXd initial_guess =OptimizeInitialGuess(p0,v2,x0);
 
+		// mCurve->Initialize(x0.block<3,1>(0,0),x0.block<3,1>(3,0),x0.block<3,1>(6,0),t_hold);
 		mCurve->Initialize(initial_guess.block<3,1>(0,0),initial_guess.block<3,1>(3,0),initial_guess.block<3,1>(6,0),t_hold);
 	}
 	//Solve IK to make coarse_motions

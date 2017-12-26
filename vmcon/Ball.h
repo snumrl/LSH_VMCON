@@ -14,9 +14,10 @@ public:
 
 	Eigen::Vector3d								releasedPoint;
 	Eigen::Vector3d								releasedVelocity;
+	int 										release_count;
 public:
 	Ball(const dart::constraint::WeldJointConstraintPtr& cons,const dart::dynamics::SkeletonPtr& skel);
-
+	bool IsClose(const Eigen::Vector3d& p);
 	void ComputeFallingPosition(double h,Eigen::Vector3d& fp);
 	void Release(const dart::simulation::WorldPtr& world);
 	// void SetPosition(const Eigen::Vector3d& p);

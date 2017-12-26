@@ -46,27 +46,37 @@ Display()
 	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,100,0),Eigen::Vector3d(0,1,0));
 	// DrawLine(Eigen::Vector3d(0,0,0),Eigen::Vector3d(0,0,100),Eigen::Vector3d(0,0,1));
 	// glLineWidth(1.0);
-	glColor3f(0,0,0);
-	glLineWidth(1.0);
-	glBegin(GL_LINES);
-	{
-		double z = 0.0;
-		for(double x=-2.0;x<=2.0;x+=0.1)
-		{
-			glVertex3f(x,-1.0,z);
-			glVertex3f(x,3.0,z);
-		}
-		for(double y=-1.0;y<=3.0;y+=0.1)
-		{
-			glVertex3f(-2.0,y,z);
-			glVertex3f(2.0,y,z);
-		}
-	}
-	glEnd();
-    glColor3f(0,0,0);
-    glEnable(GL_LIGHTING);
-
-    GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
+	// glColor3f(0,0,0);
+	// glLineWidth(1.0);
+	// glBegin(GL_LINES);
+	// {
+	// 	double z = 0.0;
+	// 	for(double x=-2.0;x<=2.0;x+=0.1)
+	// 	{
+	// 		glVertex3f(x,-1.0,z);
+	// 		glVertex3f(x,3.0,z);
+	// 	}
+	// 	for(double y=-1.0;y<=3.0;y+=0.1)
+	// 	{
+	// 		glVertex3f(-2.0,y,z);
+	// 		glVertex3f(2.0,y,z);
+	// 	}
+	// }
+	// glEnd();
+ //    glColor3f(0,0,0);
+ //    glEnable(GL_LIGHTING);
+ //    std::string onoff;
+	// for(int k = 0;k<mRecords.size();k++)
+	// {
+	// 	if(mIsRender[k])
+	// 		onoff.append("ON  ");
+	// 	else
+	// 		onoff.append("OFF ");
+	// }
+    
+ //    GUI::DrawStringOnScreen(0.6,0.1,onoff,true,Eigen::Vector3d(0,0,0));
+    
+ //    GUI::DrawStringOnScreen(0.8,0.2,std::to_string(mWorld->GetRigidWorld()->getTime()),true,Eigen::Vector3d(0,0,0));
 	// glLineWidth(1.0);
 	Eigen::Vector3d clr[5] =
 	{
@@ -80,6 +90,7 @@ Display()
 
 	for(int k = 0;k<mRecords.size();k++)
 	{
+		ball_index = 0;
 		if(mIsRender[k])
 		{
 			Eigen::VectorXd target;

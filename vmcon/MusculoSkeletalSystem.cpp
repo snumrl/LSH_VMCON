@@ -782,7 +782,7 @@ void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSk
 		{
 			auto* abn =ms->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			loc += Eigen::Vector3d(0,0.02,0.03-0.018*i);
+			loc += Eigen::Vector3d(-0.05,0.05,0.08-0.018*i);
 			MakeBall(skel,loc,0.036,0.13);
 
 			ball.push_back(std::make_shared<Ball>(nullptr,skel));
@@ -793,7 +793,7 @@ void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSk
 		{
 			auto* abn =ms->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
-			loc += Eigen::Vector3d(0,0.02,0.03-0.018*i);
+			loc += Eigen::Vector3d(0.05,0.05,0.08-0.018*i);
 			MakeBall(skel,loc,0.036,0.13);
 
 			ball.push_back(std::make_shared<Ball>(nullptr,skel));

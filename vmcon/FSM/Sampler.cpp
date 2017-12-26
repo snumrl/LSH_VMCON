@@ -72,7 +72,7 @@ Sampler(
 	param.close();
 	mInitCount = 0;
 }
-
+// extern int simulation_count;
 void
 Sampler::
 Initialze(
@@ -94,6 +94,7 @@ Initialze(
 	mBallTargetVelocity = vel_desired;
 
 	mWritePath = "../output_curve"+std::to_string((int)mInitCount++);
+	// mWritePath = "../output_curve"+std::to_string((int)simulation_count);
 	boost::filesystem::create_directories(mWritePath);
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
 	ik->ClearTarget();
@@ -108,14 +109,19 @@ Sampler::
 Solve(const Eigen::VectorXd& x0)
 {
 	Eigen::VectorXd x_star = x0;
-	std::ofstream ofs("out"+std::to_string(mInitCount));
+
+	std::ofstream ofs(mWritePath+"/out");
+	std::ofstream ofs2(mWritePath+"/out_velocity");
 	ofs<<x_star.transpose()<<std::endl;
+	Eigen::Vector3d ball_vel = mBalls[mBallIndex]->GetVelocity();
+
 	Finalize(x_star);
+
 	for(int i =0;i<15;i++)
 	{
 		double c = EvalC(x_star);
-		Eigen::Vector3d ball_vel = mBalls[mBallIndex]->GetVelocity();
-		ofs<<x_star.transpose()<<std::endl;
+		ball_vel = mBalls[mBallIndex]->GetVelocity();
+		ofs2<<ball_vel.transpose()<<std::endl;
 		auto start = std::chrono::system_clock::now();
 		Eigen::VectorXd cx = EvalCx(x_star);
 		auto end = std::chrono::system_clock::now();
@@ -151,10 +157,12 @@ Solve(const Eigen::VectorXd& x0)
 		ball_vel = mBalls[mBallIndex]->GetVelocity();
 		std::cout<<ball_vel.transpose()<<std::endl;
 		Finalize(x_star,std::to_string(i));
+		ofs<<x_star.transpose()<<std::endl;
 
-
-		if(!is_updated || c<1E-4)
+		if(!is_updated || c<1E-4 || (ball_vel-mBallTargetVelocity).norm()<1E-2){
+			ofs2<<ball_vel.transpose()<<std::endl;
 			break;
+		}
 	}
 	
 	ofs.close();

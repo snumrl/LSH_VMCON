@@ -1,5 +1,6 @@
 #include "SimWindow.h"
 #include "MusculoSkeletalSystem.h"
+#include "FSM/Machine.h"
 #include "Controller.h"
 #include "IKOptimization.h"
 #include <GL/glut.h>
@@ -73,7 +74,8 @@ Display()
 
 	
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
-	
+	glPointSize(10.0);
+	DrawPoint(mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getBodyNode("HandR")->getTransform()* mWorld->GetController()->GetMachine()->mLocalOffset);
 	if(mRenderDetail)
 	{
 		DrawWorld(mWorld->GetSoftWorld());
@@ -84,6 +86,7 @@ Display()
 			// DrawArrow3D(GetPoint(mus->origin_way_points.back()),mus->origin_force.normalized(),mus->origin_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 			// DrawArrow3D(GetPoint(mus->insertion_way_points.back()),mus->insertion_force.normalized(),mus->insertion_force.norm()*0.0001,0.005,Eigen::Vector3d(0,0,0));
 		}
+
 	}
 	if(mRenderIK)
 	{

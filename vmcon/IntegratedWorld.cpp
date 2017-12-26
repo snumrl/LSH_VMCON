@@ -100,7 +100,7 @@ Initialize()
 
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
-	MakeBalls(mRigidWorld,mMusculoSkeletalSystem,mBalls,5);
+	MakeBalls(mRigidWorld,mMusculoSkeletalSystem,mBalls,1);
 
 	// for(int i=0;i<1;i++)
 	// {
