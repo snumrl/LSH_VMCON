@@ -609,11 +609,11 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 	T_ShoulderR.linear() =	(Eigen::AngleAxisd(3.141592*0.47,Eigen::Vector3d(0,0,1)).toRotationMatrix()*
 					Eigen::AngleAxisd(-3.141592*0.05,Eigen::Vector3d(0,1,0)).toRotationMatrix()).transpose();
 	T_ShoulderR.translation() = Eigen::Vector3d(-1.24,-0.34,0.25);
-
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_ShoulderR.linear()).transpose()<<std::endl;
 	T_ShoulderL.linear() = Eigen::AngleAxisd(3.141592*0.47,Eigen::Vector3d(0,0,1)).toRotationMatrix()*
 					Eigen::AngleAxisd(-3.141592*0.05,Eigen::Vector3d(1,0,0)).toRotationMatrix();
 	T_ShoulderL.translation() = Eigen::Vector3d(1.24,-0.34,0.25);
-
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_ShoulderL.linear()).transpose()<<std::endl;
 
 	MakeBody(skel,skel->getBodyNode("NeckL"),"ShoulderL",
 		path_export+"ShoulderL.obj",
@@ -637,12 +637,13 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 						;
 					// Eigen::AngleAxisd(-3.141592*0.05,Eigen::Vector3d(0,1,0)).toRotationMatrix()).inverse();
 	T_ElbowR.translation() = Eigen::Vector3d(-0.93,-0.24,-0.28);
-
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_ElbowR.linear()).transpose()<<std::endl;
 	T_ElbowL.linear() = 
 					Eigen::AngleAxisd(3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
 					Eigen::AngleAxisd(3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 					;
 	T_ElbowL.translation() = Eigen::Vector3d(0.93,-0.24,-0.28);
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_ElbowL.linear()).transpose()<<std::endl;
 
 	MakeBody(skel,skel->getBodyNode("ShoulderL"),"ElbowL",
 		path_export+"ElbowL.obj",
@@ -677,11 +678,13 @@ void MakeSkeleton(std::shared_ptr<MusculoSkeletalSystem>& ms)
 					;
 	T_HandR.translation() = Eigen::Vector3d(-0.79,-0.26,-0.28);
 
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_HandR.linear()).transpose()<<std::endl;
 	T_HandL.linear() = 
 					Eigen::AngleAxisd(3.141592*0.1,Eigen::Vector3d(0,1,0)).toRotationMatrix()*
 					Eigen::AngleAxisd(3.141592*0.5,Eigen::Vector3d(0,0,1)).toRotationMatrix()
 					;
 	T_HandL.translation() = Eigen::Vector3d(0.79,-0.26,-0.28);
+	// std::cout<<180.0/3.141592*dart::math::matrixToEulerXYZ(T_HandL.linear()).transpose()<<std::endl;
 	MakeBody(skel,skel->getBodyNode("ElbowR"),"HandR",
 		path_export+"HandR.obj",
 		T_HandR,
@@ -783,8 +786,10 @@ void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSk
 			auto* abn =ms->GetSkeleton()->getBodyNode("HandL");
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += Eigen::Vector3d(-0.05,0.05,0.08-0.018*i);
-			MakeBall(skel,loc,0.036,0.13);
-
+			MakeBall(skel,loc,0.036,1.0);
+			for(int i =0;i<skel->getNumDofs();i++){
+				skel->getDof(i)->setDampingCoefficient(0.1);
+			}
 			ball.push_back(std::make_shared<Ball>(nullptr,skel));
 			world->addSkeleton(skel);
 			ball.back()->Attach(world,abn);
@@ -794,8 +799,10 @@ void MakeBalls(dart::simulation::WorldPtr& world,const std::shared_ptr<MusculoSk
 			auto* abn =ms->GetSkeleton()->getBodyNode("HandR");
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += Eigen::Vector3d(0.05,0.05,0.08-0.018*i);
-			MakeBall(skel,loc,0.036,0.13);
-
+			MakeBall(skel,loc,0.036,1.0);
+			for(int i =0;i<skel->getNumDofs();i++){
+				skel->getDof(i)->setDampingCoefficient(0.1);
+			}
 			ball.push_back(std::make_shared<Ball>(nullptr,skel));
 			world->addSkeleton(skel);
 			ball.back()->Attach(world,abn);	

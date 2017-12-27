@@ -16,7 +16,7 @@ public:
 	void			CountMinusMinus();
 
 	Eigen::Vector3d GetTargetVelocity(const Eigen::Vector3d& from,const Eigen::Vector3d& to);
-	double			GetT_free(){return std::max(T*(V[count]-2*D),0.0);};
+	double			GetT_free(){return std::max(T*(V[count]-2*D +0.15),0.0);};
 	double			GetT_hold(){return T*D;};
 	int 			GetBallIndex(){return ball_index[count];};
 	int 			GetV(){return V[count];};

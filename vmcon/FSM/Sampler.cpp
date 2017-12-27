@@ -281,7 +281,8 @@ GenerateMotions(const Eigen::VectorXd& x,std::vector<Eigen::VectorXd>& motions)
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 	auto save_target = ik->GetTargets();
 	Eigen::Vector3d p_hb = ball->GetPosition() - mBody->getCOM();
-
+	Eigen::Isometry3d T_hand = mBody->getTransform();
+	p_hb = T_hand.linear().inverse()*p_hb;
 	AnchorPoint ap = std::make_pair(mBody,p_hb);
 	for(int i =0;i<11;i++)
 	{
@@ -387,7 +388,15 @@ Step(const Eigen::VectorXd& q,const Eigen::VectorXd& qd)
 	Eigen::VectorXd pos_diff = skel->getPositionDifferences(q,skel->getPositions());
 	for(int i = 0;i<pos_diff.rows();i++)
 		pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
-	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (qd - skel->getVelocities()).cwiseProduct(mKv);
+	double time_step = mRigidWorld->getTimeStep();
+
+	Eigen::Vector6d F_b_r = skel->getBodyNode("HandR")->getConstraintImpulse()*(1.0/time_step);
+	Eigen::Vector6d F_b_l = skel->getBodyNode("HandL")->getConstraintImpulse()*(1.0/time_step);
+	Eigen::VectorXd jaco_t_r = skel->getInvMassMatrix()*(skel->getJacobian(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)).transpose()*F_b_r);
+	Eigen::VectorXd jaco_t_l = skel->getInvMassMatrix()*(skel->getJacobian(skel->getBodyNode("HandL"),Eigen::Vector3d(0,0,0)).transpose()*F_b_l);   
+	Eigen::VectorXd Kjt = Eigen::VectorXd::Constant(mKp.rows(),0.1);
+
+	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (qd - skel->getVelocities()).cwiseProduct(mKv) - jaco_t_l.cwiseProduct(Kjt) - jaco_t_r.cwiseProduct(Kjt);
 	if(mBalls[mNextBallIndex]->IsReleased()) // check if already attached.
 	{
 		Eigen::Vector3d body_position = mNextBody->getTransform()*Eigen::Vector3d(0.0,0.02,0.03);

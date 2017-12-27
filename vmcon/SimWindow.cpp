@@ -76,6 +76,12 @@ Display()
 	DrawSkeleton(mWorld->GetMusculoSkeletalSystem()->GetSkeleton(),Eigen::Vector3d(0.8,0.8,0.8),!mRenderDetail);
 	glPointSize(10.0);
 	DrawPoint(mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getBodyNode("HandR")->getTransform()* mWorld->GetController()->GetMachine()->mLocalOffset);
+	Eigen::Vector3d llocal = mWorld->GetController()->GetMachine()->mLocalOffset;
+	llocal[0] = - llocal[0];
+	DrawPoint(mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getBodyNode("HandL")->getTransform()* llocal);
+	// std::cout<<mWorld->GetController()->GetMachine()->mLocalOffset.transpose()<<std::endl;
+	// std::cout<<"RENDER : "<<(mWorld->GetMusculoSkeletalSystem()->GetSkeleton()->getBodyNode("HandL")->getTransform()* llocal).transpose()<<std::endl;
+	// std::cout<<"RENDER : "<<(llocal).transpose()<<std::endl;
 	if(mRenderDetail)
 	{
 		DrawWorld(mWorld->GetSoftWorld());

@@ -34,6 +34,7 @@ IKOptimization::
 IKOptimization(const SkeletonPtr& skeleton)
 	:mSkeleton(skeleton),mSolution(skeleton->getPositions())
 {	
+	mW_Regulerization =1E-6;
 	mSkeleton->computeForwardKinematics(true,false,false);
 	mTargetOrientation[0] = mSkeleton->getBodyNode("HandL")->getTransform().rotation();
 	mTargetOrientation[1] = mSkeleton->getBodyNode("HandR")->getTransform().rotation();
@@ -145,6 +146,7 @@ eval_f(	Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number& obj_v
 		// obj_value += 0.5*GetDiff(diff).angle();
 	}
 	// std::cout<<obj_value<<std::endl;
+	obj_value += 0.5*mW_Regulerization*(mSavePositions-q).norm();
 	return true;
 }
 
@@ -210,6 +212,7 @@ eval_grad_f(Ipopt::Index n, const Ipopt::Number* x, bool new_x, Ipopt::Number* g
 	}
 	// std::cout<<q.transpose()<<std::endl;
 	// std::cout<<g.transpose()<<std::endl;
+	g += mW_Regulerization*(q - mSavePositions);
 	for(int i =0;i<n;i++)
 		grad_f[i] = g[i];
 

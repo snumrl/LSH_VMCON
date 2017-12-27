@@ -17,7 +17,7 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 		const std::vector<std::shared_ptr<Ball>>& balls,
 	const std::vector<int>& sequences,int ball_size)
 	:mRigidWorld(rigid_world),mSoftWorld(soft_world),mMusculoSkeletalSystem(musculo_skeletal_system),mBalls(balls),
-	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.05,0.05,0.08))
+	mJugglingInfo(new JugglingInfo(sequences,ball_size)),mLocalOffset(Eigen::Vector3d(0.0,0.0,0.0))
 {
 	Eigen::Isometry3d T_hand = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR")->getTransform();
 	Eigen::Isometry3d T_ball = mBalls[0]->GetSkeleton()->getBodyNode(0)->getTransform();
@@ -35,11 +35,11 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	mIKSolver->Options()->SetStringValue("mehrotra_algorithm", "yes");
 	mIKSolver->Options()->SetIntegerValue("print_level", 2);
 	mIKSolver->Options()->SetIntegerValue("max_iter", 1000);
-	mIKSolver->Options()->SetNumericValue("tol", 1e-4);
+	mIKSolver->Options()->SetNumericValue("tol", 1e-3);
 
 	mIKSolver->Initialize();
 	IKOptimization* ik = static_cast<IKOptimization*>(GetRawPtr(mIKOptimization));
-
+	ik->SetSolution(mMusculoSkeletalSystem->GetSkeleton()->getPositions());
 	Eigen::Vector3d l_loc = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandL")->getCOM();
 	Eigen::Vector3d r_loc = mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR")->getCOM();
 
@@ -47,6 +47,7 @@ Machine(const dart::simulation::WorldPtr& rigid_world,
 	ik->AddTargetPositions(std::make_pair(mMusculoSkeletalSystem->GetSkeleton()->getBodyNode("HandR"),Eigen::Vector3d::Zero()),r_loc);
 
 	mHandX0 = l_loc;
+
 	mIKSolver->OptimizeTNLP(mIKOptimization);
 	mPhase = 0;
 	InitializeLQR();
@@ -71,15 +72,22 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 	//Check Catch Phase Finished.
 	if(mPhase == 0)
 	{
-		Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
+		Eigen::Vector3d local_offset = mLocalOffset;
+		
+		if(!bn_from->getName().compare("HandR"));
+		else
+			local_offset[0] = -local_offset[0];
+
+		Eigen::Vector3d body_position = bn_from->getTransform()*local_offset;
 		Eigen::Vector3d ball_position = ball->GetPosition();
 		Eigen::Vector3d ball_velocity = ball->GetVelocity();
-		
+		// std::cout<<ball_position.transpose()<<std::endl;
+		// std::cout<<bn_from->getName()<<" "<<mJugglingInfo->GetBallIndex()<<std::endl;
 		if(ball->IsReleased())
 			GenerateCatchMotions();
 		// if( ball->IsClose(body_position)  || !ball->IsReleased())
 
-		if(   ((body_position-ball_position).norm()<5E-2 &&ball_velocity[1]<0.0)|| !ball->IsReleased())
+		if((body_position-ball_position).norm()<5E-2 || !ball->IsReleased())
 		{
 			ball->Attach(mRigidWorld,bn_from);
 			need_update = true;
@@ -87,21 +95,33 @@ GetMotion(Eigen::VectorXd& p,Eigen::VectorXd& v)
 		}
 	}
 	//Look opposite Hand
-	// mJugglingInfo->CountPlusPlus();
-	// ball = mBalls[mJugglingInfo->GetBallIndex()];
-	// bn_from = skel->getBodyNode(mJugglingInfo->From());
+	mJugglingInfo->CountPlusPlus();
+	ball = mBalls[mJugglingInfo->GetBallIndex()];
+	bn_from = skel->getBodyNode(mJugglingInfo->From());
 
-	// if(ball->IsReleased()) // check if already attached.
-	// {
-	// 	Eigen::Vector3d body_position = bn_from->getTransform()*mLocalOffset;
+	if(ball->IsReleased()) // check if already attached.
+	{
+		Eigen::Vector3d local_offset = mLocalOffset;
+		
+		if(!bn_from->getName().compare("HandR"));
+		else
+			local_offset[0] = -local_offset[0];	
 
-	// 	Eigen::Vector3d ball_position = ball->GetPosition();
-	// 	if((body_position-ball_position).norm()<5E-2){
-	// 		ball->Attach(mRigidWorld,bn_from);
-	// 	}
-	// }
+
+		Eigen::Vector3d body_position = bn_from->getTransform()*local_offset;
+
+		Eigen::Vector3d ball_position = ball->GetPosition();
+		// std::cout<<(local_offset).transpose()<<std::endl;
+		// std::cout<<(skel->getBodyNode("HandL")->getTransform()*local_offset).transpose()<<std::endl;
+		// std::cout<<ball_position.transpose()<<std::endl;
+		// std::cout<<body_position.transpose()<<std::endl;
+		// std::cout<<bn_from->getName()<<" "<<mJugglingInfo->GetBallIndex()<<std::endl;
+		if((body_position-ball_position).norm()<5E-2){
+			ball->Attach(mRigidWorld,bn_from);
+		}
+	}
 	// //Go back
-	// mJugglingInfo->CountMinusMinus();
+	mJugglingInfo->CountMinusMinus();
 	ball = mBalls[mJugglingInfo->GetBallIndex()];
 	bn_from = skel->getBodyNode(mJugglingInfo->From());
 	//Check Swing Phase Finished.
@@ -172,13 +192,21 @@ GenerateCatchMotions()
 	//Check if IK target update is needed.
 	Eigen::Vector3d target;
 	// ball->ComputeFallingPosition(ball->releasedPoint[1],target);
+	// ball->ComputeFallingPosition(mHandX0[1]+0.05,target);
 	ball->ComputeFallingPosition(mHandX0[1],target);
 	if(target.norm()<1E-6){
 		mMotions.push_back(mMotions.back());
 		return;
 	}
 	// std::cout<<"Catch Target : "<<target.transpose()<<std::endl;
-	AnchorPoint ap = std::make_pair(bn_from,mLocalOffset);
+	AnchorPoint ap;
+	if(!bn_from->getName().compare("HandL")){
+		Eigen::Vector3d loc = mLocalOffset;
+		loc[0] = -loc[0];
+		ap = std::make_pair(bn_from,loc);
+	}
+	else
+		ap = std::make_pair(bn_from,mLocalOffset);
 	ik->AddTargetPositions(ap,target);
 	mIKSolver->ReOptimizeTNLP(mIKOptimization);	
 
@@ -269,6 +297,8 @@ GenerateSwingMotions()
 		x0.block<3,1>(0,0) = p0;
 		x0.block<3,1>(3,0) = p0;
 		x0.block<3,1>(6,0) = p0;
+		// x0[0] -=0.1;
+		// p0[0] -=0.2;
 		// v2 = Eigen::Vector3d(0,3,0);
 		Eigen::Vector3d v_des[7] = {
 			Eigen::Vector3d(0,3,0),
@@ -293,8 +323,9 @@ GenerateSwingMotions()
 	ik->SetSolution(mMusculoSkeletalSystem->GetSkeleton()->getPositions());
 
 	auto save_target = ik->GetTargets();
-	Eigen::Vector3d p_hb = ball->GetPosition() - bn_from->getCOM();
-
+	Eigen::Vector3d p_hb = (ball->GetPosition() - bn_from->getCOM());
+	Eigen::Isometry3d T_hand = bn_from->getTransform();
+	p_hb = T_hand.linear().inverse()*p_hb;
 	AnchorPoint ap = std::make_pair(bn_from,p_hb);
 	for(int i =0;i<11;i++)
 	{
@@ -387,7 +418,9 @@ InitializeLQR()
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += mLocalOffset;
 			MakeBall(skel,mBalls[i]->GetPosition(),0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
-
+			for(int i =0;i<skel->getNumDofs();i++){
+				skel->getDof(i)->setDampingCoefficient(0.1);
+			}
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
 			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);
@@ -398,7 +431,9 @@ InitializeLQR()
 			Eigen::Vector3d loc = abn->getTransform().translation();
 			loc += mLocalOffset;
 			MakeBall(skel,mBalls[i]->GetPosition(),0.036,mBalls[i]->GetSkeleton()->getBodyNode(0)->getMass());
-
+			for(int i =0;i<skel->getNumDofs();i++){
+				skel->getDof(i)->setDampingCoefficient(0.1);
+			}
 			mLQRBalls.push_back(std::make_shared<Ball>(nullptr,skel));
 			mLQRRigidWorld->addSkeleton(skel);
 			mLQRBalls.back()->Attach(mLQRRigidWorld,abn);	

@@ -45,8 +45,8 @@ JugglingInfo(const std::vector<int>& V_sequences,int ball_size)
 	std::cout<<std::endl;
 
 
-	for(int i = 0;i<V.size();i++)
-		V[i] = i+3;
+	// for(int i = 0;i<V.size();i++)
+	// 	V[i] = i+3;
 	// 	count = i;
 	// 	std::cout<<From()<<"->"<<To()<<" : "<<GetV()<<std::endl;
 	// }
@@ -72,9 +72,10 @@ JugglingInfo::
 GetTargetVelocity(const Eigen::Vector3d& from,const Eigen::Vector3d& to)
 {	
 	Eigen::Vector3d diff = to-from;
-	double t_free_vec[] = {0.3,0.5,0.7,0.9,1.1,1.3,1.5,1.7,1.9,2.1};
-	// double t_free = GetT_free();
-	double t_free = t_free_vec[count];
+	// double t_free_vec[] = {0.3,0.5,0.7,0.9,1.1,1.3,1.5,1.7,1.9,2.1};
+	// double t_free = t_free_vec[count];
+	double t_free = GetT_free();
+	
 	double dh = from[1] - to[1];
 	double v_0y = 0.5*9.81*t_free - dh/t_free;
 
@@ -91,7 +92,7 @@ From()
 	if(count%2 == 0 )
 		return right;
 	else
-		return right;
+		return left;
 }
 std::string 
 JugglingInfo::
@@ -102,5 +103,5 @@ To()
 	if(next_count%2==0)
 		return right;
 	else
-		return right;
+		return left;
 }

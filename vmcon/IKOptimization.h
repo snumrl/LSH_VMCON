@@ -65,6 +65,7 @@ public:
 	Eigen::VectorXd											mSavePositions;
 	std::vector<std::pair<AnchorPoint,Eigen::Vector3d>> 	mTargets;
 	Eigen::VectorXd											mSolution;
+	double													mW_Regulerization;
 
 };
 

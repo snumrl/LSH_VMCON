@@ -105,6 +105,6 @@ Initialize(const std::string& path)
 
 	mMusculoSkeletalSystem->Initialize(mSoftWorld,mRigidWorld);
 	mSoftWorld->Initialize();
-	MakeBalls(mRigidWorld,mMusculoSkeletalSystem,mBalls,1);
+	MakeBalls(mRigidWorld,mMusculoSkeletalSystem,mBalls,3);
 }
 

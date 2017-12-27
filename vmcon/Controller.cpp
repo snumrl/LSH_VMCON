@@ -52,7 +52,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 	mMuscleOptimizationSolver->Options()->SetIntegerValue("print_level", 2);
 	mMuscleOptimizationSolver->Options()->SetIntegerValue("max_iter", 100);
 	mMuscleOptimizationSolver->Options()->SetNumericValue("tol", 1e-4);
-	// std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
+	std::vector<int> V_list{3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3};
 		// std::vector<int> V_list{
 		// 3,3,3,0,0,0,3,3,3,0,0,0};
 	// std::vector<int> V_list{
@@ -67,7 +67,7 @@ Controller(const FEM::WorldPtr& soft_world,const dart::simulation::WorldPtr& rig
 
 	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
 	// std::vector<int> V_list{5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5};
-	std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+	// std::vector<int> V_list{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 	// std::vector<int> V_list{5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1,5,3,1};
 	mMuscleOptimizationSolver->Initialize();
 		mMuscleOptimizationSolver->OptimizeTNLP(mMuscleOptimization);
@@ -169,8 +169,15 @@ ComputePDForces()
 	for(int i = 0;i<pos_diff.rows();i++)
 			pos_diff[i] = dart::math::wrapToPi(pos_diff[i]);
 
-	Eigen::VectorXd qdd_desired = 
-				pos_diff.cwiseProduct(mKp)+(vel_m - vel).cwiseProduct(mKv);
+	double time_step = mRigidWorld->getTimeStep();
+	Eigen::Vector6d F_b_r = skel->getBodyNode("HandR")->getConstraintImpulse()*(1.0/time_step);
+	Eigen::Vector6d F_b_l = skel->getBodyNode("HandL")->getConstraintImpulse()*(1.0/time_step);
+	Eigen::VectorXd jaco_t_r = skel->getInvMassMatrix()*(skel->getJacobian(skel->getBodyNode("HandR"),Eigen::Vector3d(0,0,0)).transpose()*F_b_r);
+	Eigen::VectorXd jaco_t_l = skel->getInvMassMatrix()*(skel->getJacobian(skel->getBodyNode("HandL"),Eigen::Vector3d(0,0,0)).transpose()*F_b_l);   
+	Eigen::VectorXd Kjt = Eigen::VectorXd::Constant(mKp.rows(),0.1);
+
+	Eigen::VectorXd qdd_desired = pos_diff.cwiseProduct(mKp) + (mTargetVelocities - skel->getVelocities()).cwiseProduct(mKv) - jaco_t_l.cwiseProduct(Kjt) - jaco_t_r.cwiseProduct(Kjt);
+
 				
 	mPDForces = qdd_desired;
 	// std::cout<<pos_diff.transpose()<<std::endl;
